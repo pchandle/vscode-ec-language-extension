@@ -1,38 +1,20 @@
-# LSP Example
+# Emergent Coding for Visual Studio Code
 
-Heavily documented sample code for https://code.visualstudio.com/api/language-extensions/language-server-extension-guide
+This extension provides rich Emergent Coding language support for Visual Studio Code ([VS Code](https://github.com/Microsoft/vscode)). Now you can write and debug Emergent Coding expressions using the excellent IDE-like interface that VS Code provides.
 
-## Functionality
+# Features
+- Syntax highlighting
+- Code snippets
+- IntelliSense for contract specifications, protocol specifications and more
 
-This Language Server works for plain text file. It has the following language features:
-- Completions
-- Diagnostics regenerated on each file change or configuration change
+# Installing the Extension
+You can install the official release of the Emergent Coding extension by following the steps in the [Visual Studio Code documentation](https://code.visualstudio.com/docs/editor/extension-marketplace). In the Extensions pane, search for "Emergent Coding" extension and install it there. You will get notified automatically about any future extension updates!
 
-It also includes an End-to-End test.
+# Reporting Problems
+If you experience any problems with the Emergent Coding Extension, see the [troubleshooting docs](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/troubleshooting.md) for information on diagnosing and reporting issues.
 
-## Structure
+# Contributing to the Code
+Check out the [development documentation](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/development.md) for more details on how to contribute to this extension!
 
-```
-.
-├── client // Language Client
-│   ├── src
-│   │   ├── test // End to End tests for Language Client / Server
-│   │   └── extension.ts // Language Client entry point
-├── package.json // The extension manifest.
-└── server // Language Server
-    └── src
-        └── server.ts // Language Server entry point
-```
-
-## Running the Sample
-
-- Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
-- Open VS Code on this folder.
-- Press Ctrl+Shift+B to start compiling the client and server in [watch mode](https://code.visualstudio.com/docs/editor/tasks#:~:text=The%20first%20entry%20executes,the%20HelloWorld.js%20file.).
-- Switch to the Run and Debug View in the Sidebar (Ctrl+Shift+D).
-- Select `Launch Client` from the drop down (if it is not already).
-- Press ▷ to run the launch config (F5).
-- If you want to debug the server as well, use the launch configuration `Attach to Server`
-- In the [Extension Development Host](https://code.visualstudio.com/api/get-started/your-first-extension#:~:text=Then%2C%20inside%20the%20editor%2C%20press%20F5.%20This%20will%20compile%20and%20run%20the%20extension%20in%20a%20new%20Extension%20Development%20Host%20window.) instance of VSCode, open a document in 'plain text' language mode.
-  - Type `j` or `t` to see `Javascript` and `TypeScript` completion.
-  - Enter text content such as `AAA aaa BBB`. The extension will emit diagnostics for all words in all-uppercase.
+# License
+This extension is licensed under the [MIT License](https://github.com/aptissio/vscode-ec-language-extension/blob/main/LICENSE). Please see the [third-party notices](https://github.com/aptissio/vscode-ec-language-extension/blob/main/third-party-notices.md) file for details on the third-party binaries that we include with releases of this project.
