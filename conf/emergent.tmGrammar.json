@@ -1,0 +1,271 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Emergent Coding",
+	"patterns": [
+		{
+			"match": "(defaults:)(\\s*)(\\w*)(\\s*),(\\s*)(\\w*)(\\s*),(\\s*)(\\w*)(\\s*),(\\s*)(\\w*)",
+			"captures": {
+				"1": {
+					"name": "keyword"
+				},
+				"3": {
+					"name": "meta.layer"
+				},
+				"6": {
+					"name": "meta.variation"
+				},
+				"9": {
+					"name": "meta.platform"
+				},
+				"12": {
+					"name": "meta.supplier"
+				}
+			}
+		},
+		{
+			"match": "\\s*?(job)\\s+(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)",
+			"captures": {
+				"1": {
+					"name": "keyword"
+				},
+				"2": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"3": {
+					"name": "meta.layer"
+				},
+				"4": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"5": {
+					"name": "meta.verb"
+				},
+				"6": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"7": {
+					"name": "meta.subject"
+				},
+				"8": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"9": {
+					"name": "meta.variation"
+				},
+				"10": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"11": {
+					"name": "meta.platform"
+				}
+			}
+		},
+		{
+			"match": "^\\s*(sub)\\s+((/)([.0-9a-zA-Z_-]+)(/))?([.0-9a-zA-Z_-]+)(/)([.0-9a-zA-Z_-]+)((/)?([.0-9a-zA-Z_-]+)?)?((/)?([.0-9a-zA-Z_-]+)?)?(@[0-9a-zA-Z_-]+)?",
+			"captures": {
+				"1": {
+					"name": "keyword"
+				},
+				"3": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"4": {
+					"name": "meta.layer"
+				},
+				"5": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"6": {
+					"name": "meta.verb"
+				},
+				"7": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"8": {
+					"name": "meta.subject"
+				},
+				"10": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"11": {
+					"name": "meta.variation"
+				},
+				"13": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"14": {
+					"name": "meta.platform"
+				},
+				"15": {
+					"name": "meta.supplier"
+				}
+			}
+		},
+		{
+			"match": "^\\s*(host|join)\\s+((/)([.0-9a-zA-Z_-]+)(/))?([.0-9a-zA-Z_-]+)((/)?([.0-9a-zA-Z_-]+)?)?((/)?([.0-9a-zA-Z_-]+)?)?",
+			"captures": {
+				"1": {
+					"name": "keyword"
+				},
+				"3": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"4": {
+					"name": "meta.collaboration"
+				},
+				"5": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"6": {
+					"name": "meta.collaboration"
+				},
+				"8": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"9": {
+					"name": "meta.collaboration"
+				},
+				"11": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"12": {
+					"name": "meta.collaboration"
+				}
+			}
+		},
+		{
+			"name": "punctuation",
+			"match": "(\\$|->|:)"
+		},
+		{
+			"name": "operator.functions",
+			"match": "\\b(max|min|concat|len|maxlen|trunc|replace|int2str|pack|pad|escape)\\b"
+		},
+		{
+			"name": "keyword.operators",
+			"match": "[+*/%-](\\b|\\s)"
+		},
+		{
+			"name": "keyword.numbers",
+			"match": "(^|\\s|\\b)([+-]?\\d+(\\.\\d*)?|[+-]?\\.\\d+)\\b"
+		},
+		{
+			"name": "keyword.numbers.binary",
+			"match": "\\b0b[01]+\\b"
+		},
+		{
+			"name": "keyword.numbers.octal",
+			"match": "\\b0o[0-7]+\\b"
+		},
+		{
+			"name": "keyword.numbers.hexadecimal",
+			"match": "\\b0x[0-9a-fA-F]+\\b"
+		},
+		{
+			"name": "keyword.string",
+			"match": "\"(\\\"|[^\"])*\""
+		},
+		{
+			"name": "keyword.codes",
+			"include": "#codes"
+		},
+		{
+			"name": "keyword.value.truefalse",
+			"match": "\\b(true|false)\\b"
+		},
+		{
+			"name": "keyword.control.ifthenelseend",
+			"match": "(^\\s*if\\b|\\bthen\\b|\\belse\\b|\\bend\\b)"
+		},
+		{
+			"name": "keyword.keywords.subhostjoin",
+			"match": "\\b(sub|host|join)\\b"
+		},
+		{
+			"name": "keyword.keywords.assets",
+			"match": "^assets\\b"
+		},
+		{
+			"name": "keyword.control.equals",
+			"match": "->"
+		},
+		{
+			"match": "(//).*$\\n?",
+			"name": "comment.line.double-slash"
+		},
+		{
+			"match": "[a-fA-F0-9]",
+			"name": "single.hex.digit"
+		},
+		{
+			"begin": "\"",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.json"
+				}
+			},
+			"end": "\"",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.end.json"
+				}
+			},
+			"name": "string.quoted.double.json",
+			"patterns": [
+				{
+					"include": "#stringcontent"
+				}
+			]
+		}
+	],
+	"repository": {
+		"codes": {
+			"patterns": [
+				{
+					"name": "constant.character.escape.language.myscript",
+					"match": "\\#\\w+"
+				}
+			]
+		},
+		"terms": {
+			"patterns": [
+				{
+					"name": "term.language.myscript",
+					"match": "([a-z][a-z0-9]*(?:-[a-z0-9]+)*)"
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.integer.myscript",
+					"match": "\\b(\\d+)\\b"
+				},
+				{
+					"name": "constant.numeric.decimal.myscript",
+					"match": "\\b(\\d+\\.\\d+)\\b"
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.dla",
+					"match": "\\b(if|while|for|return)\\b"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.dla",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.dla",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.emergent"
+}

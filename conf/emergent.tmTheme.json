@@ -1,0 +1,105 @@
+{
+    "name": "Design Domain Language",
+    "type": "dark",
+    "colors": {
+    },
+    "tokenColors": [
+        {
+            "scope": "comment",
+            "settings": {
+                "foreground": "#656e2d"
+            }
+        },
+        {
+            "scope": "keyword",
+            "settings": {
+                "foreground": "#c586c0"
+            }
+        },
+        
+        {
+            "scope": "meta.layer",
+            "settings": {
+                "foreground": "#2e74a6"
+            }
+        },
+        {
+            "scope": "meta.verb",
+            "settings": {
+                "foreground": "#3684b7"
+            }
+        },
+        {
+            "scope": "meta.subject",
+            "settings": {
+                "foreground": "#4091c6"
+            }
+        },
+        {
+            "scope": "meta.variation",
+            "settings": {
+                "foreground": "#529bcf"
+            }
+        },
+        {
+            "scope": "meta.platform",
+            "settings": {
+                "foreground": "#66a7d5"
+            }
+        },
+        {
+            "scope": "meta.supplier",
+            "settings": {
+                "foreground": "#5E994F"
+            }
+        },
+        {
+            "scope": "meta.collaboration",
+            "settings": {
+                "foreground": "#c76f44"
+            }
+        },
+        {
+            "scope": "keyword.string",
+            "settings": {
+                "foreground": "#bd6a42"
+            }
+        },
+        {
+            "scope": "keyword.numbers",
+            "settings": {
+                "foreground": "#b5b771"
+            }
+        },
+        {
+            "scope": "keyword.operators",
+            "settings": {
+                "foreground": "#4db9a3"
+            }
+        },
+        {
+            "scope": "keyword.value.truefalse",
+            "settings": {
+                "foreground": "#4db9a3"
+            }
+        },
+        {
+            "scope": "operator.functions",
+            "settings": {
+                "foreground": "#c586c0"
+            }
+        },
+        {
+            "scope": "punctuation.definition.classification.separator.emergent",
+            "settings": {
+                "foreground": "#4db9a3"
+            }
+        },
+        {
+            "scope": "punctuation",
+            "settings": {
+                "foreground": "#50c3ac"
+            }
+        }
+    ]
+}

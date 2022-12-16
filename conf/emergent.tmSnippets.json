@@ -1,0 +1,100 @@
+{
+	"Defaults": {
+		"prefix": [
+			"defaults"
+		],
+		"body": [
+			"defaults: ${1|byte,data,system,behaviour|}, ${2:default}, ${3:x64}, ${4:codevalley}",
+			"$0"
+		],
+		"description": "An expression defaults statement."
+	},
+	"Minimum": {
+		"prefix": [
+			"min"
+		],
+		"body": [
+			"min(${1})"
+		],
+		"description": "A minimum statement."
+	},
+	"Maximum": {
+		"prefix": [
+			"max"
+		],
+		"body": [
+			"max(${1})"
+		],
+		"description": "A maximum statement."
+	},
+	"Length": {
+		"prefix": [
+			"len"
+		],
+		"body": [
+			"len(${1})"
+		],
+		"description": "A minimum statement."
+	},
+	"IfThenEnd": {
+		"prefix": [
+			"if"
+		],
+		"body": [
+			"if ${1} then",
+			"\t$0",
+			"end"
+		],
+		"description": "An if-then-end statement."
+	},
+	"IfThenElseEnd": {
+		"prefix": [
+			"if"
+		],
+		"body": [
+			"if ${1} then",
+			"\t${2}",
+			"else",
+			"\t$0",
+			"end"
+		],
+		"description": "An if-then-else-end statement."
+	},
+	"Subcontract": {
+		"prefix": [
+			"sub"
+		],
+		"body": [
+			"sub ${1}(${2}) -> ${3}"
+		],
+		"description": "A sub-contracting statement."
+	},
+	"Host": {
+		"prefix": [
+			"host"
+		],
+		"body": [
+			"host ${1}(${2}) -> ${3}"
+		],
+		"description": "A collaboration hosting statement."
+	},
+	"Join": {
+		"prefix": [
+			"join"
+		],
+		"body": [
+			"join ${1}(${2}) -> ${3}"
+		],
+		"description": "A collaboration joining statement."
+	},
+	"Job": {
+		"prefix": [
+			"job"
+		],
+		"body": [
+			"job ${1}(${2}) ${3}:",
+			"end"
+		],
+		"description": "A job statement."
+	}
+}

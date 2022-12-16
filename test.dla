@@ -1,0 +1,55 @@
+defaults: byte, default, x64, codevalley
+// system--syscall--chmod--constant--linux-x64.dla
+
+job /system/syscall/chmod/constant/linux-x64(chmod, filename, USR_MODE, GRP_MODE, OTH_MODE) result_code, success, failure :
+false -> DEBUG_FLAG
+  USR_MODE * 64 + GRP_MODE * 8 + OTH_MODE -> MODE
+
+  0x5A -> syscall_n_chmod
+
+  9223372036854775807 -> ARCH_INT_MAX
+  -9223372036854775808 -> ARCH_INT_MIN
+  4096 -> LINUX_PATH_LEN_MAX
+
+
+  join /data/bytesequence(filename) -> _, fn_len_enc_length, fn_len_enc_bytes
+  join /data/integer(fn_len_enc_length) -> _, _, fn_len_enc_length_loc
+  join /data/bytes(fn_len_enc_bytes) -> FN_LEN_ENC_LEN_MAX, fn_len_enc_loc
+
+  if DEBUG_FLAG then
+  43
+   else
+   54
+   end -> debon
+
+  join /data/integer(result_code) -> _, _, result_code_loc
+
+  min(LINUX_PATH_LEN_MAX, FN_LEN_ENC_LEN_MAX + 1) -> FN_NULL_TERM_LEN_MAX
+  
+  chmod -> {
+    
+    sub /data/new/integer/reserve/x64@aptissio($, ARCH_INT_MIN, ARCH_INT_MAX) -> result_code
+    sub /data/add/integer@aptissio($, result_code, result_code, result_code)
+    join /data/flow($) -> {
+      sub new/bytes($, FN_NULL_TERM_LEN_MAX, sub, asset) -> fn_null_term_loc
+      // Clear desitination to ensure null termination
+      sub set/bytes/constant@aptissio($, fn_null_term_loc, FN_NULL_TERM_LEN_MAX, "\x00" * FN_NULL_TERM_LEN_MAX)
+      sub dereference/64bits($, fn_len_enc_length_loc) -> fn_len_enc_length_value
+      // Copy source filename
+      sub copy/bytes/dynamic($, fn_len_enc_loc, fn_null_term_loc, fn_len_enc_length_value)
+
+      sub call/procedure/syscall/linux-x64($, syscall_n_chmod) -> {
+        sub set/syscall-parameter/default/linux-x64($, fn_null_term_loc)
+        sub set/syscall-parameter/constant/linux-x64($, MODE)
+      }, syscall_result, {
+        // If successful, then result is zero, otherwise, it is the error number.
+        sub set/integer/constant($, result_code_loc, 0)
+        host /data/flow($) -> success
+
+      }, {
+        sub set/integer($, result_code_loc, syscall_result)
+        host /data/flow($) -> failure
+      }
+    }
+  }
+end
