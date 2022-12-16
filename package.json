@@ -4,7 +4,7 @@
 	"displayName": "Emergent Coding",
 	"author": "Aptissio",
 	"license": "MIT",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -25,48 +25,48 @@
 	"contributes": {
 		"configuration": [
 			{
-			"title": "Gateway",
-			"properties": {
-				"gateway.hostname":{
-					"type": "string",
-					"default": "localhost",
-					"description": "Specifies the hostname or IPv4 address of the Emergent Coding Gateway server."
-				},
-				"gateway.port":{
-					"type": "integer",
-					"default": 10000,
-					"description": "Specifies the TCP port of the Emergent Coding Gateway server."
-				},
-				"gateway.allowInsecure":{
-					"type":"boolean",
-					"default": true,
-					"description": "Allow insecure conenctions to the Emergent Coding Gateway server."
+				"title": "Gateway",
+				"properties": {
+					"gateway.hostname": {
+						"type": "string",
+						"default": "localhost",
+						"description": "Specifies the hostname or IPv4 address of the Emergent Coding Gateway server."
+					},
+					"gateway.port": {
+						"type": "integer",
+						"default": 10000,
+						"description": "Specifies the TCP port of the Emergent Coding Gateway server."
+					},
+					"gateway.allowInsecure": {
+						"type": "boolean",
+						"default": true,
+						"description": "Allow insecure conenctions to the Emergent Coding Gateway server."
+					}
+				}
+			},
+			{
+				"title": "Extension Debugging",
+				"properties": {
+					"emergent.maxNumberOfProblems": {
+						"scope": "resource",
+						"type": "number",
+						"default": 100,
+						"description": "Controls the maximum number of problems produced by the language server."
+					},
+					"emergent.trace.server": {
+						"scope": "window",
+						"type": "string",
+						"enum": [
+							"off",
+							"messages",
+							"verbose"
+						],
+						"default": "verbose",
+						"description": "Traces the communication between VS Code and the language server."
+					}
 				}
 			}
-		},
-		{
-			"title": "Extension Debugging",
-			"properties": {
-				"emergent.maxNumberOfProblems": {
-					"scope": "resource",
-					"type": "number",
-					"default": 100,
-					"description": "Controls the maximum number of problems produced by the language server."
-				},
-				"emergent.trace.server": {
-					"scope": "window",
-					"type": "string",
-					"enum": [
-						"off",
-						"messages",
-						"verbose"
-					],
-					"default": "verbose",
-					"description": "Traces the communication between VS Code and the language server."
-				}
-			}
-		}
-	],
+		],
 		"languages": [
 			{
 				"id": "emergent",
