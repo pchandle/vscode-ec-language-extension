@@ -735,7 +735,12 @@ const contractSpecs = [];
 // 	{ layer: "behaviour", verb: "new", subject: "agent-bitcoin-wallet", variation: "default", platform: "linux-x64", supplier: "aptissio" },
 // 	{ layer: "data", verb: "new", subject: "bytesequence", variation: "default", platform: "x64", supplier: "codevalley" },
 // ];
-const apiRootUrl = 'http://103.230.184.180:10091';
+
+const gateway = vscode.workspace.getConfiguration('gateway');
+const apiRootUrl = (gateway.allowInsecure == true ? 'http://' : 'https://' ) + gateway.hostname + ':' + gateway.port ;
+console.log('API:', apiRootUrl);
+
+// const apiRootUrl = 'http://103.230.184.180:10091';
 const fetchUrlSuffix = '/fetch/';
 const valleyUrlSuffix = '/valley/view/';
 
