@@ -17,6 +17,15 @@ import {
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
+let ecStatusBarItem: vscode.StatusBarItem;
+let apiRootUrl = "";
+let lastGatewayError=undefined;
+
+
+const fetchUrlSuffix = '/fetch/';
+const valleyUrlSuffix = '/valley/view/';
+
+const valleyScanIntervalMs = 30 * 60 * 1000;
 
 export function activate(context: ExtensionContext) {
 	// The server is implemented in node
@@ -680,7 +689,7 @@ export function activate(context: ExtensionContext) {
 				const contract = text.match(/.*sub\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/).groups;
 
 				if (contract != undefined) {
-					console.log('C: ', contract);
+					// console.log('C: ', contract);
 				}
 
 				// Apply defaults
@@ -698,10 +707,6 @@ export function activate(context: ExtensionContext) {
 					return new vscode.Hover(await getContractHoverMarkdown(contract));
 				}
 
-				
-
-				
-
 				// return {
 				// 	contents: [word]
 				// };
@@ -709,7 +714,48 @@ export function activate(context: ExtensionContext) {
 		}
 	);
 
+	const ecStatusCommandId = 'emergent.showFetchError';
+	context.subscriptions.push(vscode.commands.registerCommand(ecStatusCommandId, () => {
+		vscode.window.showInformationMessage(statusInfoMessage());
+	}));
+
+	ecStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+	ecStatusBarItem.command = ecStatusCommandId;
+	ecStatusBarItem.show();
+
+	context.subscriptions.push(ecStatusBarItem);
+
 	context.subscriptions.push(contractCompletionProvider, emergentHoverProvider);
+
+	vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('gateway')) {
+			updateGatewayApiUrl();
+            vscode.window.showInformationMessage('Updated');
+        }
+    });
+
+	// Update Gateway API URL from configuration at start
+	updateGatewayApiUrl();
+
+	// Update status bar once on start.
+	updateStatusBar("");
+
+	// Start first Valley indexing
+	setTimeout(() => {
+		updateSpecs();
+	}, 5000); 
+
+	// Schedule future indexing updates
+	setInterval(async () => {
+		updateSpecs();
+	}, valleyScanIntervalMs);
+}
+
+
+function updateGatewayApiUrl() {
+	const gateway = vscode.workspace.getConfiguration('gateway');
+	apiRootUrl = (gateway.allowInsecure == true ? 'http://' : 'https://' ) + gateway.hostname + ':' + gateway.port ;
+	console.log('Gateway API URL updated:', apiRootUrl);
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -720,7 +766,7 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 
-import fetch, { RequestInfo } from 'node-fetch';
+import fetch, { RequestInfo, Response } from 'node-fetch';
 
 const contractSpecs = [];
 // const contractSpecs = [
@@ -736,35 +782,51 @@ const contractSpecs = [];
 // 	{ layer: "data", verb: "new", subject: "bytesequence", variation: "default", platform: "x64", supplier: "codevalley" },
 // ];
 
-const gateway = vscode.workspace.getConfiguration('gateway');
-const apiRootUrl = (gateway.allowInsecure == true ? 'http://' : 'https://' ) + gateway.hostname + ':' + gateway.port ;
-console.log('API:', apiRootUrl);
-
-// const apiRootUrl = 'http://103.230.184.180:10091';
-const fetchUrlSuffix = '/fetch/';
-const valleyUrlSuffix = '/valley/view/';
-
 
 async function fetchApiJson(url: RequestInfo) {
 	try {
 		const response = await fetch(url);
 		const data = await response.json();
+		lastGatewayError=undefined;
+		updateStatusBar(`$(pass) Gateway OK`);
 		return data;
 	} catch (error) {
-		console.log(error);
+		console.debug(error);
+		switch (error.type) {
+			case "invalid-json":
+				lastGatewayError="Invalid JSON received from " + JSON.stringify(url);
+				break;
+		
+			default:
+				lastGatewayError="Failed to fetch " + JSON.stringify(url);
+				break;
+		}
+		updateStatusBar(`$(debug-disconnect) Gateway error`, true);
+		
 		return;
 	}
 }
 
+
 async function fetchApiText(url: RequestInfo) {
 	try {
-		console.log(url);
-
 		const response = await fetch(url);
 		const data = await response.text();
+		lastGatewayError=undefined;
+		updateStatusBar(`$(pass) Gateway OK`);
 		return data;
 	} catch (error) {
-		console.log(error);
+		console.debug(error);
+		switch (error.type) {
+			// case "???":
+			// 	lastGatewayError="Invalid JSON received from " + JSON.stringify(url);
+			// 	break;
+		
+			default:
+				lastGatewayError="Failed to fetch " + JSON.stringify(url);
+				break;
+		}
+		updateStatusBar(`$(debug-disconnect) Gateway error`, true);
 		return;
 	}
 }
@@ -775,32 +837,41 @@ async function updateSpecs() {
 	const updateStart = Date.now();
 	//clearInterval(timer);
 	console.log('Updating specifications.');
-	const rawSpecs = await fetchApiJson(apiRootUrl + fetchUrlSuffix + "/");
-	// console.log(rawSpecs);
-	for (const spec in rawSpecs) {
-		if ((spec.match(/\//g) || []).length == 5) {
-			// This is a contract
-			const taxonomy = spec.match(/\/([^/]+)\/([^/]+)\/([^/]+)\/([^/]+)\/([^/]+)/);
-			// Fetch suppliers for this spec
-			const specDetail = await fetchApiJson(apiRootUrl + fetchUrlSuffix + spec);
-			// console.log('SD:', spec, '[',  specDetail.suppliers,']');
-			for (const supplier of specDetail.suppliers) {
-				// console.log('Sups: ', JSON.stringify(supplier));
-				const sObj = new specObj(taxonomy[1], taxonomy[2], taxonomy[3], taxonomy[4], taxonomy[5], supplier);
-				contractSpecs.push(sObj);
-				uniqueContracts++;
-				if (uniqueContracts % 100 == 0) {
-					console.log(uniqueContracts, ' contracts read.');
+	try {
+		const rawSpecs = await fetchApiJson(apiRootUrl + fetchUrlSuffix + "/");
+		for (const spec in rawSpecs) {
+			if ((spec.match(/\//g) || []).length == 5) {
+				// This is a contract
+				const taxonomy = spec.match(/\/([^/]+)\/([^/]+)\/([^/]+)\/([^/]+)\/([^/]+)/);
+				// Fetch suppliers for this spec
+				const specDetail = await fetchApiJson(apiRootUrl + fetchUrlSuffix + spec);
+				if (specDetail) {
+					for (const supplier of specDetail.suppliers) {
+						const sObj = new specObj(taxonomy[1], taxonomy[2], taxonomy[3], taxonomy[4], taxonomy[5], supplier);
+						contractSpecs.push(sObj);
+						uniqueContracts++;
+						if (uniqueContracts % 100 == 0) {
+							console.log(uniqueContracts, ' contracts read.');
+						}
+					}
 				}
 			}
 		}
+		const updateEnd = Date.now();
+		const elapsedTime = updateEnd - updateStart;
+		const elapsedTimeHr = Math.floor(elapsedTime/1000/60/60);
+		const elapsedTimeMin = Math.floor((elapsedTime - elapsedTimeHr*1000*60*60)/1000/60);
+		const elapsedTimeSec = Math.floor((elapsedTime - elapsedTimeHr*1000*60*60 - elapsedTimeMin*1000*60)/1000);
+		console.log('Specifications fetched. [contracts=' + uniqueContracts + ', elapsed-time=' + 
+		(elapsedTimeHr < 10 ? '0' + elapsedTimeHr : elapsedTimeHr) + ':' +
+		(elapsedTimeMin <10 ? '0' + elapsedTimeMin : elapsedTimeMin) + ':' +
+		(elapsedTimeSec < 10 ? '0' + elapsedTimeSec : elapsedTimeSec) +
+		', cspec-per-second=' + (uniqueContracts ==0 ? 0 : (elapsedTime /1000/uniqueContracts)) +
+		']');	
+	} catch (error) {
+		console.debug(error);
 	}
-	const updateEnd = Date.now();
-	const elapsedTime = updateEnd - updateStart;
-	const elapsedTimeHr = Math.floor(elapsedTime/1000/60/60);
-	const elapsedTimeMin = Math.floor((elapsedTime - elapsedTimeHr*1000*60*60)/1000/60);
-	const elapsedTimeSec = Math.floor((elapsedTime - elapsedTimeHr*1000*60*60 - elapsedTimeMin*1000*60)/1000);
-	console.log('Specifications fetched. [contracts=', uniqueContracts, ', elapsed-time=', elapsedTimeHr < 10 ? '0' + elapsedTimeHr : elapsedTimeHr + ':' +elapsedTimeMin + ':' +elapsedTimeSec , ', cspec-per-second=', elapsedTime /1000/uniqueContracts,']');
+	
 }
 
 async function fetchContractSpec(contract) {
@@ -813,7 +884,7 @@ async function fetchContractSpec(contract) {
 	'/' + contract.platform ;
 
 	const contractSpec = await fetchApiJson(url);
-	console.log('CS:', contractSpec);
+	// console.log('CS:', contractSpec);
 	return contractSpec;
 }
 
@@ -828,18 +899,8 @@ async function fetchContractRoutes(contract) {
 	'@' + contract.supplier;
 
 	const contractSuppliers = await fetchApiText(url);
-		console.log('Sups:', contractSuppliers);
+		// console.log('Sups:', contractSuppliers);
 }
-
-const valleyScanIntervalMs = 30 * 60 * 1000;
-
-// Start first update
-updateSpecs();
-
-// Schedule future updates
-setInterval(async () => {
-	updateSpecs();
-}, valleyScanIntervalMs);
 
 function specObj(layer, verb, subject, variation, platform, supplier) {
 	this.layer = layer;
@@ -848,4 +909,23 @@ function specObj(layer, verb, subject, variation, platform, supplier) {
 	this.variation = variation;
 	this.platform = platform;
 	this.supplier = supplier;
+}
+
+function updateStatusBar(status: string, error=false) {
+	if (error) {
+		ecStatusBarItem.backgroundColor= new vscode.ThemeColor('statusBarItem.errorBackground');
+	} else {
+		ecStatusBarItem.backgroundColor= undefined;
+	}
+		// ecStatusBarItem.text = `$(debug-disconnect) Gateway down`;
+		// ecStatusBarItem.text = `$(pass) Gateway OK`;
+		ecStatusBarItem.text = status;
+}
+
+function statusInfoMessage() {
+	if (lastGatewayError) {
+		return lastGatewayError;
+	} else {
+		return `Gateway OK`;
+	}
 }
