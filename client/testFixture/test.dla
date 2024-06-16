@@ -17,9 +17,9 @@ false -> DEBUG_FLAG
   join /data/bytes(fn_len_enc_bytes) -> FN_LEN_ENC_LEN_MAX, fn_len_enc_loc
 
   if DEBUG_FLAG then
-  43
+    43
    else
-   54
+    54
    end -> debon
 
   join /data/integer(result_code) -> _, _, result_code_loc

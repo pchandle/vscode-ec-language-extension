@@ -193,18 +193,19 @@ connection.onCompletion(
 		// which code complete got requested. For the example we ignore this
 		// info and always provide the same completion items.
 
-		return [
-			{
-				label: 'TypeScript',
-				kind: CompletionItemKind.Text,
-				data: 1
-			},
-			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
-				data: 2
-			}
-		];
+		return [];
+		// return [
+		// 	{
+		// 		label: 'TypeScript',
+		// 		kind: CompletionItemKind.Text,
+		// 		data: 1
+		// 	},
+		// 	{
+		// 		label: 'JavaScript',
+		// 		kind: CompletionItemKind.Text,
+		// 		data: 2
+		// 	}
+		// ];
 	}
 );
 
