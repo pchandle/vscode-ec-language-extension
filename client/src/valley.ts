@@ -1,5 +1,5 @@
 import { ExtensionContext } from "vscode";
-import fetch, { RequestInfo, Response } from "node-fetch";
+import fetch, { RequestInfo, RequestInit, Response } from "node-fetch";
 
 type statusCallback = (status: string, err?: boolean) => void;
 export type contractClassification = { layer: string; verb: string; subject: string; variation: string; platform: string };
@@ -800,7 +800,10 @@ function specObj(layer, verb, subject, variation, platform, supplier) {
 }
 
 async function fetchApiJson(url: RequestInfo): Promise<any> {
-  return fetch(url)
+  const init: RequestInit = {
+    headers: {"cache-control": "no-cache"}
+  };
+  return fetch(url, init)
   .then((res) => res.json())
     // .then((res) => {
     //   if (res.size == 0) {

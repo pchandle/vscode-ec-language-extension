@@ -22,12 +22,12 @@ const v = new Valley();
 
 const valleyScanIntervalMs = 30 * 60 * 1000;
 
-function getDefaults(doc) {
+function getDefaults(doc: vscode.TextDocument) {
   const defaults = doc
     .getText()
-    .match(/^\s*defaults:\s+(?<layer>[^ ,]*)\s*,\s*(?<variation>[^ ,]*)\s*,\s*(?<platform>[^ ,]*)\s*,\s*(?<supplier>\w*)/);
-  // console.debug('defaults:', defaults.groups);
-  return defaults.groups;
+    .match(/(^|\n)\s*defaults:\s+(?<layer>[^ ,]*)\s*,\s*(?<variation>[^ ,]*)\s*,\s*(?<platform>[^ ,]*)\s*,\s*(?<supplier>\w*)/);
+  console.debug('defaults:', defaults ? defaults.groups : null);
+  return defaults ? defaults.groups : null;
 }
 async function getContractHoverMarkdown(contract: any) {
   try {
@@ -143,7 +143,7 @@ async function getContractHoverMarkdown(contract: any) {
     // suppliers[]
     markdownString.supportHtml = true;
     // markdownString.isTrusted = true;
-    
+
     return markdownString;
   } catch (error) {
     console.log(error.message);
@@ -896,32 +896,28 @@ export function activate(context: ExtensionContext) {
 
       if (contract != undefined) {
         // console.log('C: ', contract);
+        // Apply defaults
+        if (contract.layer == undefined || contract.layer == ".") contract.layer = defaults.layer;
+        if (contract.variation == undefined || contract.variation == ".") contract.variation = defaults.variation;
+        if (contract.platform == undefined || contract.platform == ".") contract.platform = defaults.platform;
+        if (contract.supplier == undefined || contract.supplier == ".") contract.supplier = defaults.supplier;
+
+        if (
+          contract.layer == undefined ||
+          contract.verb == undefined ||
+          contract.variation == undefined ||
+          contract.platform == undefined ||
+          contract.supplier == undefined
+        ) {
+          console.log("Failed to parse contract.");
+        } else {
+          // console.log('F: ', contract);
+          return new vscode.Hover(await getContractHoverMarkdown(contract));
+        }
+      } else {
+        console.debug("Failed to classify text:", text);
+        return;
       }
-
-      // Apply defaults
-      if (contract.layer == undefined || contract.layer == ".") contract.layer = defaults.layer;
-      if (contract.variation == undefined || contract.variation == ".") contract.variation = defaults.variation;
-      if (contract.platform == undefined || contract.platform == ".") contract.platform = defaults.platform;
-      if (contract.supplier == undefined || contract.supplier == ".") contract.supplier = defaults.supplier;
-
-      if (
-        contract.layer == undefined ||
-        contract.verb == undefined ||
-        contract.variation == undefined ||
-        contract.platform == undefined ||
-        contract.supplier == undefined
-      ) {
-        console.log("Failed to parse contract.");
-      }
-
-      if (contract != undefined) {
-        // console.log('F: ', contract);
-        return new vscode.Hover(await getContractHoverMarkdown(contract));
-      }
-
-      // return {
-      // 	contents: [word]
-      // };
     },
   });
 
@@ -1046,7 +1042,7 @@ import { connected } from "process";
 // 	{ layer: "data", verb: "new", subject: "bytesequence", variation: "default", platform: "x64", supplier: "codevalley" },
 // ];
 
-function updateStatusBar(statusBar:vscode.StatusBarItem, status: string, error = false) {
+function updateStatusBar(statusBar: vscode.StatusBarItem, status: string, error = false) {
   if (error) {
     statusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
   } else {
