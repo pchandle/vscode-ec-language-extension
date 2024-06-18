@@ -182,8 +182,12 @@
 			"match": "\\b(sub|host|join)\\b"
 		},
 		{
-			"name": "keyword.keywords.assets",
-			"match": "^assets\\b"
+			"name": "keyword.keywords.asset",
+			"match": "^\\s*asset\\b"
+		},
+		{
+			"name": "keyword.keywords.deliver",
+			"match": "^\\s*deliver\\b"
 		},
 		{
 			"name": "keyword.control.equals",
