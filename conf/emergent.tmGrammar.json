@@ -23,39 +23,39 @@
 			}
 		},
 		{
-			"match": "\\s*?(job)\\s+(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)(/)([0-9a-zA-Z_-]+)",
+			"match": "\\s*?(job)\\s+((/)([0-9a-zA-Z_-]+)(/))?([0-9a-zA-Z_-]+)((/)([0-9a-zA-Z_-]+))?((/)([0-9a-zA-Z_-]+))?((/)([0-9a-zA-Z_-]+))?",
 			"captures": {
 				"1": {
 					"name": "keyword"
 				},
-				"2": {
-					"name": "punctuation.definition.classification.separator.emergent"
-				},
 				"3": {
-					"name": "meta.layer"
+					"name": "punctuation.definition.classification.separator.emergent"
 				},
 				"4": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "meta.layer"
 				},
 				"5": {
-					"name": "meta.verb"
-				},
-				"6": {
 					"name": "punctuation.definition.classification.separator.emergent"
 				},
-				"7": {
-					"name": "meta.subject"
+				"6": {
+					"name": "meta.verb"
 				},
 				"8": {
 					"name": "punctuation.definition.classification.separator.emergent"
 				},
 				"9": {
-					"name": "meta.variation"
-				},
-				"10": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "meta.subject"
 				},
 				"11": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"12": {
+					"name": "meta.variation"
+				},
+				"14": {
+					"name": "punctuation.definition.classification.separator.emergent"
+				},
+				"15": {
 					"name": "meta.platform"
 				}
 			}
@@ -163,7 +163,7 @@
 		},
 		{
 			"name": "keyword.string",
-			"match": "\"(\\\"|[^\"])*\""
+			"match": "\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\""
 		},
 		{
 			"name": "keyword.codes",

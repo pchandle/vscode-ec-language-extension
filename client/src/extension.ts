@@ -26,7 +26,7 @@ function getDefaults(doc: vscode.TextDocument) {
   const defaults = doc
     .getText()
     .match(/(^|\n)\s*defaults:\s+(?<layer>[^ ,]*)\s*,\s*(?<variation>[^ ,]*)\s*,\s*(?<platform>[^ ,]*)\s*,\s*(?<supplier>\w*)/);
-  console.debug('defaults:', defaults ? defaults.groups : null);
+  // console.debug('defaults:', defaults ? defaults.groups : null);
   return defaults ? defaults.groups : null;
 }
 async function getContractHoverMarkdown(contract: any) {
@@ -891,7 +891,7 @@ export function activate(context: ExtensionContext) {
       // console.log('W: ', word);
 
       const contract = text.match(
-        /.*sub\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
+        /.*(sub|job)\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
       ).groups;
 
       if (contract != undefined) {
