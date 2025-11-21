@@ -40,7 +40,7 @@ export class Valley {
       this.contracts.restoreContext();
       this.protocols.restoreContext();
       // TODO return proper status
-      return `$(pass) c:${this.contracts.count}, p:${this.contracts.count}]`;
+      return `$(pass) c:${this.contracts.count}, p:${this.protocols.count}]`;
     } catch (error) {
       return `$(debug-disconnect) ${error.message}]`;
     }
@@ -60,7 +60,7 @@ export class Valley {
       const rootDoc = await this.fetchRootDoc(this.rootDocUrl);
       this.contracts.updateFromRootDoc(rootDoc.rootContracts);
       this.protocols.updateFromRootDoc(rootDoc.rootProtocols);
-      return `$(pass) c:${this.contracts.count}, p:${this.contracts.count}]`;
+      return `$(pass) c:${this.contracts.count}, p:${this.protocols.count}]`;
     } catch (error) {
       return `$(debug-disconnect) ${error.message}]`;
     }

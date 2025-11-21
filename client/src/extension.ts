@@ -15,7 +15,7 @@ import { InsertTextMode, LanguageClient, LanguageClientOptions, ServerOptions, T
 let client: LanguageClient;
 let ecStatusBarItem: vscode.StatusBarItem;
 
-const statusText = "initialising...";
+let lastStatusText = "initialising...";
 // const contractSpecs = [];
 
 const v = new Valley();
@@ -1051,8 +1051,9 @@ function updateStatusBar(statusBar: vscode.StatusBarItem, status: string, error 
   // statusBar.text = `$(debug-disconnect) Gateway down`;
   // statusBar.text = `$(pass) Gateway OK`;
   statusBar.text = status;
+  lastStatusText = status;
 }
 
 function statusInfoMessage() {
-  return statusText;
+  return lastStatusText;
 }
