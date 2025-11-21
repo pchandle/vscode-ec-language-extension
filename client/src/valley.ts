@@ -187,7 +187,8 @@ export class ContractTerm {
       case "abstraction":
         c = { type: this.type, name: this.name, protocol: this.protocol };
         break;
-      case "site" || "boolean":
+      case "site":
+      case "boolean":
         c = { type: this.type, name: this.name };
         break;
       case "integer":
@@ -404,7 +405,13 @@ export class Contracts {
 
   get(layer: string, verb: string, subject: string, variation: string, platform: string) {
     return this.#contracts.find((c: ContractSpecification) => {
-      return c.layer == layer && c.verb == verb && c.subject == subject && c.variation == variation && c.platform && platform;
+      return (
+        c.layer === layer &&
+        c.verb === verb &&
+        c.subject === subject &&
+        c.variation === variation &&
+        c.platform === platform
+      );
     });
   }
   getByName(name: string) {
@@ -423,8 +430,7 @@ export class Contracts {
           localSpec.verb == remSpec.verb &&
           localSpec.subject == remSpec.subject &&
           localSpec.variation == remSpec.variation &&
-          localSpec.platform &&
-          remSpec.platform
+          localSpec.platform === remSpec.platform
         );
       });
       this.saveContext();
@@ -612,7 +618,12 @@ export class Protocols {
 
   get(layer: string, subject: string, variation: string, platform: string) {
     return this.#protocols.find((c: ProtocolSpecification) => {
-      return c.layer == layer && c.subject == subject && c.variation == variation && c.platform && platform;
+      return (
+        c.layer === layer &&
+        c.subject === subject &&
+        c.variation === variation &&
+        c.platform === platform
+      );
     });
   }
   getByName(name: string) {
@@ -631,8 +642,7 @@ export class Protocols {
           localSpec.layer == remSpec.layer &&
           localSpec.subject == remSpec.subject &&
           localSpec.variation == remSpec.variation &&
-          localSpec.platform &&
-          remSpec.platform
+          localSpec.platform === remSpec.platform
         );
       });
       this.saveContext();
