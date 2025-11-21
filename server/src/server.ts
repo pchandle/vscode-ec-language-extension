@@ -14,6 +14,7 @@ import {
 	Hover,
 	MarkupKind,
 	TextDocumentPositionParams,
+	RequestType,
 	TextDocumentSyncKind,
 	InitializeResult
 } from 'vscode-languageserver/node';
@@ -23,6 +24,9 @@ import {
 } from 'vscode-languageserver-textdocument';
 import { buildCompletionItems, getDefaultsFromText } from './completionSupport';
 import { gatewayClient } from './gatewayClient';
+
+type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
+type FetchSpecificationResult = { classification: string; specification: any } | null;
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -204,6 +208,55 @@ documents.onDidChangeContent(change => {
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received an file change event');
+});
+
+const fetchSpecificationRequest = new RequestType<FetchSpecificationParams, FetchSpecificationResult, void>('emergent/fetchSpecification');
+
+function getClassificationFromDocument(document: TextDocument, params: TextDocumentPositionParams) {
+	const lineRange = {
+		start: { line: params.position.line, character: 0 },
+		end: { line: params.position.line + 1, character: 0 }
+	};
+
+	const lineText = document.getText(lineRange);
+	const matches =
+		lineText.match(
+			/.*(sub|job)\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
+		)?.groups || {};
+
+	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+
+	const layer = matches.layer && matches.layer !== '.' ? matches.layer : defaults.layer;
+	const verb = matches.verb;
+	const subject = matches.subject;
+	const variation = matches.variation && matches.variation !== '.' ? matches.variation : defaults.variation;
+	const platform = matches.platform && matches.platform !== '.' ? matches.platform : defaults.platform;
+
+	if (!layer || !verb || !subject || !variation || !platform) {
+		return null;
+	}
+
+	return { classification: `/${layer}/${verb}/${subject}/${variation}/${platform}`, supplier: matches.supplier ?? '' };
+}
+
+connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpecificationResult> => {
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {
+		connection.console.warn(`FetchSpecification: document not found for ${params.textDocument.uri}`);
+		return null;
+	}
+
+	const parsed = getClassificationFromDocument(document, params);
+	if (!parsed) {
+		return null;
+	}
+
+	const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+	if (!spec) {
+		return null;
+	}
+
+	return { classification: parsed.classification, specification: spec };
 });
 
 connection.onHover(async (params): Promise<Hover | null> => {

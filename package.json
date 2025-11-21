@@ -115,6 +115,20 @@
         "language": "emergent",
         "path": "./conf/emergent.tmSnippets.json"
       }
+    ],
+    "commands": [
+      {
+        "command": "emergent.showSpecificationPanel",
+        "title": "Emergent: Show Specification Panel"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "emergent.showSpecificationPanel",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s",
+        "when": "editorLangId == emergent"
+      }
     ]
   },
   "scripts": {

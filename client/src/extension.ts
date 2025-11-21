@@ -14,6 +14,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } f
 
 let client: LanguageClient;
 let ecStatusBarItem: vscode.StatusBarItem;
+let specPanel: vscode.WebviewPanel | undefined;
 
 let lastStatusText = "initialising...";
 // const contractSpecs = [];
@@ -64,6 +65,11 @@ export function activate(context: ExtensionContext) {
   client.start();
 
   // Completion and hover are now provided by the language server.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("emergent.showSpecificationPanel", () => {
+      void showSpecificationPanel();
+    })
+  );
 
   // Code formatting implemented using API
   const emergentDocumentFormattingEditProvider = vscode.languages.registerDocumentFormattingEditProvider(
@@ -169,6 +175,111 @@ function updateGatewayApiUrl() {
 function updateFormattingCfg() {
   const formatting = vscode.workspace.getConfiguration("formatting");
   console.log("Formatting is now", formatting.disabled ? "disabled" : "enabled");
+}
+
+type FetchSpecificationResult = { classification: string; specification: any } | null;
+
+async function showSpecificationPanel() {
+  if (!client) {
+    vscode.window.showWarningMessage("Emergent language client is not ready yet.");
+    return;
+  }
+  await client.onReady();
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showWarningMessage("Open an Emergent document to view a specification.");
+    return;
+  }
+
+  const requestParams = {
+    textDocument: { uri: editor.document.uri.toString() },
+    position: editor.selection.active,
+  };
+
+  let result: FetchSpecificationResult;
+  try {
+    result = await client.sendRequest<FetchSpecificationResult>("emergent/fetchSpecification", requestParams);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(`Failed to request specification: ${err?.message ?? err}`);
+    return;
+  }
+
+  if (!result) {
+    vscode.window.showInformationMessage("No specification found for the current line.");
+    return;
+  }
+
+  if (specPanel) {
+    specPanel.title = `Spec: ${result.classification}`;
+  } else {
+    specPanel = vscode.window.createWebviewPanel(
+      "emergentSpecification",
+      `Spec: ${result.classification}`,
+      vscode.ViewColumn.Beside,
+      { enableScripts: false }
+    );
+    specPanel.onDidDispose(() => {
+      specPanel = undefined;
+    });
+  }
+
+  specPanel.webview.html = renderSpecificationHtml(result.classification, result.specification);
+}
+
+function renderSpecificationHtml(classification: string, spec: any) {
+  const requirements = Array.isArray(spec?.requirements) ? spec.requirements : [];
+  const obligations = Array.isArray(spec?.obligations) ? spec.obligations : [];
+  const suppliers = Array.isArray(spec?.suppliers) ? spec.suppliers : [];
+  const description = spec?.description ? String(spec.description) : "";
+
+  const renderTerm = (t: { name: string; type: string; protocol?: string; hint?: string }) => {
+    switch (t?.type) {
+      case "abstraction":
+        return `${t.name} :: ${t.protocol ?? ""}`;
+      case "integer":
+        return `${t.name} :: INTEGER${t.hint ? `[${t.hint}]` : ""}`;
+      case "string":
+        return `${t.name} :: STRING${t.hint ? `[${t.hint}]` : ""}`;
+      case "boolean":
+        return `${t.name} :: BOOLEAN`;
+      default:
+        return `${t?.name ?? ""}`;
+    }
+  };
+
+  const listItems = (items: any[]) => items.map((i) => `<li>${renderTerm(i)}</li>`).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: var(--vscode-editor-font-family); padding: 12px; color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }
+    h1 { font-size: 16px; margin-bottom: 8px; }
+    h2 { font-size: 13px; margin: 12px 0 6px; border-bottom: 1px solid var(--vscode-editorWidget-border); padding-bottom: 4px; }
+    p { margin: 6px 0; }
+    ul { padding-left: 18px; }
+    code { font-family: var(--vscode-editor-font-family); }
+  </style>
+</head>
+<body>
+  <h1>${classification}</h1>
+  ${description ? `<p>${description}</p>` : ""}
+  ${
+    requirements.length
+      ? `<h2>Requirements</h2><ul>${listItems(requirements)}</ul>`
+      : ""
+  }
+  ${
+    obligations.length
+      ? `<h2>Obligations</h2><ul>${listItems(obligations)}</ul>`
+      : ""
+  }
+  ${
+    suppliers.length ? `<h2>Suppliers</h2><p>${suppliers.join(", ")}</p>` : ""
+  }
+</body>
+</html>`;
 }
 
 export function deactivate(): Thenable<void> | undefined {
