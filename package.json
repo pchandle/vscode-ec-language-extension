@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -54,29 +54,35 @@
           }
         }
       },
-      {
-        "title": "Extension Debugging",
-        "properties": {
-          "emergent.maxNumberOfProblems": {
-            "scope": "resource",
+          {
+            "title": "Extension Debugging",
+            "properties": {
+              "emergent.maxNumberOfProblems": {
+                "scope": "resource",
             "type": "number",
             "default": 100,
             "description": "Controls the maximum number of problems produced by the language server."
           },
-          "emergent.trace.server": {
-            "scope": "window",
-            "type": "string",
-            "enum": [
-              "off",
-              "messages",
-              "verbose"
-            ],
-            "default": "verbose",
-            "description": "Traces the communication between VS Code and the language server."
+              "emergent.trace.server": {
+                "scope": "window",
+                "type": "string",
+                "enum": [
+                  "off",
+                  "messages",
+                  "verbose"
+                ],
+                "default": "verbose",
+                "description": "Traces the communication between VS Code and the language server."
+              },
+              "emergent.hoverDebugLogging": {
+                "scope": "window",
+                "type": "boolean",
+                "default": false,
+                "description": "Emit detailed hover classification and fetch logging to the Language Server output."
+              }
+            }
           }
-        }
-      }
-    ],
+        ],
     "languages": [
       {
         "id": "emergent",

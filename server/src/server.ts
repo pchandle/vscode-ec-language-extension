@@ -11,6 +11,8 @@ import {
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
+	Hover,
+	MarkupKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult
@@ -19,8 +21,8 @@ import {
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
-import fetch from 'node-fetch';
-import { ContractClassification, buildCompletionItems, classifyContractName } from './completionSupport';
+import { buildCompletionItems, getDefaultsFromText } from './completionSupport';
+import { gatewayClient } from './gatewayClient';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -37,78 +39,14 @@ let gatewayConfig: { hostname: string; port: number; allowInsecure: boolean } = 
 	port: 10000,
 	allowInsecure: true
 };
-let apiRoot = 'http://localhost:10000';
-const completionCacheIntervalMs = 30 * 60 * 1000;
-let completionCache: ContractClassification[] = [];
-let cacheTimer: NodeJS.Timer | undefined;
-
-function buildApiRoot(cfg = gatewayConfig) {
-	return `${cfg.allowInsecure ? 'http' : 'https'}://${cfg.hostname}:${cfg.port}`;
-}
-
-async function fetchApiJson(url: string): Promise<any> {
-	try {
-		const res = await fetch(url, { headers: { 'cache-control': 'no-cache' } });
-		if (!res.ok) {
-			throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${url}`);
-		}
-		const text = await res.text();
-		try {
-			return JSON.parse(text);
-		} catch {
-			throw new Error(`Invalid JSON received from ${url}`);
-		}
-	} catch (error: any) {
-		switch (error?.code) {
-			case 'ECONNRESET':
-			case 'ETIMEDOUT':
-				throw new Error(`Connection timed out fetching ${url}`);
-			case 'ENOTFOUND':
-				throw new Error(`Host not found fetching ${url}`);
-			default:
-				throw new Error(error?.message ? error.message : `Failed to fetch ${url}`);
-		}
-	}
-}
-
-async function refreshContractCache(): Promise<void> {
-	const rootUrl = `${apiRoot}/fetch/`;
-	try {
-		const rootDoc = await fetchApiJson(rootUrl);
-		const roots: ContractClassification[] = [];
-		for (const spec in rootDoc) {
-			const c = classifyContractName(spec);
-			if (c) roots.push(c);
-		}
-		completionCache = roots;
-		connection.console.log(`Updated contract cache with ${completionCache.length} entries.`);
-	} catch (err: any) {
-		connection.console.error(`Failed to refresh contract cache: ${err.message}`);
-	}
-}
-
-function startCacheTimer() {
-	if (cacheTimer) {
-		clearInterval(cacheTimer);
-	}
-	cacheTimer = setInterval(() => {
-		refreshContractCache();
-	}, completionCacheIntervalMs);
-}
-
-function stopCacheTimer() {
-	if (cacheTimer) {
-		clearInterval(cacheTimer);
-		cacheTimer = undefined;
-	}
-}
 
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
+	gatewayClient.setConfig(gatewayConfig);
 	if (params.initializationOptions && params.initializationOptions.gateway) {
 		gatewayConfig = params.initializationOptions.gateway;
-		apiRoot = buildApiRoot(gatewayConfig);
+		gatewayClient.setConfig(gatewayConfig);
 	}
 
 	// Does the client support the `workspace/configuration` request?
@@ -131,7 +69,8 @@ connection.onInitialize((params: InitializeParams) => {
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true
-			}
+			},
+			hoverProvider: true
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -142,8 +81,9 @@ connection.onInitialize((params: InitializeParams) => {
 		};
 	}
 
-	refreshContractCache();
-	startCacheTimer();
+	gatewayClient.attachConnection(connection);
+	void gatewayClient.refreshContractCache();
+	gatewayClient.startCacheTimer();
 	return result;
 });
 
@@ -160,26 +100,27 @@ connection.onInitialized(() => {
 });
 
 // The example settings
-interface ExampleSettings {
+interface EmergentSettings {
 	maxNumberOfProblems: number;
+	hoverDebugLogging: boolean;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
+const defaultSettings: EmergentSettings = { maxNumberOfProblems: 1000, hoverDebugLogging: false };
+let globalSettings: EmergentSettings = defaultSettings;
 
 // Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+const documentSettings: Map<string, Thenable<EmergentSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
 	} else {
-		globalSettings = <ExampleSettings>(
-			(change.settings.languageServerExample || defaultSettings)
+		globalSettings = <EmergentSettings>(
+			(change.settings.emergent || defaultSettings)
 		);
 	}
 
@@ -187,7 +128,7 @@ connection.onDidChangeConfiguration(change => {
 	// documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+function getDocumentSettings(resource: string): Thenable<EmergentSettings> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
@@ -265,6 +206,93 @@ connection.onDidChangeWatchedFiles(_change => {
 	connection.console.log('We received an file change event');
 });
 
+connection.onHover(async (params): Promise<Hover | null> => {
+	const settings = await getDocumentSettings(params.textDocument.uri);
+	const hoverDebugLogging = settings.hoverDebugLogging;
+	const debugLog = (message: string) => {
+		if (hoverDebugLogging) {
+			connection.console.log(message);
+		}
+	};
+
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {
+		connection.console.warn(`Hover: document not found for ${params.textDocument.uri}`);
+		return null;
+	}
+
+	const lineRange = {
+		start: { line: params.position.line, character: 0 },
+		end: { line: params.position.line + 1, character: 0 }
+	};
+
+	const lineText = document.getText(lineRange);
+	debugLog(`Hover: raw line text "${lineText.trim()}" at ${params.position.line}:${params.position.character}`);
+	const matches =
+		lineText.match(
+			/.*(sub|job)\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
+		)?.groups || {};
+
+	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+	debugLog(
+		`Hover: defaults layer=${defaults.layer}, variation=${defaults.variation}, platform=${defaults.platform}, supplier=${defaults.supplier}`
+	);
+
+	const layer = matches.layer && matches.layer !== '.' ? matches.layer : defaults.layer;
+	const verb = matches.verb;
+	const subject = matches.subject;
+	const variation = matches.variation && matches.variation !== '.' ? matches.variation : defaults.variation;
+	const platform = matches.platform && matches.platform !== '.' ? matches.platform : defaults.platform;
+
+	if (!layer || !verb || !subject || !variation || !platform) {
+		debugLog(
+			`Hover: incomplete classification (layer=${layer}, verb=${verb}, subject=${subject}, variation=${variation}, platform=${platform})`
+		);
+		return null;
+	}
+
+	const classification = `/${layer}/${verb}/${subject}/${variation}/${platform}`;
+	debugLog(`Hover: classification ${classification}, supplier=${matches.supplier ?? ''}`);
+	const spec = await gatewayClient.fetchContractSpec(classification);
+	if (!spec) {
+		debugLog(`Hover: no spec returned for ${classification}`);
+		return null;
+	}
+	debugLog(`Hover: rendering hover for ${classification}`);
+
+	const lines: string[] = [];
+	if (spec.description) {
+		lines.push(`**Description**\n\n${spec.description}`);
+	}
+
+	const renderTerm = (t: { name: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number }) => {
+		switch (t.type) {
+			case 'abstraction':
+				return `${t.name} :: ${t.protocol ?? ''}`;
+			case 'integer':
+				return `${t.name} :: INTEGER${t.hint ? `[${t.hint}]` : ''}`;
+			case 'string':
+				return `${t.name} :: STRING${t.hint ? `[${t.hint}]` : ''}`;
+			case 'boolean':
+				return `${t.name} :: BOOLEAN`;
+			default:
+				return `${t.name}`;
+		}
+	};
+
+	if (spec.requirements && spec.requirements.length > 0) {
+		lines.push('**Requirements**', ...spec.requirements.map(req => `- ${renderTerm(req)}`));
+	}
+	if (spec.obligations && spec.obligations.length > 0) {
+		lines.push('**Obligations**', ...spec.obligations.map(ob => `- ${renderTerm(ob)}`));
+	}
+	if (spec.suppliers && spec.suppliers.length > 0) {
+		lines.push(`**Suppliers**\n\n${spec.suppliers.join(', ')}`);
+	}
+
+	return { contents: { kind: MarkupKind.Markdown, value: lines.join('\n\n') } };
+});
+
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
 	(params: TextDocumentPositionParams): CompletionItem[] => {
@@ -272,9 +300,17 @@ connection.onCompletion(
 		if (!document) {
 			return [];
 		}
-		return buildCompletionItems(completionCache, document, params.position);
+		return buildCompletionItems(gatewayClient.completionCache, document, params.position);
 	}
 );
+
+connection.onShutdown(() => {
+	gatewayClient.dispose();
+});
+
+connection.onExit(() => {
+	gatewayClient.dispose();
+});
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
