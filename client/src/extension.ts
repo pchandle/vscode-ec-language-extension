@@ -179,6 +179,9 @@ export function activate(context: ExtensionContext) {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
     },
+    initializationOptions: {
+      gateway: workspace.getConfiguration("gateway"),
+    },
   };
 
   // Create the language client and start the client.
@@ -958,7 +961,7 @@ export function activate(context: ExtensionContext) {
   ecStatusBarItem.show();
 
   context.subscriptions.push(ecStatusBarItem);
-  context.subscriptions.push(contractCompletionProvider, emergentHoverProvider);
+  context.subscriptions.push(emergentHoverProvider);
   context.subscriptions.push(emergentDocumentFormattingEditProvider);
   context.subscriptions.push(emergentDocumentRangeFormattingEditProvider);
 

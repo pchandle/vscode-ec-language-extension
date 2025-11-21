@@ -11,7 +11,6 @@ import {
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
-	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult
@@ -20,6 +19,8 @@ import {
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
+import fetch from 'node-fetch';
+import { ContractClassification, buildCompletionItems, classifyContractName } from './completionSupport';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -31,9 +32,84 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
+let gatewayConfig: { hostname: string; port: number; allowInsecure: boolean } = {
+	hostname: 'localhost',
+	port: 10000,
+	allowInsecure: true
+};
+let apiRoot = 'http://localhost:10000';
+const completionCacheIntervalMs = 30 * 60 * 1000;
+let completionCache: ContractClassification[] = [];
+let cacheTimer: NodeJS.Timer | undefined;
+
+function buildApiRoot(cfg = gatewayConfig) {
+	return `${cfg.allowInsecure ? 'http' : 'https'}://${cfg.hostname}:${cfg.port}`;
+}
+
+async function fetchApiJson(url: string): Promise<any> {
+	try {
+		const res = await fetch(url, { headers: { 'cache-control': 'no-cache' } });
+		if (!res.ok) {
+			throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${url}`);
+		}
+		const text = await res.text();
+		try {
+			return JSON.parse(text);
+		} catch {
+			throw new Error(`Invalid JSON received from ${url}`);
+		}
+	} catch (error: any) {
+		switch (error?.code) {
+			case 'ECONNRESET':
+			case 'ETIMEDOUT':
+				throw new Error(`Connection timed out fetching ${url}`);
+			case 'ENOTFOUND':
+				throw new Error(`Host not found fetching ${url}`);
+			default:
+				throw new Error(error?.message ? error.message : `Failed to fetch ${url}`);
+		}
+	}
+}
+
+async function refreshContractCache(): Promise<void> {
+	const rootUrl = `${apiRoot}/fetch/`;
+	try {
+		const rootDoc = await fetchApiJson(rootUrl);
+		const roots: ContractClassification[] = [];
+		for (const spec in rootDoc) {
+			const c = classifyContractName(spec);
+			if (c) roots.push(c);
+		}
+		completionCache = roots;
+		connection.console.log(`Updated contract cache with ${completionCache.length} entries.`);
+	} catch (err: any) {
+		connection.console.error(`Failed to refresh contract cache: ${err.message}`);
+	}
+}
+
+function startCacheTimer() {
+	if (cacheTimer) {
+		clearInterval(cacheTimer);
+	}
+	cacheTimer = setInterval(() => {
+		refreshContractCache();
+	}, completionCacheIntervalMs);
+}
+
+function stopCacheTimer() {
+	if (cacheTimer) {
+		clearInterval(cacheTimer);
+		cacheTimer = undefined;
+	}
+}
+
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
+	if (params.initializationOptions && params.initializationOptions.gateway) {
+		gatewayConfig = params.initializationOptions.gateway;
+		apiRoot = buildApiRoot(gatewayConfig);
+	}
 
 	// Does the client support the `workspace/configuration` request?
 	// If not, we fall back using global settings.
@@ -65,6 +141,9 @@ connection.onInitialize((params: InitializeParams) => {
 			}
 		};
 	}
+
+	refreshContractCache();
+	startCacheTimer();
 	return result;
 });
 
@@ -188,39 +267,12 @@ connection.onDidChangeWatchedFiles(_change => {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-
-		return [];
-		// return [
-		// 	{
-		// 		label: 'TypeScript',
-		// 		kind: CompletionItemKind.Text,
-		// 		data: 1
-		// 	},
-		// 	{
-		// 		label: 'JavaScript',
-		// 		kind: CompletionItemKind.Text,
-		// 		data: 2
-		// 	}
-		// ];
-	}
-);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
+	(params: TextDocumentPositionParams): CompletionItem[] => {
+		const document = documents.get(params.textDocument.uri);
+		if (!document) {
+			return [];
 		}
-		return item;
+		return buildCompletionItems(completionCache, document, params.position);
 	}
 );
 
