@@ -811,60 +811,54 @@ function specObj(layer, verb, subject, variation, platform, supplier) {
 
 async function fetchApiJson(url: RequestInfo): Promise<any> {
   const init: RequestInit = {
-    headers: {"cache-control": "no-cache"}
+    headers: { "cache-control": "no-cache" },
   };
-  return fetch(url, init)
-  .then((res) => res.json())
-    // .then((res) => {
-    //   if (res.size == 0) {
-    //     throw { type: "empty-response", message: "Received empty response fetching " + JSON.stringify(url) };
-    //   }
-    //   return res.json();
-    // })
-    .catch((error) => {
-      switch (error.type) {
-        case "invalid-json":
-          throw new Error("Invalid JSON received from " + JSON.stringify(url));
-          break;
-        case "empty-response":
-          throw new Error("Received empty response fetching " + JSON.stringify(url));
-          break;
-        case "system":
-          switch (error.code) {
-            case "ECONNRESET":
-              throw new Error("Connection timed out fetching " + JSON.stringify(url));
-              break;
-            default:
-              throw new Error("A system error ocurred fetching " + JSON.stringify(url));
-              console.debug(error);
-              break;
-          }
-          break;
 
-        default:
-          throw new Error("Failed to fetch " + JSON.stringify(url));
-          break;
-      }
-    });
+  try {
+    const res = await fetch(url, init);
+    if (!res.ok) {
+      throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${JSON.stringify(url)}`);
+    }
+
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (jsonErr) {
+      throw new Error(`Invalid JSON received from ${JSON.stringify(url)}`);
+    }
+  } catch (error: any) {
+    switch (error?.code) {
+      case "ECONNRESET":
+        throw new Error(`Connection timed out fetching ${JSON.stringify(url)}`);
+      case "ENOTFOUND":
+        throw new Error(`Host not found fetching ${JSON.stringify(url)}`);
+      case "ETIMEDOUT":
+        throw new Error(`Connection timed out fetching ${JSON.stringify(url)}`);
+      default:
+        throw new Error(error?.message ? error.message : `Failed to fetch ${JSON.stringify(url)}`);
+    }
+  }
 }
 
 async function fetchApiText(url: RequestInfo): Promise<string> {
-  return fetch(url)
-    .then((data) => {
-      return data.text();
-    })
-    .catch((error) => {
-      console.debug(error);
-      switch (error.type) {
-        // case "???":
-        // 	lastGatewayError="Invalid JSON received from " + JSON.stringify(url);
-        // 	break;
-
-        default:
-          throw new Error("Failed to fetch " + JSON.stringify(url));
-          break;
-      }
-    });
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${JSON.stringify(url)}`);
+    }
+    return await res.text();
+  } catch (error: any) {
+    switch (error?.code) {
+      case "ECONNRESET":
+        throw new Error(`Connection timed out fetching ${JSON.stringify(url)}`);
+      case "ENOTFOUND":
+        throw new Error(`Host not found fetching ${JSON.stringify(url)}`);
+      case "ETIMEDOUT":
+        throw new Error(`Connection timed out fetching ${JSON.stringify(url)}`);
+      default:
+        throw new Error(error?.message ? error.message : `Failed to fetch ${JSON.stringify(url)}`);
+    }
+  }
 }
 
 function isProtocolName(name: string): boolean {
