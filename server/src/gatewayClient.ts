@@ -6,6 +6,7 @@ import { Connection } from "vscode-languageserver";
 import { ContractClassification, classifyContractName } from "./completionSupport";
 
 type GatewayConfig = { hostname: string; port: number; allowInsecure: boolean };
+type NetworkPaths = { rootPrefix: string; specPrefix: string };
 
 export type RemoteContractSpec = {
   name: string;
@@ -25,6 +26,8 @@ class GatewayClient {
   #connection: Connection | undefined;
   #cacheIntervalMs = 30 * 60 * 1000;
   #cacheFilePath: string;
+  #rootPathPrefix = "/fetch/";
+  #specPathPrefix = "/fetch/";
 
   constructor() {
     this.#cacheFilePath = path.join(os.homedir(), ".emergent", "contractCache.json");
@@ -40,6 +43,15 @@ class GatewayClient {
     this.#apiRoot = `${cfg.allowInsecure ? "http" : "https"}://${cfg.hostname}:${cfg.port}`;
   }
 
+  setNetworkPaths(networkLabel: string) {
+    const normalized = networkLabel?.toString() ?? "";
+    const paths: NetworkPaths =
+      NETWORK_PATHS[normalized] ?? NETWORK_PATHS["31"]; // default to 31 network paths
+    this.#rootPathPrefix = paths.rootPrefix;
+    this.#specPathPrefix = paths.specPrefix;
+    this.#connection?.console.log(`Gateway network "${normalized || "default"}" using root prefix "${this.#rootPathPrefix}" and spec prefix "${this.#specPathPrefix}"`);
+  }
+
   dispose() {
     this.stopCacheTimer();
   }
@@ -49,8 +61,11 @@ class GatewayClient {
   }
 
   async refreshContractCache(): Promise<void> {
-    // Root document requires a double trailing slash to differentiate from spec fetch.
-    const rootUrl = `${this.#apiRoot}/fetch//`;
+    const rootPrefixWithTrailingSlash = this.#rootPathPrefix.endsWith("/")
+      ? this.#rootPathPrefix
+      : `${this.#rootPathPrefix}/`;
+    // Root document requires a trailing slash. For legacy networks this results in a double slash which the Gateway expects.
+    const rootUrl = `${this.#apiRoot}${rootPrefixWithTrailingSlash}/`;
     try {
       const rootDoc = await this.fetchJson(rootUrl);
       this.#rootDocument = typeof rootDoc === "object" && rootDoc !== null ? rootDoc : {};
@@ -84,7 +99,7 @@ class GatewayClient {
   async fetchContractSpec(classification: string): Promise<RemoteContractSpec | null> {
     const host = await this.ensureHostForClassification(classification);
     const url = host
-      ? `${this.#config.allowInsecure ? "http" : "https"}://${host}/fetch${classification.startsWith("/") ? "" : "/"}${classification}`
+      ? `${this.#config.allowInsecure ? "http" : "https"}://${host}${this.#specPathPrefix}${classification}`
       : null;
     const cached = this.#specCache[classification];
     if (!url) {
@@ -149,6 +164,8 @@ class GatewayClient {
       this.#completionCache = Array.isArray(data?.completionCache) ? data.completionCache : [];
       this.#specCache = typeof data?.specCache === "object" && data.specCache !== null ? data.specCache : {};
       this.#rootDocument = typeof data?.rootDocument === "object" && data.rootDocument !== null ? data.rootDocument : {};
+      if (typeof data?.rootPathPrefix === "string") this.#rootPathPrefix = data.rootPathPrefix;
+      if (typeof data?.specPathPrefix === "string") this.#specPathPrefix = data.specPathPrefix;
     } catch (err: any) {
       this.#connection?.console.error(`Failed to load disk cache: ${err.message}`);
     }
@@ -161,6 +178,8 @@ class GatewayClient {
         completionCache: this.#completionCache,
         specCache: this.#specCache,
         rootDocument: this.#rootDocument,
+        rootPathPrefix: this.#rootPathPrefix,
+        specPathPrefix: this.#specPathPrefix,
       };
       fs.writeFileSync(this.#cacheFilePath, JSON.stringify(payload, null, 2), "utf8");
     } catch (err: any) {
@@ -168,5 +187,12 @@ class GatewayClient {
     }
   }
 }
+
+const NETWORK_PATHS: Record<string, NetworkPaths> = {
+  // Legacy network (double trailing slash on root fetch).
+  "31": { rootPrefix: "/fetch/", specPrefix: "/fetch/" },
+  // Newer network paths.
+  "34": { rootPrefix: "/api/valley/fetch/", specPrefix: "/api/valley/fetch/" },
+};
 
 export const gatewayClient = new GatewayClient();

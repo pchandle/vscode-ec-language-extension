@@ -23,7 +23,7 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 import { buildCompletionItems, getDefaultsFromText } from './completionSupport';
-import { gatewayClient } from './gatewayClient';
+import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -38,10 +38,11 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
-let gatewayConfig: { hostname: string; port: number; allowInsecure: boolean } = {
+let gatewayConfig: { hostname: string; port: number; allowInsecure: boolean; network: string } = {
 	hostname: 'localhost',
 	port: 10000,
-	allowInsecure: true
+	allowInsecure: true,
+	network: '31'
 };
 
 
@@ -52,6 +53,7 @@ connection.onInitialize((params: InitializeParams) => {
 		gatewayConfig = params.initializationOptions.gateway;
 		gatewayClient.setConfig(gatewayConfig);
 	}
+	gatewayClient.setNetworkPaths(gatewayConfig.network);
 
 	// Does the client support the `workspace/configuration` request?
 	// If not, we fall back using global settings.
@@ -107,12 +109,13 @@ connection.onInitialized(() => {
 interface EmergentSettings {
 	maxNumberOfProblems: number;
 	hoverDebugLogging: boolean;
+	gatewayNetwork: string;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: EmergentSettings = { maxNumberOfProblems: 1000, hoverDebugLogging: false };
+const defaultSettings: EmergentSettings = { maxNumberOfProblems: 1000, hoverDebugLogging: false, gatewayNetwork: '31' };
 let globalSettings: EmergentSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -126,6 +129,11 @@ connection.onDidChangeConfiguration(change => {
 		globalSettings = <EmergentSettings>(
 			(change.settings.emergent || defaultSettings)
 		);
+	}
+
+	if (change.settings?.gateway?.network && typeof change.settings.gateway.network === 'string') {
+		gatewayConfig.network = change.settings.gateway.network;
+		gatewayClient.setNetworkPaths(gatewayConfig.network);
 	}
 
 	// Revalidate all open text documents
@@ -211,6 +219,86 @@ connection.onDidChangeWatchedFiles(_change => {
 });
 
 const fetchSpecificationRequest = new RequestType<FetchSpecificationParams, FetchSpecificationResult, void>('emergent/fetchSpecification');
+
+type ContractTerm = { name: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number };
+
+const MARKDOWN_STYLES = {
+	heading: '#5E994F',
+	keyword: '#c586c0',
+	classification: '#2e74a6',
+	abstraction: '#f27b39',
+	primitive: '#cb3697'
+};
+
+function escapeHtml(value: string): string {
+	return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderTermRow(term: ContractTerm): string {
+	const name = escapeHtml(term?.name ?? '');
+	let typeMarkup: string;
+	switch (term?.type) {
+		case 'abstraction': {
+			const protocolText = term.protocol ? escapeHtml(term.protocol) : '';
+			typeMarkup = `<span style="color:${MARKDOWN_STYLES.abstraction};">${protocolText}</span>`;
+			break;
+		}
+		case 'integer': {
+			const hint = term.hint ? `[${escapeHtml(String(term.hint))}]` : '';
+			typeMarkup = `<span style="color:${MARKDOWN_STYLES.primitive};">INTEGER${hint}</span>`;
+			break;
+		}
+		case 'string': {
+			const hint = term.hint ? `[${escapeHtml(String(term.hint))}]` : '';
+			typeMarkup = `<span style="color:${MARKDOWN_STYLES.primitive};">STRING${hint}</span>`;
+			break;
+		}
+		case 'boolean':
+			typeMarkup = `<span style="color:${MARKDOWN_STYLES.primitive};">BOOLEAN</span>`;
+			break;
+		default:
+			typeMarkup = escapeHtml(term?.type ?? '');
+	}
+	return `<tr><td>${name}</td><td>::${typeMarkup}</td></tr>`;
+}
+
+function renderStyledHover(spec: RemoteContractSpec, classification: string): string {
+	const parts: string[] = [];
+	const safeDescription = spec.description ? escapeHtml(String(spec.description)) : '';
+	const safeName = escapeHtml(spec.name || classification);
+	const requirements = Array.isArray(spec.requirements) ? spec.requirements.map(renderTermRow).join('') : '';
+	const obligations = Array.isArray(spec.obligations) ? spec.obligations.map(renderTermRow).join('') : '';
+
+	if (safeDescription) {
+		parts.push(
+			`<span style="color:${MARKDOWN_STYLES.heading};"><em>Description</em></span><br>${safeDescription}<br>`
+		);
+	}
+
+	const interfaceSections: string[] = [];
+	interfaceSections.push(`<span style="color:${MARKDOWN_STYLES.heading};"><em>Interface</em></span><br>`);
+	interfaceSections.push(
+		`<span style="color:${MARKDOWN_STYLES.keyword};">sub</span> <span style="color:${MARKDOWN_STYLES.classification};">${safeName}</span>(<br>`
+	);
+	if (requirements) {
+		interfaceSections.push('<table>', requirements, '</table>');
+	}
+	interfaceSections.push(') -&gt;<br>');
+	if (obligations) {
+		interfaceSections.push('<table>', obligations, '</table>');
+	}
+	parts.push(interfaceSections.join(''));
+
+	if (Array.isArray(spec.suppliers) && spec.suppliers.length > 0) {
+		parts.push(
+			`<span style="color:${MARKDOWN_STYLES.heading};"><em>Suppliers</em></span><br>${spec.suppliers
+				.map(s => escapeHtml(String(s)))
+				.join(', ')}`
+		);
+	}
+
+	return parts.join('\n\n');
+}
 
 function getClassificationFromDocument(document: TextDocument, params: TextDocumentPositionParams) {
 	const lineRange = {
@@ -313,37 +401,7 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	}
 	debugLog(`Hover: rendering hover for ${classification}`);
 
-	const lines: string[] = [];
-	if (spec.description) {
-		lines.push(`**Description**\n\n${spec.description}`);
-	}
-
-	const renderTerm = (t: { name: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number }) => {
-		switch (t.type) {
-			case 'abstraction':
-				return `${t.name} :: ${t.protocol ?? ''}`;
-			case 'integer':
-				return `${t.name} :: INTEGER${t.hint ? `[${t.hint}]` : ''}`;
-			case 'string':
-				return `${t.name} :: STRING${t.hint ? `[${t.hint}]` : ''}`;
-			case 'boolean':
-				return `${t.name} :: BOOLEAN`;
-			default:
-				return `${t.name}`;
-		}
-	};
-
-	if (spec.requirements && spec.requirements.length > 0) {
-		lines.push('**Requirements**', ...spec.requirements.map(req => `- ${renderTerm(req)}`));
-	}
-	if (spec.obligations && spec.obligations.length > 0) {
-		lines.push('**Obligations**', ...spec.obligations.map(ob => `- ${renderTerm(ob)}`));
-	}
-	if (spec.suppliers && spec.suppliers.length > 0) {
-		lines.push(`**Suppliers**\n\n${spec.suppliers.join(', ')}`);
-	}
-
-	return { contents: { kind: MarkupKind.Markdown, value: lines.join('\n\n') } };
+	return { contents: { kind: MarkupKind.Markdown, value: renderStyledHover(spec, classification) } };
 });
 
 // This handler provides the initial list of the completion items.

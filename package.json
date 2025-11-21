@@ -41,6 +41,15 @@
             "type": "boolean",
             "default": true,
             "description": "Allow insecure conenctions to the Emergent Coding Gateway server."
+          },
+          "gateway.network": {
+            "type": "string",
+            "enum": [
+              "31",
+              "34"
+            ],
+            "default": "31",
+            "description": "Select the Emergent network for API path prefixes (root/spec fetch)."
           }
         }
       },
