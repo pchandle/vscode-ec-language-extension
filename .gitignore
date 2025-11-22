@@ -3,3 +3,6 @@ node_modules
 client/server
 .vscode-test
 /*.vsix
+docs/fetched-specs
+logs/schema-validation
+logs/spec-normalisation
