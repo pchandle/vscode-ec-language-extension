@@ -73,6 +73,17 @@
                 "type": "string",
                 "default": "",
                 "description": "Default supplier value used when creating a new contract specification."
+          }
+        }
+      },
+          {
+            "title": "Hover",
+            "properties": {
+              "emergent.hover.disabled": {
+                "scope": "resource",
+                "type": "boolean",
+                "default": true,
+                "description": "Disable hover popups for Emergent Coding files."
               }
             }
           },

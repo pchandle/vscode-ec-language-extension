@@ -110,12 +110,19 @@ interface EmergentSettings {
 	maxNumberOfProblems: number;
 	hoverDebugLogging: boolean;
 	gatewayNetwork: string;
+	hoverDisabled?: boolean;
+	hover?: { disabled?: boolean };
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: EmergentSettings = { maxNumberOfProblems: 1000, hoverDebugLogging: false, gatewayNetwork: '31' };
+const defaultSettings: EmergentSettings = {
+	maxNumberOfProblems: 1000,
+	hoverDebugLogging: false,
+	gatewayNetwork: '31',
+	hoverDisabled: true
+};
 let globalSettings: EmergentSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -350,11 +357,15 @@ connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpe
 connection.onHover(async (params): Promise<Hover | null> => {
 	const settings = await getDocumentSettings(params.textDocument.uri);
 	const hoverDebugLogging = settings.hoverDebugLogging;
+	const hoverDisabled = settings.hoverDisabled ?? settings.hover?.disabled ?? true;
 	const debugLog = (message: string) => {
 		if (hoverDebugLogging) {
 			connection.console.log(message);
 		}
 	};
+	if (hoverDisabled) {
+		return null;
+	}
 
 	const document = documents.get(params.textDocument.uri);
 	if (!document) {
