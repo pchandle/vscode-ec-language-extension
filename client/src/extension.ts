@@ -71,6 +71,11 @@ export function activate(context: ExtensionContext) {
       void showSpecificationPanel();
     })
   );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("emergent.newContractSpec", () => {
+      void createNewContractSpec();
+    })
+  );
 
   // Code formatting implemented using API
   const emergentDocumentFormattingEditProvider = vscode.languages.registerDocumentFormattingEditProvider(
@@ -343,5 +348,68 @@ function registerSpecificationEditors(context: vscode.ExtensionContext) {
   if (protocolSchema) {
     const protocolProvider = new SpecEditorProvider(context, protocolSchema, diagnostics, "protocol");
     context.subscriptions.push(vscode.window.registerCustomEditorProvider("protocolSpecEditor", protocolProvider, options));
+  }
+}
+
+async function createNewContractSpec() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    void vscode.window.showWarningMessage("Open a workspace folder to create a contract specification.");
+    return;
+  }
+
+  const classificationPattern = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
+  const classification = await vscode.window.showInputBox({
+    title: "Contract Classification",
+    prompt: "Enter contract classification (/layer/verb/subject/variation/platform)",
+    value: "/layer/verb/subject/variation/platform",
+    validateInput: (value) => {
+      const trimmed = value.trim();
+      return classificationPattern.test(trimmed)
+        ? undefined
+        : "Classification must match /layer/verb/subject/variation/platform (lowercase, digits, hyphens).";
+    },
+  });
+
+  if (!classification) {
+    return;
+  }
+
+  const trimmedClassification = classification.trim();
+  const defaultSupplier = vscode.workspace.getConfiguration("specification").get<string>("defaultSupplier", "") ?? "";
+
+  const suggestedFilename = (() => {
+    const parts = trimmedClassification.slice(1).split("/");
+    return parts.length === 5 && parts.every((p) => p) ? `${parts.join("--")}.cspec` : "new-contract.cspec";
+  })();
+
+  const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, suggestedFilename);
+  const targetUri = await vscode.window.showSaveDialog({
+    defaultUri,
+    filters: { "Contract Specification": ["cspec"] },
+    saveLabel: "Create Contract Specification",
+  });
+
+  if (!targetUri) {
+    return;
+  }
+
+  const template = {
+    type: "supplier",
+    name: trimmedClassification,
+    description: "",
+    requirements: [],
+    obligations: [],
+    supplier: defaultSupplier,
+  };
+
+  const data = Buffer.from(JSON.stringify(template, null, 2) + "\n", "utf8");
+
+  try {
+    await vscode.workspace.fs.writeFile(targetUri, data);
+    await vscode.commands.executeCommand("vscode.openWith", targetUri, "contractSpecEditor");
+  } catch (error: any) {
+    console.error("Failed to create contract specification", error);
+    void vscode.window.showErrorMessage(`Failed to create contract specification: ${error?.message ?? error}`);
   }
 }

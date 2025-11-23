@@ -21,7 +21,8 @@
   "activationEvents": [
     "onLanguage:emergent",
     "onCustomEditor:contractSpecEditor",
-    "onCustomEditor:protocolSpecEditor"
+    "onCustomEditor:protocolSpecEditor",
+    "onCommand:emergent.newContractSpec"
   ],
   "main": "./client/out/extension",
   "contributes": {
@@ -65,6 +66,16 @@
           }
         }
       },
+          {
+            "title": "Specification Defaults",
+            "properties": {
+              "specification.defaultSupplier": {
+                "type": "string",
+                "default": "",
+                "description": "Default supplier value used when creating a new contract specification."
+              }
+            }
+          },
           {
             "title": "Extension Debugging",
             "properties": {
@@ -133,6 +144,11 @@
       {
         "command": "emergent.showSpecificationPanel",
         "title": "Emergent: Show Specification Panel"
+      },
+      {
+        "command": "emergent.newContractSpec",
+        "title": "Emergent: New Contract Specification",
+        "category": "Emergent"
       }
     ],
     "keybindings": [
