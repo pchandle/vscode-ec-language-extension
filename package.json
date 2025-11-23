@@ -73,9 +73,21 @@
                 "type": "string",
                 "default": "",
                 "description": "Default supplier value used when creating a new contract specification."
-          }
-        }
-      },
+              },
+              "specification.localContractRoot": {
+                "type": "string",
+                "default": "",
+                "markdownDescription": "Local Contract Specification Root Directory. Select a folder to store and edit contract specifications.",
+                "format": "uri"
+              },
+              "specification.localProtocolRoot": {
+                "type": "string",
+                "default": "",
+                "markdownDescription": "Local Protocol Specification Root Directory. Select a folder to store and edit protocol specifications.",
+                "format": "uri"
+              }
+            }
+          },
           {
             "title": "Hover",
             "properties": {
@@ -162,6 +174,11 @@
         "category": "Emergent"
       },
       {
+        "command": "emergent.openLocalSpecificationAtPosition",
+        "title": "Emergent: Open Local Specification at Position",
+        "category": "Emergent"
+      },
+      {
         "command": "emergent.newContractSpec",
         "title": "Emergent: New Contract Specification",
         "category": "Emergent"
@@ -239,7 +256,9 @@
   },
   "configurationDefaults": {
     "[emergent]": {
-      "editor.semanticHighlighting.enabled": true
+      "editor.semanticHighlighting.enabled": true,
+      "editor.bracketPairColorization.enabled": false,
+      "editor.guides.bracketPairs": false
     }
   }
 }

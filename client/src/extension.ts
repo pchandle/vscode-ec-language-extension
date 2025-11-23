@@ -4,6 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from "path";
+import { TextEncoder } from "util";
 import { Valley } from "./valley";
 import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvider";
 import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./formatting";
@@ -76,6 +77,14 @@ export function activate(context: ExtensionContext) {
       "emergent.openSpecificationAtPosition",
       (uri?: vscode.Uri | string, position?: vscode.Position | { line: number; character: number }) => {
         void showSpecificationPanel(uri, position);
+      }
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "emergent.openLocalSpecificationAtPosition",
+      (uri?: vscode.Uri | string, position?: vscode.Position | { line: number; character: number }) => {
+        void openLocalSpecification(uri, position);
       }
     )
   );
@@ -407,6 +416,66 @@ function getDefaultsFromText(text: string) {
   return defaults ? (defaults.groups as any) : null;
 }
 
+type ClassificationInfo =
+  | { type: "contract"; classification: string; position: vscode.Position }
+  | { type: "protocol"; classification: string; position: vscode.Position };
+
+function getClassificationAtPosition(document: vscode.TextDocument, position: vscode.Position): ClassificationInfo | null {
+  const defaults = getDefaultsFromText(document.getText()) || { layer: "", variation: "", platform: "", supplier: "" };
+  const lineText = document.lineAt(position.line).text;
+
+  const contractPattern =
+    /(sub|job)\s+(?<raw>(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*))/;
+  const protocolPattern =
+    /(host|join)\s+(?<raw>(?:\/(?<layer>[^/]*)\/?)?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*))/;
+
+  const matchAt = (pattern: RegExp) => {
+    const m = pattern.exec(lineText);
+    if (!m || !m.groups?.raw) return null;
+    const raw = m.groups.raw;
+    const startCol = m.index + m[0].indexOf(raw);
+    const endCol = startCol + raw.length;
+    if (position.character < startCol || position.character > endCol) {
+      return null;
+    }
+    return { match: m.groups, start: startCol, end: endCol };
+  };
+
+  const contract = matchAt(contractPattern);
+  if (contract) {
+    const layer = contract.match.layer && contract.match.layer !== "." ? contract.match.layer : defaults.layer;
+    const verb = contract.match.verb;
+    const subject = contract.match.subject;
+    const variation = contract.match.variation && contract.match.variation !== "." ? contract.match.variation : defaults.variation;
+    const platform = contract.match.platform && contract.match.platform !== "." ? contract.match.platform : defaults.platform;
+    if (layer && verb && subject && variation && platform) {
+      return {
+        type: "contract",
+        classification: `/${layer}/${verb}/${subject}/${variation}/${platform}`,
+        position: new vscode.Position(position.line, contract.start),
+      };
+    }
+  }
+
+  const protocol = matchAt(protocolPattern);
+  if (protocol) {
+    const layer = protocol.match.layer && protocol.match.layer !== "." ? protocol.match.layer : defaults.layer;
+    const subject = protocol.match.subject;
+    const variation =
+      protocol.match.variation && protocol.match.variation !== "." ? protocol.match.variation : defaults.variation;
+    const platform = protocol.match.platform && protocol.match.platform !== "." ? protocol.match.platform : defaults.platform;
+    if (layer && subject && variation && platform) {
+      return {
+        type: "protocol",
+        classification: `/${layer}/${subject}/${variation}/${platform}`,
+        position: new vscode.Position(position.line, protocol.start),
+      };
+    }
+  }
+
+  return null;
+}
+
 function registerSpecificationLinks(context: vscode.ExtensionContext) {
   const selector: vscode.DocumentSelector = { language: "emergent", scheme: "file" };
   const provider: vscode.DocumentLinkProvider = {
@@ -450,12 +519,21 @@ function registerSpecificationLinks(context: vscode.ExtensionContext) {
           const start = new vscode.Position(line, classificationIndex);
           const end = new vscode.Position(line, classificationIndex + raw.length);
           const args = [document.uri.toString(), { line, character: classificationIndex }];
-          const commandUri = vscode.Uri.parse(
+          const remoteUri = vscode.Uri.parse(
             `command:emergent.openSpecificationAtPosition?${encodeURIComponent(JSON.stringify(args))}`
           );
-          const link = new vscode.DocumentLink(new vscode.Range(start, end), commandUri);
-          link.tooltip = "Show specification";
-          links.push(link);
+          const localUri = vscode.Uri.parse(
+            `command:emergent.openLocalSpecificationAtPosition?${encodeURIComponent(JSON.stringify(args))}`
+          );
+          const range = new vscode.Range(start, end);
+
+          const remoteLink = new vscode.DocumentLink(range, remoteUri);
+          remoteLink.tooltip = "Show specification";
+          links.push(remoteLink);
+
+          const localLink = new vscode.DocumentLink(range, localUri);
+          localLink.tooltip = "Open local specification (Ctrl+Shift+Click)";
+          links.push(localLink);
         };
 
         let match: RegExpExecArray | null;
@@ -526,13 +604,115 @@ async function createNewContractSpec() {
     supplier: defaultSupplier,
   };
 
-  const data = Buffer.from(JSON.stringify(template, null, 2) + "\n", "utf8");
-
   try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(template, null, 2) + "\n");
     await vscode.workspace.fs.writeFile(targetUri, data);
     await vscode.commands.executeCommand("vscode.openWith", targetUri, "contractSpecEditor");
   } catch (error: any) {
     console.error("Failed to create contract specification", error);
     void vscode.window.showErrorMessage(`Failed to create contract specification: ${error?.message ?? error}`);
   }
+}
+
+async function openLocalSpecification(uri?: vscode.Uri | string, position?: vscode.Position | { line: number; character: number }) {
+  const targetUri = typeof uri === "string" ? vscode.Uri.parse(uri) : uri;
+  const editor =
+    targetUri !== undefined
+      ? await vscode.workspace.openTextDocument(targetUri).then((doc) => vscode.window.showTextDocument(doc, { preview: true }))
+      : vscode.window.activeTextEditor;
+  const targetPosition =
+    position instanceof vscode.Position
+      ? position
+      : position
+      ? new vscode.Position(position.line, position.character)
+      : editor?.selection.active;
+
+  if (!editor || !targetPosition) {
+    return;
+  }
+
+  const info = getClassificationAtPosition(editor.document, targetPosition);
+  if (!info) {
+    return;
+  }
+
+  const config = vscode.workspace.getConfiguration("specification");
+  const contractRoot = config.get<string>("localContractRoot", "") ?? "";
+  const protocolRoot = config.get<string>("localProtocolRoot", "") ?? "";
+
+  const rootString = info.type === "contract" ? contractRoot : protocolRoot;
+  if (!rootString) {
+    return;
+  }
+
+  let rootUri: vscode.Uri | null = null;
+  try {
+    rootUri = rootString.startsWith("file:") ? vscode.Uri.parse(rootString) : vscode.Uri.file(rootString);
+  } catch {
+    rootUri = null;
+  }
+  if (!rootUri) {
+    void vscode.window.showWarningMessage("Invalid local specification root path.");
+    return;
+  }
+
+  const filenameFromClassification = () => {
+    const parts = info.classification.slice(1).split("/");
+    const dashed = parts.join("--");
+    return info.type === "contract" ? `${dashed}.cspec` : `${dashed}.pspec`;
+  };
+
+  const suggestedName = filenameFromClassification();
+  const pattern = new vscode.RelativePattern(rootUri, `**/${suggestedName}`);
+  const matches = await vscode.workspace.findFiles(pattern);
+
+  let specFile: vscode.Uri | undefined;
+
+  if (matches.length === 1) {
+    specFile = matches[0];
+  } else if (matches.length > 1) {
+    const selection = await vscode.window.showQuickPick(
+      matches.map((m) => ({ label: vscode.workspace.asRelativePath(m, false), uri: m })),
+      { title: "Select specification to open" }
+    );
+    specFile = selection?.uri;
+  } else {
+    const create = await vscode.window.showInformationMessage(
+      `No local ${info.type === "contract" ? "contract" : "protocol"} specification found. Create it?`,
+      { modal: false },
+      "Create"
+    );
+    if (create === "Create") {
+      specFile = vscode.Uri.joinPath(rootUri, suggestedName);
+      const template =
+        info.type === "contract"
+          ? {
+              type: "supplier",
+              name: info.classification,
+              description: "",
+              requirements: [],
+              obligations: [],
+              supplier: config.get<string>("defaultSupplier", "") ?? "",
+            }
+          : {
+              type: "protocol",
+              policy: 0,
+              name: info.classification,
+              description: "",
+              host: { requirements: [], obligations: [], macro: "" },
+              join: { requirements: [], obligations: [], macro: "" },
+            };
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(template, null, 2) + "\n");
+      await vscode.workspace.fs.writeFile(specFile, data);
+    }
+  }
+
+  if (!specFile) {
+    return;
+  }
+
+  const viewType = info.type === "contract" ? "contractSpecEditor" : "protocolSpecEditor";
+  await vscode.commands.executeCommand("vscode.openWith", specFile, viewType);
 }
