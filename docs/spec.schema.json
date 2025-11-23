@@ -37,9 +37,10 @@
         {
           "properties": {
             "type": { "const": "string" },
-            "length": { "type": ["number", "string"] }
+            "length": { "type": ["number", "string"] },
+            "hint": { "type": ["number", "string"] }
           },
-          "required": ["length"]
+          "required": ["length", "hint"]
         },
         {
           "properties": {

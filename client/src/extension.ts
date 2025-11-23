@@ -5,6 +5,7 @@
 
 import * as path from "path";
 import { Valley } from "./valley";
+import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvider";
 import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./formatting";
 import { workspace, ExtensionContext } from "vscode";
 
@@ -120,6 +121,8 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(ecStatusBarItem);
   context.subscriptions.push(emergentDocumentFormattingEditProvider);
   context.subscriptions.push(emergentDocumentRangeFormattingEditProvider);
+
+  registerSpecificationEditors(context);
 
   vscode.workspace.onDidChangeConfiguration((e) => {
     if (e.affectsConfiguration("gateway")) {
@@ -291,8 +294,6 @@ export function deactivate(): Thenable<void> | undefined {
   return client.stop();
 }
 
-import { connected } from "process";
-
 // const contractSpecs = [
 // 	{ layer: "data", verb: "add", subject: "integer", variation: "default", platform: "x64", supplier: "aptissio" },
 // 	{ layer: "data", verb: "new", subject: "program", variation: "default", platform: "linux-x64", supplier: "aptissio" },
@@ -320,4 +321,27 @@ function updateStatusBar(statusBar: vscode.StatusBarItem, status: string, error 
 
 function statusInfoMessage() {
   return lastStatusText;
+}
+
+function registerSpecificationEditors(context: vscode.ExtensionContext) {
+  const diagnostics = vscode.languages.createDiagnosticCollection("spec-schema");
+  context.subscriptions.push(diagnostics);
+
+  const contractSchema = loadSchema(context, "contractSpec.schema.json");
+  const protocolSchema = loadSchema(context, "protocolSpec.schema.json");
+
+  const options = {
+    webviewOptions: { retainContextWhenHidden: true },
+    supportsMultipleEditorsPerDocument: true,
+  };
+
+  if (contractSchema) {
+    const contractProvider = new SpecEditorProvider(context, contractSchema, diagnostics, "supplier");
+    context.subscriptions.push(vscode.window.registerCustomEditorProvider("contractSpecEditor", contractProvider, options));
+  }
+
+  if (protocolSchema) {
+    const protocolProvider = new SpecEditorProvider(context, protocolSchema, diagnostics, "protocol");
+    context.subscriptions.push(vscode.window.registerCustomEditorProvider("protocolSpecEditor", protocolProvider, options));
+  }
 }
