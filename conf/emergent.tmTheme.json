@@ -2,6 +2,19 @@
     "name": "Design Domain Language",
     "type": "dark",
     "colors": {
+        "editorBracketHighlight.foreground1": "#c586c0",
+        "editorBracketHighlight.foreground2": "#c586c0",
+        "editorBracketHighlight.foreground3": "#c586c0",
+        "editorBracketHighlight.foreground4": "#c586c0",
+        "editorBracketHighlight.foreground5": "#c586c0",
+        "editorBracketHighlight.foreground6": "#c586c0",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#c586c0",
+        "editorBracketHighlight.activeForeground1": "#c586c0",
+        "editorBracketHighlight.activeForeground2": "#c586c0",
+        "editorBracketHighlight.activeForeground3": "#c586c0",
+        "editorBracketHighlight.activeForeground4": "#c586c0",
+        "editorBracketHighlight.activeForeground5": "#c586c0",
+        "editorBracketHighlight.activeForeground6": "#c586c0"
     },
     "tokenColors": [
         {
@@ -90,6 +103,12 @@
             }
         },
         {
+            "scope": "punctuation.section.parens.emergent",
+            "settings": {
+                "foreground": "#c586c0"
+            }
+        },
+        {
             "scope": "markup.underline.link.emergent",
             "settings": {
                 "foreground": "#2e74a6"
@@ -99,6 +118,18 @@
             "scope": "markup.underline.link.protocol.emergent",
             "settings": {
                 "foreground": "#c76f44"
+            }
+        },
+        {
+            "scope": "punctuation.supplier.delimiter.emergent",
+            "settings": {
+                "foreground": "#e0a14a"
+            }
+        },
+        {
+            "scope": "variable.parameter.supplier.emergent",
+            "settings": {
+                "foreground": "#d2d86c"
             }
         },
         {
