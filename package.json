@@ -102,7 +102,9 @@
         ],
         "extensions": [
           ".dla",
-          ".dlp"
+          ".dlp",
+          ".cspec",
+          ".pspec"
         ],
         "configuration": "./conf/emergent.tmLanguage.json"
       }
