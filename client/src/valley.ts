@@ -66,6 +66,18 @@ export class Valley {
     }
   }
 
+  async reloadSpecifications() {
+    const rootDoc = await this.fetchRootDoc(this.rootDocUrl);
+
+    await this.contracts.clearCache();
+    await this.protocols.clearCache();
+
+    await this.contracts.updateFromRootDoc(rootDoc.rootContracts);
+    await this.protocols.updateFromRootDoc(rootDoc.rootProtocols);
+
+    return `$(pass) c:${this.contracts.count}, p:${this.protocols.count}]`;
+  }
+
   async fetchRootDoc(
     rootDocUrl: string
   ): Promise<{ rootContracts: Array<contractClassification>; rootProtocols: Array<protocolClassification> }> {
@@ -348,6 +360,11 @@ export class Contracts {
     this.context = context;
   }
 
+  async clearCache() {
+    this.#contracts = [];
+    await this.context.globalState.update(GLOBALSTATE_CONTRACTS_LABEL, []);
+  }
+
   async saveContext() {
     await this.context.globalState.update(GLOBALSTATE_CONTRACTS_LABEL, this);
     console.debug("Valley cache updated with", this.count, "contracts.");
@@ -560,6 +577,11 @@ export class Protocols {
   }
   init(context: ExtensionContext) {
     this.context = context;
+  }
+
+  async clearCache() {
+    this.#protocols = [];
+    await this.context.globalState.update(GLOBALSTATE_PROTOCOLS_LABEL, []);
   }
 
   async saveContext() {

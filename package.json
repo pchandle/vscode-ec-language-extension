@@ -22,7 +22,8 @@
     "onLanguage:emergent",
     "onCustomEditor:contractSpecEditor",
     "onCustomEditor:protocolSpecEditor",
-    "onCommand:emergent.newContractSpec"
+    "onCommand:emergent.newContractSpec",
+    "onCommand:emergent.reloadSpecifications"
   ],
   "main": "./client/out/extension",
   "contributes": {
@@ -181,6 +182,11 @@
       {
         "command": "emergent.newContractSpec",
         "title": "Emergent: New Contract Specification",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.reloadSpecifications",
+        "title": "Emergent: Reload Specifications",
         "category": "Emergent"
       }
     ],

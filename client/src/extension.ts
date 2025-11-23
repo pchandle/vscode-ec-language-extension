@@ -73,6 +73,11 @@ export function activate(context: ExtensionContext) {
     })
   );
   context.subscriptions.push(
+    vscode.commands.registerCommand("emergent.reloadSpecifications", () => {
+      void reloadValleySpecifications();
+    })
+  );
+  context.subscriptions.push(
     vscode.commands.registerCommand(
       "emergent.openSpecificationAtPosition",
       (uri?: vscode.Uri | string, position?: vscode.Position | { line: number; character: number }) => {
@@ -191,6 +196,27 @@ function updateValleySpecs() {
     .catch((error) => {
       updateStatusBar(ecStatusBarItem, error.message, false);
     });
+}
+
+async function reloadValleySpecifications() {
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Reload Emergent specifications",
+    },
+    async (progress) => {
+      progress.report({ message: "Fetching specifications from gateway..." });
+      try {
+        const status = await v.reloadSpecifications();
+        updateStatusBar(ecStatusBarItem, status, false);
+        vscode.window.showInformationMessage("Specification cache reloaded from gateway.");
+      } catch (error: any) {
+        const message = error?.message ?? String(error);
+        updateStatusBar(ecStatusBarItem, message, true);
+        vscode.window.showErrorMessage(`Failed to reload specifications: ${message}`);
+      }
+    }
+  );
 }
 
 function updateGatewayApiUrl() {

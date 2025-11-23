@@ -8,6 +8,11 @@ contributing.md
 .travis.yml
 client/testFixture/**
 client/node_modules/**
+client/server/**
+.vscode-test/**
+docs/fetched-specs/**
+logs/**
+scripts/**
 !client/node_modules/vscode-jsonrpc/**
 !client/node_modules/vscode-languageclient/**
 !client/node_modules/vscode-languageserver-protocol/**
