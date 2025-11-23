@@ -55,7 +55,7 @@
       ],
       "properties": {
         "type": { "type": "string" },
-        "name": { "type": "string" },
+        "name": { "type": "string", "pattern": "^[\\w .(),-]+$" },
         "protocol": { "type": "string" },
         "minimum": { "type": ["number", "string"] },
         "maximum": { "type": ["number", "string"] },

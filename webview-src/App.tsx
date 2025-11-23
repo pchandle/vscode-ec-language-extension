@@ -79,7 +79,7 @@ export default function App() {
         node.properties.protocol.pattern = "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$";
       }
       if (node.properties.name) {
-        node.properties.name.pattern = "^[a-z0-9 _-]+$";
+        node.properties.name.pattern = "^[\\w .(),-]+$";
       }
       if (node.properties.length) {
         node.properties.length.type = "integer";
