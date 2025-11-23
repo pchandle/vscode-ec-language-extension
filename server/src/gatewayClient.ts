@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { Connection } from "vscode-languageserver";
-import { ContractClassification, classifyContractName } from "./completionSupport";
+import { ContractClassification, ProtocolClassification, classifyContractName, classifyProtocolName } from "./completionSupport";
 
 type GatewayConfig = { hostname: string; port: number; allowInsecure: boolean };
 type NetworkPaths = { rootPrefix: string; specPrefix: string };
@@ -20,6 +20,7 @@ class GatewayClient {
   #config: GatewayConfig = { hostname: "localhost", port: 10000, allowInsecure: true };
   #apiRoot = "http://localhost:10000";
   #completionCache: ContractClassification[] = [];
+  #protocolCompletionCache: ProtocolClassification[] = [];
   #specCache: Record<string, RemoteContractSpec> = {};
   #rootDocument: Record<string, string> = {};
   #cacheTimer: NodeJS.Timer | undefined;
@@ -59,6 +60,9 @@ class GatewayClient {
   get completionCache(): ContractClassification[] {
     return this.#completionCache;
   }
+  get protocolCache(): ProtocolClassification[] {
+    return this.#protocolCompletionCache;
+  }
 
   async refreshContractCache(): Promise<void> {
     const rootPrefixWithTrailingSlash = this.#rootPathPrefix.endsWith("/")
@@ -69,13 +73,24 @@ class GatewayClient {
     try {
       const rootDoc = await this.fetchJson(rootUrl);
       this.#rootDocument = typeof rootDoc === "object" && rootDoc !== null ? rootDoc : {};
-      const roots: ContractClassification[] = [];
+      const contractRoots: ContractClassification[] = [];
+      const protocolRoots: ProtocolClassification[] = [];
       for (const spec in this.#rootDocument) {
-        const c = classifyContractName(spec);
-        if (c) roots.push(c);
+        const contract = classifyContractName(spec);
+        if (contract) {
+          contractRoots.push(contract);
+          continue;
+        }
+        const protocol = classifyProtocolName(spec);
+        if (protocol) {
+          protocolRoots.push(protocol);
+        }
       }
-      this.#completionCache = roots;
-      this.#connection?.console.log(`Updated contract cache with ${this.#completionCache.length} entries.`);
+      this.#completionCache = contractRoots;
+      this.#protocolCompletionCache = protocolRoots;
+      this.#connection?.console.log(
+        `Updated contract cache with ${this.#completionCache.length} contracts and ${this.#protocolCompletionCache.length} protocols.`
+      );
       this.persistDiskCache();
     } catch (err: any) {
       this.#connection?.console.error(`Failed to refresh contract cache: ${err.message}`);
@@ -162,6 +177,7 @@ class GatewayClient {
       const raw = fs.readFileSync(this.#cacheFilePath, "utf8");
       const data = JSON.parse(raw);
       this.#completionCache = Array.isArray(data?.completionCache) ? data.completionCache : [];
+      this.#protocolCompletionCache = Array.isArray(data?.protocolCompletionCache) ? data.protocolCompletionCache : [];
       this.#specCache = typeof data?.specCache === "object" && data.specCache !== null ? data.specCache : {};
       this.#rootDocument = typeof data?.rootDocument === "object" && data.rootDocument !== null ? data.rootDocument : {};
       if (typeof data?.rootPathPrefix === "string") this.#rootPathPrefix = data.rootPathPrefix;
@@ -176,6 +192,7 @@ class GatewayClient {
       fs.mkdirSync(path.dirname(this.#cacheFilePath), { recursive: true });
       const payload = {
         completionCache: this.#completionCache,
+        protocolCompletionCache: this.#protocolCompletionCache,
         specCache: this.#specCache,
         rootDocument: this.#rootDocument,
         rootPathPrefix: this.#rootPathPrefix,

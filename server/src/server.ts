@@ -438,9 +438,11 @@ connection.onCompletion(
 		if (!document) {
 			return [];
 		}
-		return buildCompletionItems(gatewayClient.completionCache, document, params.position);
+		return buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
 	}
 );
+
+connection.onCompletionResolve((item): CompletionItem => item);
 
 connection.onShutdown(() => {
 	gatewayClient.dispose();
