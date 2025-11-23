@@ -90,6 +90,18 @@
             }
         },
         {
+            "scope": "markup.underline.link.emergent",
+            "settings": {
+                "foreground": "#2e74a6"
+            }
+        },
+        {
+            "scope": "markup.underline.link.protocol.emergent",
+            "settings": {
+                "foreground": "#c76f44"
+            }
+        },
+        {
             "scope": "punctuation.definition.classification.separator.emergent",
             "settings": {
                 "foreground": "#4db9a3"

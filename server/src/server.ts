@@ -314,24 +314,40 @@ function getClassificationFromDocument(document: TextDocument, params: TextDocum
 	};
 
 	const lineText = document.getText(lineRange);
-	const matches =
+	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+	const contractMatch =
 		lineText.match(
 			/.*(sub|job)\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
 		)?.groups || {};
 
-	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+	const layer = contractMatch.layer && contractMatch.layer !== '.' ? contractMatch.layer : defaults.layer;
+	const verb = contractMatch.verb;
+	const subject = contractMatch.subject;
+	const variation =
+		contractMatch.variation && contractMatch.variation !== '.' ? contractMatch.variation : defaults.variation;
+	const platform = contractMatch.platform && contractMatch.platform !== '.' ? contractMatch.platform : defaults.platform;
 
-	const layer = matches.layer && matches.layer !== '.' ? matches.layer : defaults.layer;
-	const verb = matches.verb;
-	const subject = matches.subject;
-	const variation = matches.variation && matches.variation !== '.' ? matches.variation : defaults.variation;
-	const platform = matches.platform && matches.platform !== '.' ? matches.platform : defaults.platform;
-
-	if (!layer || !verb || !subject || !variation || !platform) {
-		return null;
+	if (layer && verb && subject && variation && platform) {
+		return { classification: `/${layer}/${verb}/${subject}/${variation}/${platform}`, supplier: contractMatch.supplier ?? '' };
 	}
 
-	return { classification: `/${layer}/${verb}/${subject}/${variation}/${platform}`, supplier: matches.supplier ?? '' };
+	const protocolMatch =
+		lineText.match(
+			/.*(host|join)\s+(?:\/(?<layer>[^/]*)\/?)?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?/
+		)?.groups || {};
+
+	const pLayer = protocolMatch.layer && protocolMatch.layer !== '.' ? protocolMatch.layer : defaults.layer;
+	const pSubject = protocolMatch.subject;
+	const pVariation =
+		protocolMatch.variation && protocolMatch.variation !== '.' ? protocolMatch.variation : defaults.variation;
+	const pPlatform =
+		protocolMatch.platform && protocolMatch.platform !== '.' ? protocolMatch.platform : defaults.platform;
+
+	if (pLayer && pSubject && pVariation && pPlatform) {
+		return { classification: `/${pLayer}/${pSubject}/${pVariation}/${pPlatform}`, supplier: '' };
+	}
+
+	return null;
 }
 
 connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpecificationResult> => {

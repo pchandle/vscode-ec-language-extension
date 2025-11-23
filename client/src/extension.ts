@@ -72,6 +72,14 @@ export function activate(context: ExtensionContext) {
     })
   );
   context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "emergent.openSpecificationAtPosition",
+      (uri?: vscode.Uri | string, position?: vscode.Position | { line: number; character: number }) => {
+        void showSpecificationPanel(uri, position);
+      }
+    )
+  );
+  context.subscriptions.push(
     vscode.commands.registerCommand("emergent.newContractSpec", () => {
       void createNewContractSpec();
     })
@@ -162,6 +170,8 @@ export function activate(context: ExtensionContext) {
   setInterval(async () => {
     updateValleySpecs();
   }, valleyScanIntervalMs);
+
+  registerSpecificationLinks(context);
 }
 
 function updateValleySpecs() {
@@ -187,21 +197,36 @@ function updateFormattingCfg() {
 
 type FetchSpecificationResult = { classification: string; specification: any } | null;
 
-async function showSpecificationPanel() {
+async function showSpecificationPanel(
+  uri?: vscode.Uri | string,
+  position?: vscode.Position | { line: number; character: number }
+) {
   if (!client) {
     vscode.window.showWarningMessage("Emergent language client is not ready yet.");
     return;
   }
   await client.onReady();
-  const editor = vscode.window.activeTextEditor;
+  const targetUri = typeof uri === "string" ? vscode.Uri.parse(uri) : uri;
+  const editor = targetUri
+    ? await vscode.workspace
+        .openTextDocument(targetUri)
+        .then((doc) => vscode.window.showTextDocument(doc, { preview: true }))
+    : vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showWarningMessage("Open an Emergent document to view a specification.");
     return;
   }
 
+  const targetPosition =
+    position instanceof vscode.Position
+      ? position
+      : position
+      ? new vscode.Position(position.line, position.character)
+      : editor.selection.active;
+
   const requestParams = {
     textDocument: { uri: editor.document.uri.toString() },
-    position: editor.selection.active,
+    position: targetPosition,
   };
 
   let result: FetchSpecificationResult;
@@ -235,6 +260,8 @@ async function showSpecificationPanel() {
 }
 
 function renderSpecificationHtml(classification: string, spec: any) {
+  const specType = (spec?.type ?? "").toString();
+  const isProtocol = specType === "protocol" || (!!spec?.host && !!spec?.join);
   const requirements = Array.isArray(spec?.requirements) ? spec.requirements : [];
   const obligations = Array.isArray(spec?.obligations) ? spec.obligations : [];
   const suppliers = Array.isArray(spec?.suppliers) ? spec.suppliers : [];
@@ -256,6 +283,25 @@ function renderSpecificationHtml(classification: string, spec: any) {
   };
 
   const listItems = (items: any[]) => items.map((i) => `<li>${renderTerm(i)}</li>`).join("");
+  const renderRole = (label: string, role?: any) => {
+    if (!role || (!Array.isArray(role.requirements) && !Array.isArray(role.obligations) && !role.macro)) {
+      return "";
+    }
+    const reqs = Array.isArray(role.requirements) ? role.requirements : [];
+    const oblgs = Array.isArray(role.obligations) ? role.obligations : [];
+    const macro = role.macro ? String(role.macro) : "";
+    return `
+      <h2>${label}</h2>
+      ${reqs.length ? `<h3>Requirements</h3><ul>${listItems(reqs)}</ul>` : ""}
+      ${oblgs.length ? `<h3>Obligations</h3><ul>${listItems(oblgs)}</ul>` : ""}
+      ${macro ? `<h3>Macro</h3><pre>${macro}</pre>` : ""}
+    `;
+  };
+
+  const policyBlock =
+    isProtocol && spec?.policy !== undefined ? `<p><strong>Policy:</strong> ${spec.policy}</p>` : "";
+  const hostBlock = isProtocol ? renderRole("Host", spec?.host) : "";
+  const joinBlock = isProtocol ? renderRole("Join", spec?.join) : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -273,6 +319,9 @@ function renderSpecificationHtml(classification: string, spec: any) {
 <body>
   <h1>${classification}</h1>
   ${description ? `<p>${description}</p>` : ""}
+  ${policyBlock}
+  ${hostBlock}
+  ${joinBlock}
   ${
     requirements.length
       ? `<h2>Requirements</h2><ul>${listItems(requirements)}</ul>`
@@ -349,6 +398,80 @@ function registerSpecificationEditors(context: vscode.ExtensionContext) {
     const protocolProvider = new SpecEditorProvider(context, protocolSchema, diagnostics, "protocol");
     context.subscriptions.push(vscode.window.registerCustomEditorProvider("protocolSpecEditor", protocolProvider, options));
   }
+}
+
+function getDefaultsFromText(text: string) {
+  const defaults = text.match(
+    /(^|\n)\s*defaults:\s+(?<layer>[^ ,]*)\s*,\s*(?<variation>[^ ,]*)\s*,\s*(?<platform>[^ ,]*)\s*,\s*(?<supplier>\w*)/
+  );
+  return defaults ? (defaults.groups as any) : null;
+}
+
+function registerSpecificationLinks(context: vscode.ExtensionContext) {
+  const selector: vscode.DocumentSelector = { language: "emergent", scheme: "file" };
+  const provider: vscode.DocumentLinkProvider = {
+    provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
+      const links: vscode.DocumentLink[] = [];
+      const contractPattern =
+        /(sub|job)\s+(?<raw>(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*))/g;
+      const protocolPattern =
+        /(host|join)\s+(?<raw>(?:\/(?<layer>[^/]*)\/?)?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*))/g;
+      const defaults = getDefaultsFromText(document.getText()) || { layer: "", variation: "", platform: "", supplier: "" };
+
+      for (let line = 0; line < document.lineCount; line++) {
+        const textLine = document.lineAt(line);
+        const processMatch = (match: RegExpExecArray | null, type: "contract" | "protocol") => {
+          if (!match) {
+            return;
+          }
+          const groups = match.groups ?? {};
+          const layer = groups.layer && groups.layer !== "." ? groups.layer : defaults.layer;
+          const subject = groups.subject;
+          const variation = groups.variation && groups.variation !== "." ? groups.variation : defaults.variation;
+          const platform = groups.platform && groups.platform !== "." ? groups.platform : defaults.platform;
+          const verb = type === "contract" ? groups.verb : undefined;
+
+          if (type === "contract" && (!layer || !verb || !subject || !variation || !platform)) {
+            return;
+          }
+          if (type === "protocol" && (!layer || !subject || !variation || !platform)) {
+            return;
+          }
+
+          const raw = groups.raw ?? "";
+          if (!raw) {
+            return;
+          }
+          const classification =
+            type === "contract"
+              ? `/${layer}/${verb}/${subject}/${variation}/${platform}`
+              : `/${layer}/${subject}/${variation}/${platform}`;
+          const classificationIndex = match.index + match[0].indexOf(raw);
+          const start = new vscode.Position(line, classificationIndex);
+          const end = new vscode.Position(line, classificationIndex + raw.length);
+          const args = [document.uri.toString(), { line, character: classificationIndex }];
+          const commandUri = vscode.Uri.parse(
+            `command:emergent.openSpecificationAtPosition?${encodeURIComponent(JSON.stringify(args))}`
+          );
+          const link = new vscode.DocumentLink(new vscode.Range(start, end), commandUri);
+          link.tooltip = "Show specification";
+          links.push(link);
+        };
+
+        let match: RegExpExecArray | null;
+        while ((match = contractPattern.exec(textLine.text)) !== null) {
+          processMatch(match, "contract");
+        }
+        while ((match = protocolPattern.exec(textLine.text)) !== null) {
+          processMatch(match, "protocol");
+        }
+      }
+
+      return links;
+    },
+  };
+
+  context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(selector, provider));
 }
 
 async function createNewContractSpec() {

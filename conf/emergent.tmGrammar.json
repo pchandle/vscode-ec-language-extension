@@ -29,34 +29,34 @@
 					"name": "keyword"
 				},
 				"3": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"4": {
-					"name": "meta.layer"
+					"name": "markup.underline.link.emergent"
 				},
 				"5": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"6": {
-					"name": "meta.verb"
+					"name": "markup.underline.link.emergent"
 				},
 				"8": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"9": {
-					"name": "meta.subject"
+					"name": "markup.underline.link.emergent"
 				},
 				"11": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"12": {
-					"name": "meta.variation"
+					"name": "markup.underline.link.emergent"
 				},
 				"14": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"15": {
-					"name": "meta.platform"
+					"name": "markup.underline.link.emergent"
 				}
 			}
 		},
@@ -67,37 +67,37 @@
 					"name": "keyword"
 				},
 				"3": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"4": {
-					"name": "meta.layer"
+					"name": "markup.underline.link.emergent"
 				},
 				"5": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"6": {
-					"name": "meta.verb"
+					"name": "markup.underline.link.emergent"
 				},
 				"7": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"8": {
-					"name": "meta.subject"
+					"name": "markup.underline.link.emergent"
 				},
 				"10": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"11": {
-					"name": "meta.variation"
+					"name": "markup.underline.link.emergent"
 				},
 				"13": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.emergent"
 				},
 				"14": {
-					"name": "meta.platform"
+					"name": "markup.underline.link.emergent"
 				},
 				"15": {
-					"name": "meta.supplier"
+					"name": "markup.underline.link.emergent"
 				}
 			}
 		},
@@ -108,28 +108,28 @@
 					"name": "keyword"
 				},
 				"3": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"4": {
-					"name": "meta.collaboration"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"5": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"6": {
-					"name": "meta.collaboration"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"8": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"9": {
-					"name": "meta.collaboration"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"11": {
-					"name": "punctuation.definition.classification.separator.emergent"
+					"name": "markup.underline.link.protocol.emergent"
 				},
 				"12": {
-					"name": "meta.collaboration"
+					"name": "markup.underline.link.protocol.emergent"
 				}
 			}
 		},

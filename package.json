@@ -157,6 +157,11 @@
         "title": "Emergent: Show Specification Panel"
       },
       {
+        "command": "emergent.openSpecificationAtPosition",
+        "title": "Emergent: Open Specification at Position",
+        "category": "Emergent"
+      },
+      {
         "command": "emergent.newContractSpec",
         "title": "Emergent: New Contract Specification",
         "category": "Emergent"
