@@ -56,14 +56,27 @@ function buildContractCompletionItems(
   const lineRange: Range = { start: { line: position.line, character: 0 }, end: position };
   const lineText = document.getText(lineRange);
 
-  if (!/^\s*(sub|job)\s/.test(lineText)) {
+  const keywordMatch = lineText.match(/^\s*(sub|job)\s+/);
+  if (!keywordMatch) {
+    return [];
+  }
+
+  const restOfLine = lineText.slice(keywordMatch[0].length);
+  const delimiterIdx = restOfLine.search(/[\s(@]/); // first whitespace, '(' or '@'
+  const classificationEnd =
+    delimiterIdx === -1 ? lineText.length : keywordMatch[0].length + delimiterIdx;
+
+  if (position.character > classificationEnd) {
     return [];
   }
 
   const fullText = document.getText();
   const defaults = getDefaultsFromText(fullText) || { layer: "", variation: "", platform: "", supplier: "" };
 
-  const taxonomy = lineText.match(/^\s*sub +(\/([^/]*)\/?)?([^/]*)?\/?([^/@(]*)?(?:\/([^/@(]*))?(?:\/([^/@(]*))?@?([^(]*)?$/);
+  const classificationText = lineText.slice(0, classificationEnd);
+  const taxonomy = classificationText.match(
+    /^\s*sub +(\/([^/]*)\/?)?([^/]*)?\/?([^/@(]*)?(?:\/([^/@(]*))?(?:\/([^/@(]*))?@?([^(]*)?$/
+  );
   const layer = taxonomy?.[2];
   const verb = taxonomy?.[3];
   const subject = taxonomy?.[4];
@@ -161,14 +174,27 @@ function buildProtocolCompletionItems(
   const lineRange: Range = { start: { line: position.line, character: 0 }, end: position };
   const lineText = document.getText(lineRange);
 
-  if (!/^\s*(host|join)\s/.test(lineText)) {
+  const keywordMatch = lineText.match(/^\s*(host|join)\s+/);
+  if (!keywordMatch) {
+    return [];
+  }
+
+  const restOfLine = lineText.slice(keywordMatch[0].length);
+  const delimiterIdx = restOfLine.search(/[\s(@]/); // first whitespace, '(' or '@'
+  const classificationEnd =
+    delimiterIdx === -1 ? lineText.length : keywordMatch[0].length + delimiterIdx;
+
+  if (position.character > classificationEnd) {
     return [];
   }
 
   const fullText = document.getText();
   const defaults = getDefaultsFromText(fullText) || { layer: "", variation: "", platform: "", supplier: "" };
 
-  const taxonomy = lineText.match(/^\s*(host|join)\s+(?:\/([^/]*)\/?)?([^/]*)?\/?([^/@(]*)?\/?([^/@(]*)?@?([^(]*)?$/);
+  const classificationText = lineText.slice(0, classificationEnd);
+  const taxonomy = classificationText.match(
+    /^\s*(host|join)\s+(?:\/([^/]*)\/?)?([^/]*)?\/?([^/@(]*)?\/?([^/@(]*)?@?([^(]*)?$/
+  );
   const layer = taxonomy?.[2];
   const subject = taxonomy?.[3];
   const variation = taxonomy?.[4];

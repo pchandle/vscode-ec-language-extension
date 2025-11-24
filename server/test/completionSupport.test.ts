@@ -107,4 +107,25 @@ describe("completionSupport", () => {
     const labels = items.map((i) => i.label);
     expect(labels).to.include("/data/integer/default/x64");
   });
+
+  it("bails out after whitespace following contract classification", () => {
+    const line = "sub /byte/new/integer/default/x64 param";
+    const doc = mockDoc(line);
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 0, character: line.length });
+    expect(items).to.deep.equal([]);
+  });
+
+  it("bails out after '(' following contract classification", () => {
+    const line = "sub /byte/new/integer/default/x64(param1";
+    const doc = mockDoc(line);
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 0, character: line.length });
+    expect(items).to.deep.equal([]);
+  });
+
+  it("bails out after '@' following protocol classification", () => {
+    const line = "join /data/integer/default/x64@codevalley foo";
+    const doc = mockDoc(line);
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 0, character: line.length });
+    expect(items).to.deep.equal([]);
+  });
 });
