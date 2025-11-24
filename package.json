@@ -16,15 +16,8 @@
     "multi-root ready"
   ],
   "engines": {
-    "vscode": "^1.63.0"
+    "vscode": "^1.75.0"
   },
-  "activationEvents": [
-    "onLanguage:emergent",
-    "onCustomEditor:contractSpecEditor",
-    "onCustomEditor:protocolSpecEditor",
-    "onCommand:emergent.newContractSpec",
-    "onCommand:emergent.reloadSpecifications"
-  ],
   "main": "./client/out/extension",
   "contributes": {
     "configuration": [
