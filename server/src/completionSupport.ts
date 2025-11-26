@@ -18,6 +18,12 @@ export type ProtocolClassification = {
   suppliers?: string[];
 };
 
+export type ContractSpecTopic = { name?: string };
+export type ContractSpecification = {
+  requirements?: ContractSpecTopic[];
+  obligations?: ContractSpecTopic[];
+};
+
 export function classifyContractName(name: string): ContractClassification | undefined {
   const groups = name.match(/\/(?<layer>[^/]+)\/(?<verb>[^/]+)\/(?<subject>[^/]+)\/(?<variation>[^/]+)\/(?<platform>[^/]+)/);
   if (!groups) return undefined;
@@ -46,6 +52,76 @@ export function getDefaultsFromText(text: string) {
     /(^|\n)\s*defaults:\s+(?<layer>[^ ,]*)\s*,\s*(?<variation>[^ ,]*)\s*,\s*(?<platform>[^ ,]*)\s*,\s*(?<supplier>\w*)/
   );
   return defaults ? (defaults.groups as any) : null;
+}
+
+function normalizeTopicName(name?: string): string | null {
+  if (!name) return null;
+  const normalized = name.toLowerCase().replace(/[^a-z0-9]/gi, "_");
+  return normalized || null;
+}
+
+function getLineText(document: TextDocument, line: number): string {
+  const rawLine = document.getText({ start: { line, character: 0 }, end: { line: line + 1, character: 0 } });
+  return rawLine.replace(/[\r\n]+$/, "");
+}
+
+export function shouldTriggerContractSpecCompletion(
+  document: TextDocument,
+  position: Position
+): { lineText: string; openParenIndex: number } | null {
+  const lineText = getLineText(document, position.line);
+  if (!/^\s*sub\s+/i.test(lineText)) {
+    return null;
+  }
+
+  const openParenIndex = lineText.indexOf("(");
+  if (openParenIndex === -1 || position.character <= openParenIndex) {
+    return null;
+  }
+
+  const beforeCursor = lineText.slice(openParenIndex + 1, position.character);
+  if (beforeCursor.trim() !== "") {
+    return null;
+  }
+
+  const afterCursor = lineText.slice(position.character);
+  const afterCursorTrimmed = afterCursor.trim();
+  if (afterCursorTrimmed !== "" && afterCursorTrimmed !== ")") {
+    return null;
+  }
+
+  return { lineText, openParenIndex };
+}
+
+export function buildContractSpecCompletionItems(
+  spec: ContractSpecification,
+  position: Position,
+  lineText: string,
+  openParenIndex: number
+): CompletionItem[] | null {
+  const requirements = (spec.requirements ?? []).map((req) => normalizeTopicName(req.name)).filter(Boolean) as string[];
+  const obligations = (spec.obligations ?? []).map((obl) => normalizeTopicName(obl.name)).filter(Boolean) as string[];
+
+  const requirementText = requirements.join(", ");
+  const obligationText = obligations.join(", ");
+  const completionText = `${requirementText}) -> ${obligationText}`.trimEnd();
+  const newText = completionText || ") -> ";
+
+  const editRange: Range = {
+    start: { line: position.line, character: openParenIndex + 1 },
+    end: { line: position.line, character: lineText.length },
+  };
+
+  return [
+    {
+      label: completionText || ") ->",
+      kind: CompletionItemKind.Snippet,
+      preselect: true,
+      sortText: "emergent_completion_000_spec",
+      textEdit: { range: editRange, newText },
+      insertText: newText,
+    },
+  ];
 }
 
 function buildContractCompletionItems(

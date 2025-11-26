@@ -2,10 +2,12 @@ import { expect } from "chai";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   buildCompletionItems,
+  buildContractSpecCompletionItems,
   classifyContractName,
   ContractClassification,
   ProtocolClassification,
   classifyProtocolName,
+  shouldTriggerContractSpecCompletion,
 } from "../src/completionSupport";
 
 function mockDoc(text: string) {
@@ -127,5 +129,54 @@ describe("completionSupport", () => {
     const doc = mockDoc(line);
     const items = buildCompletionItems(contracts, protocols, doc, { line: 0, character: line.length });
     expect(items).to.deep.equal([]);
+  });
+
+  it("builds contract spec completion after opening parenthesis", () => {
+    const line = "sub /byte/new/integer/default/x64(";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerContractSpecCompletion(doc, position);
+
+    const spec = {
+      requirements: [{ name: "First Requirement" }, { name: "Second-Req" }],
+      obligations: [{ name: "Do Thing" }],
+    };
+
+    const items =
+      context && buildContractSpecCompletionItems(spec, position, context.lineText, context.openParenIndex);
+
+    expect(items?.[0].textEdit && "newText" in items[0].textEdit ? items[0].textEdit.newText : undefined).to.equal(
+      "first_requirement, second_req) -> do_thing"
+    );
+    const editRange = items?.[0].textEdit && "range" in items[0].textEdit ? items[0].textEdit.range : null;
+    expect(editRange).to.deep.equal({
+      start: { line: 0, character: line.indexOf("(") + 1 },
+      end: { line: 0, character: line.length },
+    });
+  });
+
+  it("does not trigger spec completion when arguments already typed", () => {
+    const line = "sub /byte/new/integer/default/x64(foo";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerContractSpecCompletion(doc, position);
+    expect(context).to.equal(null);
+  });
+
+  it("does not trigger spec completion when text follows the cursor", () => {
+    const line = "sub /byte/new/integer/default/x64(";
+    const fullLine = `${line} foo`;
+    const doc = mockDoc(fullLine);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerContractSpecCompletion(doc, position);
+    expect(context).to.equal(null);
+  });
+
+  it("allows spec completion when closing parenthesis is already present", () => {
+    const line = "sub /byte/new/integer/default/x64()";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.indexOf("(") + 1 };
+    const context = shouldTriggerContractSpecCompletion(doc, position);
+    expect(context).to.not.equal(null);
   });
 });

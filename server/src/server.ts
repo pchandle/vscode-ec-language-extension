@@ -22,7 +22,12 @@ import {
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
-import { buildCompletionItems, getDefaultsFromText } from './completionSupport';
+import {
+	buildCompletionItems,
+	buildContractSpecCompletionItems,
+	getDefaultsFromText,
+	shouldTriggerContractSpecCompletion
+} from './completionSupport';
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
@@ -433,10 +438,29 @@ connection.onHover(async (params): Promise<Hover | null> => {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(params: TextDocumentPositionParams): CompletionItem[] => {
+	async (params: TextDocumentPositionParams): Promise<CompletionItem[]> => {
 		const document = documents.get(params.textDocument.uri);
 		if (!document) {
 			return [];
+		}
+
+		const specContext = shouldTriggerContractSpecCompletion(document, params.position);
+		if (specContext) {
+			const parsed = getClassificationFromDocument(document, params);
+			if (parsed?.classification) {
+				const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+				if (spec) {
+					const specItems = buildContractSpecCompletionItems(
+						spec,
+						params.position,
+						specContext.lineText,
+						specContext.openParenIndex
+					);
+					if (specItems) {
+						return specItems;
+					}
+				}
+			}
 		}
 		return buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
 	}
