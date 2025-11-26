@@ -1,0 +1,43 @@
+{
+  "protocolDesignVersion": 1,
+  "hostMacroGlobal": {
+	"def": "def (acs, $TOPICS, self, trigger, debug_msg) :",
+	"header": "sub /behaviour/add/collaboration-endpoint/host/x64@codevalley( acs, self, trigger, debug_msg) -> {",
+	"footer": "}\nend"
+  },
+  "joinMacroGlobal": {
+	"def": "def (acs, $TOPICS, self, trigger, debug_msg) :",
+	"header": "sub /behaviour/add/collaboration-endpoint/join/x64@codevalley( acs, self, trigger, debug_msg) -> {",
+	"footer": "}\nend"
+  },
+  "modeTemplates": [
+    {
+      "name": "collect-peer-sum-and-issue-offsets",
+      "topics": [
+        { "name": "first offset", "role": "host", "constraint": "requirement", "type": "integer", "comment":"first offset as dictated by the host" },
+        { "name": "peer sum", "role": "host", "constraint": "obligation", "type": "integer", "comment":"sum of all peer quantity requests" },
+        { "name": "requested quantity", "role": "join", "constraint": "requirement", "type": "integer", "comment":"quantity required by the peer" },
+        { "name": "issued offset", "role": "join", "constraint": "obligation", "type": "integer", "comment":"offset issued from which the required quantity is available" }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect-and-distribute/agent-integer/default/x64@codevalley(acs, $, $TOPIC_0, $TOPIC_1, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+		"sub /behaviour/fold-and-allocate/agent-integer/default/x64@codevalley(acs, $, $TOPIC_2, $TOPIC_3, trigger, debug_msg)"
+	  ]
+    },
+    {
+      "name": "group-peers",
+      "topics": [
+        { "name": "hosted group", "role": "host", "constraint": "requirement", "type": "abstraction", "comment":"group dictated by host" },
+        { "name": "joined group", "role": "join", "constraint": "obligation", "type": "abstraction", "comment":"group joined by peer" }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect-and-distribute/agent-group/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+		"sub /behaviour/fold-and-allocate/agent-group/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+	  ]
+    }
+  ]
+}

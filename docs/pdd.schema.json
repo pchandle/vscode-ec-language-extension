@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Protocol Design Definition (.pdd)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["protocolDesignVersion", "hostMacroGlobal", "joinMacroGlobal", "modeTemplates"],
+  "properties": {
+    "protocolDesignVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "hostMacroGlobal": {
+      "type": "object",
+      "required": ["def", "header", "footer"],
+      "properties": {
+        "def": { "type": "string" },
+        "header": { "type": "string" },
+        "footer": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "joinMacroGlobal": {
+      "type": "object",
+      "required": ["def", "header", "footer"],
+      "properties": {
+        "def": { "type": "string" },
+        "header": { "type": "string" },
+        "footer": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "modeTemplates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "topics", "hostMacroTemplates", "joinMacroTemplates"],
+        "properties": {
+          "name": { "type": "string" },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "role", "constraint", "type"],
+              "properties": {
+                "name": { "type": "string" },
+                "role": { "enum": ["host", "join"] },
+                "constraint": { "enum": ["requirement", "obligation"] },
+                "type": { "enum": ["abstraction", "integer", "string", "boolean"] }
+              },
+              "additionalProperties": true
+            }
+          },
+          "hostMacroTemplates": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "joinMacroTemplates": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

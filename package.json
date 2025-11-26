@@ -82,21 +82,39 @@
               }
             }
           },
-          {
-            "title": "Hover",
-            "properties": {
-              "emergent.hover.disabled": {
-                "scope": "resource",
-                "type": "boolean",
-                "default": true,
-                "description": "Disable hover popups for Emergent Coding files."
-              }
-            }
-          },
-          {
-            "title": "Extension Debugging",
-            "properties": {
-              "emergent.maxNumberOfProblems": {
+  {
+    "title": "Hover",
+    "properties": {
+      "emergent.hover.disabled": {
+        "scope": "resource",
+        "type": "boolean",
+        "default": true,
+        "description": "Disable hover popups for Emergent Coding files."
+      }
+    }
+  },
+  {
+    "title": "Protocol Design Definitions",
+    "properties": {
+      "protocolDesign.definitionPaths": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "default": [],
+        "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder."
+      },
+      "protocolDesign.activeDefinition": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`."
+      }
+    }
+  },
+  {
+    "title": "Extension Debugging",
+    "properties": {
+      "emergent.maxNumberOfProblems": {
                 "scope": "resource",
             "type": "number",
             "default": 100,
@@ -167,19 +185,24 @@
         "title": "Emergent: Open Specification at Position",
         "category": "Emergent"
       },
-      {
-        "command": "emergent.openLocalSpecificationAtPosition",
-        "title": "Emergent: Open Local Specification at Position",
-        "category": "Emergent"
-      },
-      {
-        "command": "emergent.newContractSpec",
-        "title": "Emergent: New Contract Specification",
-        "category": "Emergent"
+    {
+      "command": "emergent.openLocalSpecificationAtPosition",
+      "title": "Emergent: Open Local Specification at Position",
+      "category": "Emergent"
+    },
+    {
+      "command": "emergent.newContractSpec",
+      "title": "Emergent: New Contract Specification",
+      "category": "Emergent"
       },
       {
         "command": "emergent.reloadSpecifications",
         "title": "Emergent: Reload Specifications",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.exportProtocolSpec",
+        "title": "Emergent: Export Protocol Spec (from .pdes)",
         "category": "Emergent"
       }
     ],
@@ -206,13 +229,23 @@
         "viewType": "protocolSpecEditor",
         "displayName": "Protocol Specification Editor",
         "selector": [
-          {
-            "filenamePattern": "*.pspec"
-          }
-        ],
-        "priority": "default"
+      {
+        "filenamePattern": "*.pspec"
       }
-    ]
+    ],
+    "priority": "default"
+  },
+  {
+    "viewType": "protocolDesignEditor",
+    "displayName": "Protocol Design Editor",
+    "selector": [
+      {
+        "filenamePattern": "*.pdes"
+      }
+    ],
+    "priority": "default"
+  }
+]
   },
   "scripts": {
     "build": "npm run build:webview && npm run compile",

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Protocol Design (.pdes)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["protocolDesignVersion", "classification", "description", "policy", "modes"],
+  "properties": {
+    "protocolDesignVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "classification": {
+      "type": "string",
+      "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$"
+    },
+    "description": { "type": "string" },
+    "policy": {
+      "type": ["string", "number"]
+    },
+    "modes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["modeTemplate", "topics"],
+        "properties": {
+          "modeTemplate": { "type": "string" },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "properties"],
+              "properties": {
+                "name": { "type": "string" },
+                "properties": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": ["string", "number", "boolean", "object", "array", "null"]
+                  }
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

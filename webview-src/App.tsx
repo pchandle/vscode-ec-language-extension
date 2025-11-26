@@ -13,6 +13,7 @@ import {
 } from "@rjsf/utils";
 import { HostMessage, WebviewMessage } from "./types";
 import { vscode } from "./vscode";
+import { PdesEditor } from "./pdes/PdesEditor";
 
 type FormData = Record<string, unknown> | null | undefined;
 
@@ -27,6 +28,9 @@ const REQUIREMENT_TYPE_OPTIONS = [
 export default function App() {
   const [schema, setSchema] = useState<any>();
   const [formData, setFormData] = useState<FormData>({});
+  const [pdesData, setPdesData] = useState<any | null>(null);
+  const [pdd, setPdd] = useState<any | null>(null);
+  const [pddPath, setPddPath] = useState<string | undefined>();
   const [hostErrors, setHostErrors] = useState<string[]>([]);
   const [parseError, setParseError] = useState<string | undefined>();
   const [formErrors, setFormErrors] = useState<RJSFValidationError[]>([]);
@@ -36,16 +40,31 @@ export default function App() {
   const [extraErrors, setExtraErrors] = useState<ErrorSchema | undefined>();
   const liveFormDataRef = useRef<FormData>({});
   const [formVersion, setFormVersion] = useState(0);
+  const [editorMode, setEditorMode] = useState<"schema" | "pdes">("schema");
 
   useEffect(() => {
     const handler = (event: MessageEvent<HostMessage>) => {
       const message = event.data;
       if (message.type === "state") {
+        setEditorMode("schema");
         setSchema(message.schema);
         const nextValue = message.value ?? {};
         setFormData(nextValue);
+        setPdesData(null);
         liveFormDataRef.current = nextValue;
         setFormVersion((v) => v + 1);
+        setHostErrors(message.errors ?? []);
+        setParseError(message.parseError);
+        setFormErrors([]);
+      } else if (message.type === "pdesState") {
+        setEditorMode("pdes");
+        setSchema(undefined);
+        setFormData(undefined);
+        const nextValue = message.value ?? {};
+        setPdesData(nextValue);
+        setPdd((message as any).pdd ?? null);
+        setPddPath((message as any).pddPath);
+        liveFormDataRef.current = nextValue;
         setHostErrors(message.errors ?? []);
         setParseError(message.parseError);
         setFormErrors([]);
@@ -267,6 +286,56 @@ export default function App() {
       validationTimer.current = undefined;
     }, delayMs);
   };
+
+  if (editorMode === "pdes") {
+    return (
+      <div style={styles.container}>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            input, select, textarea, button {
+              font-family: var(--vscode-font-family, "Segoe WPC", "Segoe UI", sans-serif);
+              font-size: 13px;
+            }
+          `,
+          }}
+        />
+        <header style={styles.header}>
+          <div style={styles.title}>Protocol Design</div>
+          <div style={styles.headerActions}>
+            {hostErrors.length > 0 ? <div style={styles.errorBadge}>Errors</div> : <div style={styles.okBadge}>Valid</div>}
+          </div>
+        </header>
+        {parseError ? <div style={styles.bannerError}>Unable to parse JSON: {parseError}</div> : null}
+        {hostErrors.length > 0 ? (
+          <div style={styles.bannerWarning}>
+            <div style={styles.bannerTitle}>Validation</div>
+            <ul style={styles.errorList}>
+              {hostErrors.map((err) => (
+                <li key={err}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        <PdesEditor
+          value={pdesData}
+          pdd={pdd}
+          pddPath={pddPath}
+          onChange={(next) => {
+            liveFormDataRef.current = next;
+            setPdesData(next);
+            if (pendingUpdate.current) {
+              window.clearTimeout(pendingUpdate.current);
+            }
+            pendingUpdate.current = window.setTimeout(() => {
+              vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current } as WebviewMessage);
+              pendingUpdate.current = undefined;
+            }, 250);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>

@@ -1084,7 +1084,7 @@
             }
             return dispatcher.useContext(Context);
           }
-          function useState4(initialState) {
+          function useState5(initialState) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useState(initialState);
           }
@@ -1112,7 +1112,7 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useCallback(callback, deps);
           }
-          function useMemo3(create, deps) {
+          function useMemo4(create, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useMemo(create, deps);
           }
@@ -1884,10 +1884,10 @@
           exports2.useImperativeHandle = useImperativeHandle;
           exports2.useInsertionEffect = useInsertionEffect;
           exports2.useLayoutEffect = useLayoutEffect;
-          exports2.useMemo = useMemo3;
+          exports2.useMemo = useMemo4;
           exports2.useReducer = useReducer2;
           exports2.useRef = useRef2;
-          exports2.useState = useState4;
+          exports2.useState = useState5;
           exports2.useSyncExternalStore = useSyncExternalStore;
           exports2.useTransition = useTransition;
           exports2.version = ReactVersion;
@@ -2383,9 +2383,9 @@
           if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
             __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
           }
-          var React2 = require_react();
+          var React3 = require_react();
           var Scheduler = require_scheduler();
-          var ReactSharedInternals = React2.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React3.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           var suppressWarning = false;
           function setSuppressWarning(newSuppressWarning) {
             {
@@ -3990,7 +3990,7 @@
             {
               if (props.value == null) {
                 if (typeof props.children === "object" && props.children !== null) {
-                  React2.Children.forEach(props.children, function(child) {
+                  React3.Children.forEach(props.children, function(child) {
                     if (child == null) {
                       return;
                     }
@@ -4486,15 +4486,15 @@
             };
           }
           var warnValidStyle$1 = warnValidStyle;
-          function createDangerousStringForStyles(styles2) {
+          function createDangerousStringForStyles(styles3) {
             {
               var serialized = "";
               var delimiter = "";
-              for (var styleName in styles2) {
-                if (!styles2.hasOwnProperty(styleName)) {
+              for (var styleName in styles3) {
+                if (!styles3.hasOwnProperty(styleName)) {
                   continue;
                 }
-                var styleValue = styles2[styleName];
+                var styleValue = styles3[styleName];
                 if (styleValue != null) {
                   var isCustomProperty = styleName.indexOf("--") === 0;
                   serialized += delimiter + (isCustomProperty ? styleName : hyphenateStyleName(styleName)) + ":";
@@ -4505,19 +4505,19 @@
               return serialized || null;
             }
           }
-          function setValueForStyles(node, styles2) {
+          function setValueForStyles(node, styles3) {
             var style2 = node.style;
-            for (var styleName in styles2) {
-              if (!styles2.hasOwnProperty(styleName)) {
+            for (var styleName in styles3) {
+              if (!styles3.hasOwnProperty(styleName)) {
                 continue;
               }
               var isCustomProperty = styleName.indexOf("--") === 0;
               {
                 if (!isCustomProperty) {
-                  warnValidStyle$1(styleName, styles2[styleName]);
+                  warnValidStyle$1(styleName, styles3[styleName]);
                 }
               }
-              var styleValue = dangerousStyleValue(styleName, styles2[styleName], isCustomProperty);
+              var styleValue = dangerousStyleValue(styleName, styles3[styleName], isCustomProperty);
               if (styleName === "float") {
                 styleName = "cssFloat";
               }
@@ -4531,9 +4531,9 @@
           function isValueEmpty(value) {
             return value == null || typeof value === "boolean" || value === "";
           }
-          function expandShorthandMap(styles2) {
+          function expandShorthandMap(styles3) {
             var expanded = {};
-            for (var key in styles2) {
+            for (var key in styles3) {
               var longhands = shorthandToLonghand[key] || [key];
               for (var i2 = 0; i2 < longhands.length; i2++) {
                 expanded[longhands[i2]] = key;
@@ -23559,7 +23559,7 @@
       if (true) {
         (function() {
           "use strict";
-          var React2 = require_react();
+          var React3 = require_react();
           var REACT_ELEMENT_TYPE = Symbol.for("react.element");
           var REACT_PORTAL_TYPE = Symbol.for("react.portal");
           var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
@@ -23585,7 +23585,7 @@
             }
             return null;
           }
-          var ReactSharedInternals = React2.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React3.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           function error(format) {
             {
               {
@@ -24435,11 +24435,11 @@
               return jsxWithValidation(type, props, key, false);
             }
           }
-          var jsx3 = jsxWithValidationDynamic;
-          var jsxs2 = jsxWithValidationStatic;
+          var jsx4 = jsxWithValidationDynamic;
+          var jsxs3 = jsxWithValidationStatic;
           exports2.Fragment = REACT_FRAGMENT_TYPE;
-          exports2.jsx = jsx3;
-          exports2.jsxs = jsxs2;
+          exports2.jsx = jsx4;
+          exports2.jsxs = jsxs3;
         })();
       }
     }
@@ -36211,7 +36211,7 @@
   var import_client = __toESM(require_client());
 
   // webview-src/App.tsx
-  var import_react20 = __toESM(require_react());
+  var import_react21 = __toESM(require_react());
 
   // node_modules/@rjsf/core/lib/components/Form.js
   var import_jsx_runtime46 = __toESM(require_jsx_runtime());
@@ -44470,8 +44470,586 @@
     getState: () => void 0
   };
 
-  // webview-src/App.tsx
+  // webview-src/pdes/PdesEditor.tsx
+  var import_react20 = __toESM(require_react());
+
+  // webview-src/pdes/transform.ts
+  function normalizeIdentifier(name, counter) {
+    const base = name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+    const count = counter[base] ?? 0;
+    counter[base] = count + 1;
+    if (count === 0) {
+      return base || "topic";
+    }
+    return `${base || "topic"}${count}`;
+  }
+  function topicIdLists(ids) {
+    const req = [];
+    const ob = [];
+    ids.forEach((item) => {
+      if (item.constraint === "requirement") {
+        req.push(item.id);
+      } else if (item.constraint === "obligation") {
+        ob.push(item.id);
+      }
+    });
+    return { req, ob };
+  }
+  function buildMacro(global2, templates2, defParams, modeTopicIds) {
+    const lines = [];
+    lines.push(global2.def.replace("$TOPICS", defParams.join(", ")));
+    lines.push(global2.header);
+    templates2.forEach((tpl, modeIdx) => {
+      const ids = modeTopicIds[modeIdx] ?? [];
+      const replaced = tpl.replace(/\$TOPIC_(\d+)/g, (_2, n2) => ids[Number(n2)] ?? "");
+      lines.push(replaced);
+    });
+    lines.push(global2.footer);
+    return lines.join("\n");
+  }
+  function buildPreview(design, pdd) {
+    if (!pdd) {
+      return { hostMacro: "", joinMacro: "", errors: ["No protocol design definition loaded."] };
+    }
+    const errors = [];
+    const modeTopicIds = [];
+    const allIds = [];
+    const counter = {};
+    const hostTemplates = [];
+    const joinTemplates = [];
+    design.modes?.forEach((mode, modeIdx) => {
+      const template = (pdd.modeTemplates || []).find((t) => t.name === mode.modeTemplate);
+      if (!template) {
+        errors.push(`No mode template found for "${mode.modeTemplate}"`);
+        modeTopicIds.push([]);
+        return;
+      }
+      const ids = [];
+      (mode.topics || []).forEach((topicInstance, topicIdx) => {
+        const templateTopic = template.topics?.[topicIdx];
+        if (!templateTopic) {
+          errors.push(`Topic #${topicIdx + 1} missing template in mode ${template.name}`);
+          return;
+        }
+        const id = normalizeIdentifier(topicInstance.name ?? templateTopic.name ?? `topic${topicIdx + 1}`, counter);
+        ids.push(id);
+        allIds.push({ id, constraint: templateTopic.constraint });
+      });
+      modeTopicIds.push(ids);
+      hostTemplates.push(...template.hostMacroTemplates ?? []);
+      joinTemplates.push(...template.joinMacroTemplates ?? []);
+    });
+    const { req, ob } = topicIdLists(allIds);
+    const defParams = [...req, ...ob];
+    const hostMacro = pdd.hostMacroGlobal && pdd.hostMacroGlobal.def ? buildMacro(pdd.hostMacroGlobal, hostTemplates, defParams, modeTopicIds) : "";
+    const joinMacro = pdd.joinMacroGlobal && pdd.joinMacroGlobal.def ? buildMacro(pdd.joinMacroGlobal, joinTemplates, defParams, modeTopicIds) : "";
+    return { hostMacro, joinMacro, errors };
+  }
+
+  // webview-src/pdes/PdesEditor.tsx
   var import_jsx_runtime48 = __toESM(require_jsx_runtime());
+  var propertyFields = {
+    abstraction: [{ key: "protocol", label: "Protocol", type: "text" }],
+    integer: [
+      { key: "minimum", label: "Minimum", type: "number" },
+      { key: "maximum", label: "Maximum", type: "number" },
+      { key: "hint", label: "Hint", type: "text" }
+    ],
+    string: [
+      { key: "length", label: "Length", type: "number" },
+      { key: "hint", label: "Hint", type: "text" }
+    ],
+    boolean: []
+  };
+  function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChange }) {
+    const design = value ? {
+      ...value,
+      classification: value.classification ?? value.name ?? ""
+    } : {
+      protocolDesignVersion: pdd?.protocolDesignVersion ?? 1,
+      classification: "",
+      description: "",
+      policy: "",
+      modes: []
+    };
+    const [newModeTemplate, setNewModeTemplate] = (0, import_react20.useState)("");
+    const [collapsedModes, setCollapsedModes] = (0, import_react20.useState)(() => {
+      const initial = {};
+      (design.modes ?? []).forEach((_2, idx) => {
+        initial[idx] = true;
+      });
+      return initial;
+    });
+    const templates2 = (0, import_react20.useMemo)(() => {
+      if (!pdd) {
+        return {};
+      }
+      const map = {};
+      for (const t of pdd.modeTemplates ?? []) {
+        if (t?.name) {
+          map[t.name] = t;
+        }
+      }
+      return map;
+    }, [pdd]);
+    const updateDesign = (partial) => {
+      onChange({ ...design, ...partial });
+    };
+    const updateModeTopic = (modeIndex, topicIndex, next) => {
+      const modes = [...design.modes ?? []];
+      const mode = { ...modes[modeIndex] ?? { modeTemplate: "", topics: [] } };
+      const topics = [...mode.topics ?? []];
+      topics[topicIndex] = next;
+      mode.topics = topics;
+      modes[modeIndex] = mode;
+      updateDesign({ modes });
+    };
+    const addMode = () => {
+      if (!newModeTemplate || !templates2[newModeTemplate]) {
+        return;
+      }
+      const template = templates2[newModeTemplate];
+      const topics = (template.topics || []).map((t) => ({
+        name: t.name || "",
+        properties: {}
+      }));
+      const modes = [...design.modes ?? [], { modeTemplate: template.name, topics }];
+      updateDesign({ modes });
+      setCollapsedModes((prev) => ({ ...prev, [modes.length - 1]: false }));
+    };
+    const moveMode = (index, delta) => {
+      const modes = [...design.modes ?? []];
+      const target = index + delta;
+      if (target < 0 || target >= modes.length)
+        return;
+      const [item] = modes.splice(index, 1);
+      modes.splice(target, 0, item);
+      updateDesign({ modes });
+      setCollapsedModes((prev) => {
+        const next = { ...prev };
+        const current = next[index];
+        next[index] = next[target];
+        next[target] = current;
+        return next;
+      });
+    };
+    const removeMode = (index) => {
+      const modes = [...design.modes ?? []];
+      modes.splice(index, 1);
+      updateDesign({ modes });
+      setCollapsedModes((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        const reordered = {};
+        Object.entries(next).forEach(([k2, v2]) => {
+          const num = Number(k2);
+          reordered[num > index ? num - 1 : num] = v2;
+        });
+        return reordered;
+      });
+    };
+    const toggleMode = (index) => {
+      setCollapsedModes((prev) => ({ ...prev, [index]: !prev[index] }));
+    };
+    const setAllModesCollapsed = (collapsed) => {
+      const next = {};
+      (design.modes ?? []).forEach((_2, idx) => {
+        next[idx] = collapsed;
+      });
+      setCollapsedModes(next);
+    };
+    const renderHeader = () => /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("section", { style: styles.section, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionHeader, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("h2", { style: styles.sectionTitle, children: "Protocol Design" }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.meta, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("span", { children: [
+            "Version: ",
+            design.protocolDesignVersion
+          ] }),
+          pddPath ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("span", { style: styles.metaMuted, children: [
+            "PDD: ",
+            pddPath
+          ] }) : null
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.fieldGrid, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("label", { style: styles.label, children: "Classification" }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+          "input",
+          {
+            style: styles.input,
+            value: design.classification ?? "",
+            onChange: (e2) => updateDesign({ classification: e2.target.value })
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("label", { style: styles.label, children: "Description" }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+          "textarea",
+          {
+            style: { ...styles.input, minHeight: 60 },
+            value: design.description ?? "",
+            onChange: (e2) => updateDesign({ description: e2.target.value })
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("label", { style: styles.label, children: "Policy" }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+          "input",
+          {
+            style: styles.input,
+            value: design.policy ?? "",
+            onChange: (e2) => updateDesign({ policy: e2.target.value })
+          }
+        )
+      ] })
+    ] });
+    const renderTopic = (topic, template, modeIndex, topicIndex) => {
+      const type = template?.type ?? "abstraction";
+      const fields2 = propertyFields[type] ?? [];
+      return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.topicCard, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.topicHeader, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.topicTitle, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.badge, children: template?.role ?? "?" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.badge, children: template?.constraint ?? "?" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.badge, children: template?.type ?? "?" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+              "input",
+              {
+                style: styles.topicName,
+                value: topic.name ?? "",
+                onChange: (e2) => updateModeTopic(modeIndex, topicIndex, { ...topic, name: e2.target.value })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.topicMeta, children: template?.name ?? "Topic" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.topicBody, children: [
+          fields2.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.metaMuted, children: "No properties" }) : null,
+          fields2.map((field) => /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("label", { style: styles.propertyRow, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.label, children: field.label }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+              "input",
+              {
+                style: styles.input,
+                type: field.type === "number" ? "number" : "text",
+                value: topic.properties?.[field.key] ?? "",
+                onChange: (e2) => updateModeTopic(modeIndex, topicIndex, {
+                  ...topic,
+                  properties: {
+                    ...topic.properties ?? {},
+                    [field.key]: field.type === "number" ? e2.target.value === "" ? void 0 : Number(e2.target.value) : e2.target.value
+                  }
+                })
+              }
+            )
+          ] }, field.key))
+        ] })
+      ] }, topicIndex);
+    };
+    const renderMode = (mode, index) => {
+      const template = templates2[mode.modeTemplate];
+      const templateTopics = template?.topics ?? [];
+      const isCollapsed = collapsedModes[index] ?? false;
+      const isFirst = index === 0;
+      const isLast = index >= (design.modes?.length ?? 0) - 1;
+      return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeCard, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeHeader, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeTitle, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.badge, children: "Mode" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("strong", { children: mode.modeTemplate })
+          ] }),
+          !template ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.metaMuted, children: "Template not found" }) : null,
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeActions, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => toggleMode(index), title: isCollapsed ? "Expand" : "Collapse", children: isCollapsed ? "\u25B8" : "\u25BE" }),
+            !isFirst ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => moveMode(index, -1), title: "Move up", children: "\u2191" }) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.iconPlaceholder }),
+            !isLast ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => moveMode(index, 1), title: "Move down", children: "\u2193" }) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.iconPlaceholder }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.dangerButton, onClick: () => removeMode(index), title: "Delete mode", children: "\u{1F5D1}\uFE0F" })
+          ] })
+        ] }),
+        !isCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.topicList, children: mode.topics?.map((topic, tIdx) => renderTopic(topic, templateTopics[tIdx], index, tIdx)) }) : null
+      ] }, index);
+    };
+    const preview = (0, import_react20.useMemo)(() => buildPreview(design, pdd), [design, pdd]);
+    return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.wrapper, children: [
+      renderHeader(),
+      parseError ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.bannerError, children: [
+        "Parse error: ",
+        parseError
+      ] }) : null,
+      hostErrors && hostErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.bannerWarning, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("strong", { children: "Validation:" }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("ul", { children: hostErrors.map((e2) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("li", { children: e2 }, e2)) })
+      ] }) : null,
+      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("section", { style: styles.section, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionHeader, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("h2", { style: styles.sectionTitle, children: "Modes" }),
+          !pdd ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.metaMuted, children: "No .pdd loaded" }) : null,
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeHeaderActions, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => setAllModesCollapsed(false), children: "Expand all" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => setAllModesCollapsed(true), children: "Collapse all" })
+          ] }),
+          pdd ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.addModeRow, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)(
+              "select",
+              {
+                style: styles.select,
+                value: newModeTemplate,
+                onChange: (e2) => setNewModeTemplate(e2.target.value),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("option", { value: "", children: "Select template\u2026" }),
+                  pdd.modeTemplates?.map((t) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("option", { value: t.name, children: t.name }, t.name))
+                ]
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.addButton, onClick: addMode, disabled: !newModeTemplate, children: "+ Add mode" })
+          ] }) : null
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.modeList, children: design.modes?.length ? design.modes.map((m2, idx) => renderMode(m2, idx)) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.bannerInfo, children: "No modes defined." }) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("section", { style: styles.section, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionHeader, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("h2", { style: styles.sectionTitle, children: "Macro preview" }),
+          preview.errors.length ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.metaMuted, children: "Fix template issues to preview" }) : null
+        ] }),
+        preview.errors.length ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.bannerWarning, children: /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("ul", { children: preview.errors.map((e2) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("li", { children: e2 }, e2)) }) }) : null,
+        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.macroGrid, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.macroBlock, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.macroTitle, children: "Host macro" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("textarea", { style: styles.codeArea, readOnly: true, value: preview.hostMacro })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.macroBlock, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.macroTitle, children: "Join macro" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("textarea", { style: styles.codeArea, readOnly: true, value: preview.joinMacro })
+          ] })
+        ] })
+      ] })
+    ] });
+  }
+  var styles = {
+    wrapper: {
+      display: "grid",
+      gap: 12,
+      color: "var(--vscode-editor-foreground)",
+      paddingTop: 6
+    },
+    section: {
+      border: "1px solid var(--vscode-editorWidget-border)",
+      borderRadius: 8,
+      padding: 12,
+      background: "var(--vscode-editor-background)",
+      marginTop: 4,
+      width: "100%",
+      boxSizing: "border-box"
+    },
+    sectionHeader: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8
+    },
+    sectionTitle: {
+      fontSize: 16,
+      margin: 0
+    },
+    meta: {
+      display: "flex",
+      gap: 12,
+      fontSize: 12
+    },
+    metaMuted: {
+      color: "var(--vscode-descriptionForeground)",
+      fontSize: 12
+    },
+    fieldGrid: {
+      display: "grid",
+      gridTemplateColumns: "140px minmax(0, 1fr)",
+      gap: "8px 10px",
+      alignItems: "center"
+    },
+    label: {
+      fontWeight: 500
+    },
+    input: {
+      width: "100%",
+      padding: "6px 8px",
+      borderRadius: 6,
+      border: "1px solid var(--vscode-input-border)",
+      background: "var(--vscode-input-background)",
+      color: "var(--vscode-input-foreground)"
+    },
+    modeList: {
+      display: "grid",
+      gap: 10
+    },
+    modeCard: {
+      border: "1px solid var(--vscode-editorWidget-border)",
+      borderRadius: 8,
+      padding: 10,
+      background: "var(--vscode-editor-background)"
+    },
+    modeHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8
+    },
+    modeTitle: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      fontSize: 14
+    },
+    topicList: {
+      display: "grid",
+      gap: 8
+    },
+    modeActions: {
+      display: "flex",
+      gap: 6
+    },
+    modeHeaderActions: {
+      display: "flex",
+      gap: 6,
+      alignItems: "center"
+    },
+    iconButton: {
+      border: "1px solid var(--vscode-input-border)",
+      background: "var(--vscode-button-secondaryBackground)",
+      color: "var(--vscode-button-secondaryForeground)",
+      borderRadius: 6,
+      padding: "2px 6px",
+      cursor: "pointer"
+    },
+    iconPlaceholder: {
+      display: "inline-block",
+      width: 26
+    },
+    dangerButton: {
+      border: "1px solid var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground))",
+      background: "transparent",
+      color: "var(--vscode-inputValidation-errorForeground, var(--vscode-errorForeground))",
+      borderRadius: 6,
+      padding: "2px 8px",
+      cursor: "pointer",
+      marginLeft: 6
+    },
+    topicCard: {
+      border: "1px solid var(--vscode-input-border)",
+      borderRadius: 6,
+      padding: 8,
+      background: "var(--vscode-editor-background)"
+    },
+    topicHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 6,
+      gap: 8
+    },
+    topicTitle: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      flexWrap: "wrap"
+    },
+    badge: {
+      background: "var(--vscode-button-secondaryBackground, #333)",
+      color: "var(--vscode-button-secondaryForeground, #fff)",
+      borderRadius: 10,
+      padding: "2px 8px",
+      fontSize: 12,
+      textTransform: "capitalize"
+    },
+    topicName: {
+      border: "1px solid var(--vscode-input-border)",
+      borderRadius: 6,
+      padding: "4px 6px",
+      minWidth: 160,
+      background: "var(--vscode-input-background)",
+      color: "var(--vscode-input-foreground)"
+    },
+    topicMeta: {
+      color: "var(--vscode-descriptionForeground)",
+      fontSize: 12
+    },
+    topicBody: {
+      display: "grid",
+      gap: 6
+    },
+    propertyRow: {
+      display: "grid",
+      gridTemplateColumns: "120px minmax(0, 1fr)",
+      gap: 8,
+      alignItems: "center"
+    },
+    bannerError: {
+      background: "var(--vscode-inputValidation-errorBackground)",
+      color: "var(--vscode-inputValidation-errorForeground)",
+      border: "1px solid var(--vscode-inputValidation-errorBorder)",
+      padding: 10,
+      borderRadius: 6
+    },
+    bannerWarning: {
+      background: "var(--vscode-inputValidation-warningBackground)",
+      color: "var(--vscode-inputValidation-warningForeground)",
+      border: "1px solid var(--vscode-inputValidation-warningBorder)",
+      padding: 10,
+      borderRadius: 6
+    },
+    bannerInfo: {
+      background: "var(--vscode-inputValidation-infoBackground)",
+      color: "var(--vscode-inputValidation-infoForeground)",
+      border: "1px solid var(--vscode-inputValidation-infoBorder)",
+      padding: 10,
+      borderRadius: 6
+    },
+    addModeRow: {
+      display: "flex",
+      gap: 8,
+      alignItems: "center"
+    },
+    select: {
+      padding: "6px 8px",
+      borderRadius: 6,
+      border: "1px solid var(--vscode-input-border)",
+      background: "var(--vscode-input-background)",
+      color: "var(--vscode-input-foreground)"
+    },
+    addButton: {
+      border: "1px solid var(--vscode-button-border, var(--vscode-input-border))",
+      background: "var(--vscode-button-background)",
+      color: "var(--vscode-button-foreground)",
+      borderRadius: 6,
+      padding: "6px 10px",
+      cursor: "pointer"
+    },
+    macroGrid: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 12
+    },
+    macroBlock: {
+      display: "grid",
+      gap: 6
+    },
+    macroTitle: {
+      fontWeight: 600
+    },
+    codeArea: {
+      width: "100%",
+      minHeight: 160,
+      fontFamily: "var(--vscode-editor-font-family)",
+      fontSize: 12,
+      background: "var(--vscode-editor-background)",
+      color: "var(--vscode-editor-foreground)",
+      border: "1px solid var(--vscode-editorWidget-border)",
+      borderRadius: 6,
+      padding: 8,
+      resize: "vertical"
+    }
+  };
+
+  // webview-src/App.tsx
+  var import_jsx_runtime49 = __toESM(require_jsx_runtime());
   var REQUIREMENT_TYPE_OPTIONS = [
     { value: "abstraction", label: "Protocol" },
     { value: "integer", label: "Integer" },
@@ -44480,26 +45058,44 @@
     { value: "site", label: "Site" }
   ];
   function App() {
-    const [schema, setSchema] = (0, import_react20.useState)();
-    const [formData, setFormData] = (0, import_react20.useState)({});
-    const [hostErrors, setHostErrors] = (0, import_react20.useState)([]);
-    const [parseError, setParseError] = (0, import_react20.useState)();
-    const [formErrors, setFormErrors] = (0, import_react20.useState)([]);
-    const [collapsedState, setCollapsedState] = (0, import_react20.useState)({});
-    const pendingUpdate = (0, import_react20.useRef)(void 0);
-    const validationTimer = (0, import_react20.useRef)(void 0);
-    const [extraErrors, setExtraErrors] = (0, import_react20.useState)();
-    const liveFormDataRef = (0, import_react20.useRef)({});
-    const [formVersion, setFormVersion] = (0, import_react20.useState)(0);
-    (0, import_react20.useEffect)(() => {
+    const [schema, setSchema] = (0, import_react21.useState)();
+    const [formData, setFormData] = (0, import_react21.useState)({});
+    const [pdesData, setPdesData] = (0, import_react21.useState)(null);
+    const [pdd, setPdd] = (0, import_react21.useState)(null);
+    const [pddPath, setPddPath] = (0, import_react21.useState)();
+    const [hostErrors, setHostErrors] = (0, import_react21.useState)([]);
+    const [parseError, setParseError] = (0, import_react21.useState)();
+    const [formErrors, setFormErrors] = (0, import_react21.useState)([]);
+    const [collapsedState, setCollapsedState] = (0, import_react21.useState)({});
+    const pendingUpdate = (0, import_react21.useRef)(void 0);
+    const validationTimer = (0, import_react21.useRef)(void 0);
+    const [extraErrors, setExtraErrors] = (0, import_react21.useState)();
+    const liveFormDataRef = (0, import_react21.useRef)({});
+    const [formVersion, setFormVersion] = (0, import_react21.useState)(0);
+    const [editorMode, setEditorMode] = (0, import_react21.useState)("schema");
+    (0, import_react21.useEffect)(() => {
       const handler = (event) => {
         const message = event.data;
         if (message.type === "state") {
+          setEditorMode("schema");
           setSchema(message.schema);
           const nextValue = message.value ?? {};
           setFormData(nextValue);
+          setPdesData(null);
           liveFormDataRef.current = nextValue;
           setFormVersion((v2) => v2 + 1);
+          setHostErrors(message.errors ?? []);
+          setParseError(message.parseError);
+          setFormErrors([]);
+        } else if (message.type === "pdesState") {
+          setEditorMode("pdes");
+          setSchema(void 0);
+          setFormData(void 0);
+          const nextValue = message.value ?? {};
+          setPdesData(nextValue);
+          setPdd(message.pdd ?? null);
+          setPddPath(message.pddPath);
+          liveFormDataRef.current = nextValue;
           setHostErrors(message.errors ?? []);
           setParseError(message.parseError);
           setFormErrors([]);
@@ -44511,7 +45107,7 @@
         window.removeEventListener("message", handler);
       };
     }, []);
-    const enhancedSchema = (0, import_react20.useMemo)(() => {
+    const enhancedSchema = (0, import_react21.useMemo)(() => {
       if (!schema) {
         return void 0;
       }
@@ -44564,7 +45160,7 @@
       applyRequirementOptions(clone?.$defs?.obligation);
       return clone;
     }, [schema]);
-    const uiSchema = (0, import_react20.useMemo)(() => {
+    const uiSchema = (0, import_react21.useMemo)(() => {
       const buildRequirementUi = () => ({
         "ui:options": { orderable: true },
         items: {
@@ -44594,7 +45190,7 @@
         }
       };
     }, []);
-    const templates2 = (0, import_react20.useMemo)(
+    const templates2 = (0, import_react21.useMemo)(
       () => ({
         ArrayFieldTemplate: CardArrayFieldTemplate,
         FieldTemplate: CompactFieldTemplate,
@@ -44603,7 +45199,7 @@
       }),
       []
     );
-    const formContext = (0, import_react20.useMemo)(
+    const formContext = (0, import_react21.useMemo)(
       () => ({
         collapsedState,
         formErrors,
@@ -44641,10 +45237,10 @@
       }),
       [collapsedState, formErrors]
     );
-    const hasErrors = (0, import_react20.useMemo)(() => {
+    const hasErrors = (0, import_react21.useMemo)(() => {
       return Boolean(parseError || hostErrors && hostErrors.length > 0);
     }, [parseError, hostErrors]);
-    const [errorsCollapsed, setErrorsCollapsed] = (0, import_react20.useState)(true);
+    const [errorsCollapsed, setErrorsCollapsed] = (0, import_react21.useState)(true);
     const onChange = (data) => {
       liveFormDataRef.current = data.formData;
       setFormData(data.formData);
@@ -44659,14 +45255,14 @@
     const onBlur = () => {
       scheduleValidation(0);
     };
-    (0, import_react20.useEffect)(() => {
+    (0, import_react21.useEffect)(() => {
       return () => {
         if (pendingUpdate.current) {
           window.clearTimeout(pendingUpdate.current);
         }
       };
     }, []);
-    (0, import_react20.useEffect)(() => {
+    (0, import_react21.useEffect)(() => {
       if (!enhancedSchema && !schema) {
         return;
       }
@@ -44699,8 +45295,56 @@
         validationTimer.current = void 0;
       }, delayMs);
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.container, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+    if (editorMode === "pdes") {
+      return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.container, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          "style",
+          {
+            dangerouslySetInnerHTML: {
+              __html: `
+            input, select, textarea, button {
+              font-family: var(--vscode-font-family, "Segoe WPC", "Segoe UI", sans-serif);
+              font-size: 13px;
+            }
+          `
+            }
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("header", { style: styles2.header, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.title, children: "Protocol Design" }),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.okBadge, children: "Valid" }) })
+        ] }),
+        parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerError, children: [
+          "Unable to parse JSON: ",
+          parseError
+        ] }) : null,
+        hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerWarning, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) })
+        ] }) : null,
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          PdesEditor,
+          {
+            value: pdesData,
+            pdd,
+            pddPath,
+            onChange: (next) => {
+              liveFormDataRef.current = next;
+              setPdesData(next);
+              if (pendingUpdate.current) {
+                window.clearTimeout(pendingUpdate.current);
+              }
+              pendingUpdate.current = window.setTimeout(() => {
+                vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current });
+                pendingUpdate.current = void 0;
+              }, 250);
+            }
+          }
+        )
+      ] });
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.container, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
         "style",
         {
           dangerouslySetInnerHTML: {
@@ -44713,31 +45357,31 @@
           }
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("header", { style: styles.header, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.title, children: "Contract Specification" }),
-        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.headerActions, children: [
-          hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("header", { style: styles2.header, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.title, children: "Contract Specification" }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.headerActions, children: [
+          hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
             "button",
             {
               type: "button",
-              style: styles.collapseButton,
+              style: styles2.collapseButton,
               onClick: () => setErrorsCollapsed((v2) => !v2),
               "aria-label": errorsCollapsed ? "Show errors" : "Hide errors",
               children: errorsCollapsed ? "Show errors" : "Hide errors"
             }
           ) : null,
-          hasErrors ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.okBadge, children: "Valid" })
+          hasErrors ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.okBadge, children: "Valid" })
         ] })
       ] }),
-      parseError ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.bannerError, children: [
+      parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerError, children: [
         "Unable to parse JSON: ",
         parseError
       ] }) : null,
-      hostErrors.length > 0 && !errorsCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.bannerWarning, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.bannerTitle, children: "Schema validation" }),
-        /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("ul", { style: styles.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("li", { children: err }, err)) })
+      hostErrors.length > 0 && !errorsCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerWarning, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Schema validation" }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) })
       ] }) : null,
-      !schema ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.bannerInfo, children: "Loading schema\u2026" }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+      !schema ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerInfo, children: "Loading schema\u2026" }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
         lib_default,
         {
           schema: enhancedSchema ?? schema,
@@ -44752,7 +45396,7 @@
           noHtml5Validate: true,
           onChange,
           onBlur,
-          children: /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(import_jsx_runtime48.Fragment, {})
+          children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_jsx_runtime49.Fragment, {})
         }
       )
     ] });
@@ -44761,11 +45405,11 @@
     const { title, items, canAdd, onAddClick, required, formData, errorSchema, idSchema, formContext } = props;
     const path = idSchema.$id;
     const collapsedMap = formContext?.collapsedState?.[path] ?? {};
-    const prevKeysRef = (0, import_react20.useRef)([]);
+    const prevKeysRef = (0, import_react21.useRef)([]);
     const itemHasErrors = (index) => hasErrorsInSchema(errorSchema?.[index]);
     const itemDataAt = (index) => Array.isArray(formData) ? formData[index] : void 0;
     const allKeys = items.map((item) => item.key);
-    (0, import_react20.useEffect)(() => {
+    (0, import_react21.useEffect)(() => {
       const prevKeys = prevKeysRef.current;
       const currentKeys = items.map((item) => item.key);
       const newKeys = currentKeys.filter((k2) => !prevKeys.includes(k2));
@@ -44774,40 +45418,40 @@
       }
       prevKeysRef.current = currentKeys;
     }, [items, formContext, path]);
-    return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.arraySection, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionHeader, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionTitle, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.arraySection, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionHeader, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionTitle, children: [
           title,
-          required ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.requiredMarker, children: "*" }) : null
+          required ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionActions, children: [
-          items.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)(import_jsx_runtime48.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionActions, children: [
+          items.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
               "button",
               {
                 type: "button",
-                style: styles.smallButton,
+                style: styles2.smallButton,
                 onClick: () => formContext?.setAll?.(path, false, allKeys),
                 children: "Expand all"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
               "button",
               {
                 type: "button",
-                style: styles.smallButton,
+                style: styles2.smallButton,
                 onClick: () => formContext?.setAll?.(path, true, allKeys),
                 children: "Collapse all"
               }
             )
           ] }) : null,
-          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("button", { type: "button", style: styles.addButton, onClick: onAddClick, children: [
+          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("button", { type: "button", style: styles2.addButton, onClick: onAddClick, children: [
             "+ Add ",
             title?.replace(/s$/i, "") ?? "item"
           ] }) : null
         ] })
       ] }),
-      items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.emptyState, children: [
+      items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.emptyState, children: [
         "No ",
         title?.toLowerCase() ?? "items",
         " yet."
@@ -44822,67 +45466,67 @@
         const itemErrors = rawItemErrors.length ? rawItemErrors : item.rawErrors ?? [];
         const collapsed = collapsedMap[item.key] ?? true;
         const hasAnyErrors = showError || itemErrors && itemErrors.length > 0;
-        return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
           "div",
           {
             style: {
-              ...styles.card,
+              ...styles2.card,
               borderWidth: hasAnyErrors ? "2px" : "1px",
-              borderColor: hasAnyErrors ? "#f0b400" : styles.card.borderColor,
+              borderColor: hasAnyErrors ? "#f0b400" : styles2.card.borderColor,
               boxShadow: hasAnyErrors ? "0 0 0 1px #f0b400" : void 0
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.cardHeader, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.cardActionsLeft, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardHeader, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardActionsLeft, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
                     "button",
                     {
                       type: "button",
-                      style: styles.collapseButton,
+                      style: styles2.collapseButton,
                       "aria-label": collapsed ? "Expand" : "Collapse",
                       onClick: () => formContext?.toggleItem?.(path, item.key),
                       children: collapsed ? "\u25B8" : "\u25BE"
                     }
                   ),
-                  item.hasMoveUp ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+                  item.hasMoveUp ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
                     "button",
                     {
                       type: "button",
-                      style: styles.iconButton,
+                      style: styles2.iconButton,
                       "aria-label": "Move up",
                       onClick: item.onReorderClick(item.index, item.index - 1),
                       children: "\u2191"
                     }
-                  ) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.placeholderButton }),
-                  item.hasMoveDown ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+                  ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton }),
+                  item.hasMoveDown ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
                     "button",
                     {
                       type: "button",
-                      style: styles.iconButton,
+                      style: styles2.iconButton,
                       "aria-label": "Move down",
                       onClick: item.onReorderClick(item.index, item.index + 1),
                       children: "\u2193"
                     }
-                  ) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.placeholderButton })
+                  ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.cardTitle, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.typeBadge, children: displayType }),
-                  /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.cardName, children: displayName })
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardTitle, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.typeBadge, children: displayType }),
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.cardName, children: displayName })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.cardActionsRight, children: item.hasRemove ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.cardActionsRight, children: item.hasRemove ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
                   "button",
                   {
                     type: "button",
-                    style: styles.dangerButton,
+                    style: styles2.dangerButton,
                     "aria-label": "Remove item",
                     title: "Remove",
                     onClick: item.onDropIndexClick(item.index),
                     children: "\u{1F5D1}\uFE0F"
                   }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.placeholderButton }) })
+                ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton }) })
               ] }),
-              !collapsed ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.cardBody, children: item.children }) : null,
-              showError && itemErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("ul", { style: styles.itemErrorList, children: itemErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("li", { children: err }, err)) }) : null
+              !collapsed ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.cardBody, children: item.children }) : null,
+              showError && itemErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.itemErrorList, children: itemErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) }) : null
             ]
           },
           item.key
@@ -44893,42 +45537,42 @@
   function CompactFieldTemplate(props) {
     const { id, classNames, label, required, description, children, rawErrors, schema, hidden } = props;
     if (hidden) {
-      return /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: { display: "none" }, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: { display: "none" }, children });
     }
     const isArrayField = schema?.type === "array";
     const isRoot = id === "root";
     const isArrayItemWrapper = schema?.type === "object" && (id.includes("_requirements_") || id.includes("_obligations_"));
     if (isArrayField || isRoot || isArrayItemWrapper) {
-      return /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { className: classNames, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: classNames, children });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { className: classNames, style: styles.fieldRow, children: [
-      label ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("label", { htmlFor: id, style: styles.fieldLabel, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: classNames, style: styles2.fieldRow, children: [
+      label ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { htmlFor: id, style: styles2.fieldLabel, children: [
         label,
-        required ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.requiredMarker, children: "*" }) : null
+        required ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
       ] }) : null,
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.fieldControl, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.fieldControl, children: [
         children,
         description,
-        rawErrors && rawErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.inlineErrors, children: rawErrors.map((error) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { children: error }, error)) }) : null
+        rawErrors && rawErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.inlineErrors, children: rawErrors.map((error) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { children: error }, error)) }) : null
       ] })
     ] });
   }
   function SectionObjectTemplate(props) {
-    return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.objectSection, children: [
-      props.title ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.sectionTitle, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.objectSection, children: [
+      props.title ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionTitle, children: [
         props.title,
-        props.required ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.requiredMarker, children: "*" }) : null
+        props.required ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
       ] }) }) : null,
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.objectGrid, children: props.properties.map(
-        (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.objectField, children: property2.content }, property2.name)
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectGrid, children: props.properties.map(
+        (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
       ) })
     ] });
   }
   function RequirementObjectTemplate(props) {
     const typeValue = props.formData?.type;
     const allowed = allowedRequirementProps(typeValue);
-    return /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.objectSection, children: /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.objectGrid, children: props.properties.filter((property2) => allowed.has(property2.name)).map(
-      (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.objectField, children: property2.content }, property2.name)
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectSection, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectGrid, children: props.properties.filter((property2) => allowed.has(property2.name)).map(
+      (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
     ) }) });
   }
   function allowedRequirementProps(typeValue) {
@@ -44955,9 +45599,9 @@
     if (!errors || errors.length === 0) {
       return null;
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.formErrorList, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.bannerTitle, children: "Validation" }),
-      /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("ul", { style: styles.errorList, children: errors.map((error, index) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("li", { children: error.stack }, index)) })
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.formErrorList, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: errors.map((error, index) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: error.stack }, index)) })
     ] });
   }
   function requirementLabelFromValue(value) {
@@ -44989,7 +45633,7 @@
     }
     return { __errors: matching.map((m2) => m2.message || m2.stack).filter(Boolean) };
   }
-  var styles = {
+  var styles2 = {
     container: {
       fontFamily: "var(--vscode-font-family, sans-serif)",
       background: "var(--vscode-editor-background)",
@@ -45249,11 +45893,11 @@
   };
 
   // webview-src/main.tsx
-  var import_jsx_runtime49 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime50 = __toESM(require_jsx_runtime());
   var rootElement = document.getElementById("root");
   if (rootElement) {
     const root2 = (0, import_client.createRoot)(rootElement);
-    root2.render(/* @__PURE__ */ (0, import_jsx_runtime49.jsx)(App, {}));
+    root2.render(/* @__PURE__ */ (0, import_jsx_runtime50.jsx)(App, {}));
   }
 })();
 /*! Bundled license information:

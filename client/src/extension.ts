@@ -7,7 +7,10 @@ import * as path from "path";
 import { TextEncoder } from "util";
 import { Valley } from "./valley";
 import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvider";
+import { PdesEditorProvider, loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./formatting";
+import { registerPdesVersionCheck } from "./pdesVersionCheck";
+import { registerExportProtocolSpec } from "./pdesExport";
 import { workspace, ExtensionContext } from "vscode";
 
 import * as vscode from "vscode";
@@ -150,6 +153,9 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(emergentDocumentRangeFormattingEditProvider);
 
   registerSpecificationEditors(context);
+  registerPdesVersionCheck(context);
+  registerPdesEditor(context);
+  registerExportProtocolSpec(context);
 
   vscode.workspace.onDidChangeConfiguration((e) => {
     if (e.affectsConfiguration("gateway")) {
@@ -433,6 +439,50 @@ function registerSpecificationEditors(context: vscode.ExtensionContext) {
     const protocolProvider = new SpecEditorProvider(context, protocolSchema, diagnostics, "protocol");
     context.subscriptions.push(vscode.window.registerCustomEditorProvider("protocolSpecEditor", protocolProvider, options));
   }
+
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument((doc) => {
+      if (doc.uri.fsPath.toLowerCase().endsWith(".pspec") || doc.uri.fsPath.toLowerCase().endsWith(".cspec")) {
+        diagnostics.delete(doc.uri);
+      }
+    })
+  );
+}
+
+function registerPdesEditor(context: vscode.ExtensionContext) {
+  const schema = loadPdesSchema(context);
+  if (!schema) {
+    return;
+  }
+
+  const diagnostics = vscode.languages.createDiagnosticCollection("pdes-schema");
+  context.subscriptions.push(diagnostics);
+
+  let provider: PdesEditorProvider;
+  try {
+    provider = new PdesEditorProvider(context, schema, diagnostics);
+  } catch (err: any) {
+    console.error("Failed to initialize Protocol Design Editor", err);
+    void vscode.window.showErrorMessage(
+      `Failed to initialize Protocol Design Editor: ${err?.message ?? String(err)}`
+    );
+    return;
+  }
+  const options = {
+    webviewOptions: { retainContextWhenHidden: true },
+    supportsMultipleEditorsPerDocument: true,
+  };
+  context.subscriptions.push(
+    vscode.window.registerCustomEditorProvider("protocolDesignEditor", provider, options)
+  );
+
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument((doc) => {
+      if (doc.uri.fsPath.toLowerCase().endsWith(".pdes")) {
+        diagnostics.delete(doc.uri);
+      }
+    })
+  );
 }
 
 function getDefaultsFromText(text: string) {

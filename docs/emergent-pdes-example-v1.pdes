@@ -1,0 +1,62 @@
+{
+  "protocolDesignVersion": 1,
+  "classification": "/data/example/default/x64",
+  "description": "Minimal design to validate templates.",
+  "policy": 0,
+  "modes": [
+    {
+      "modeTemplate": "group-peers",
+      "topics": [
+        {
+          "name": "My number",
+          "properties": {
+            "protocol": "/data/integer/default/x64"
+          }
+        },
+        {
+          "name": "Hosts number",
+          "properties": {
+            "protocol": "/data/integer/default/x64"
+          }
+        }
+      ]
+    },
+    {
+      "modeTemplate": "collect-peer-sum-and-issue-offsets",
+      "topics": [
+        {
+          "name": "Base",
+          "properties": {
+            "minimum": 1,
+            "maximum": 1000,
+            "hint": "1 - 100"
+          }
+        },
+        {
+          "name": "Total",
+          "properties": {
+            "minimum": 1,
+            "maximum": 1000,
+            "hint": "1 - 100"
+          }
+        },
+        {
+          "name": "Size",
+          "properties": {
+            "minimum": 1,
+            "maximum": 1000,
+            "hint": "1 - 100"
+          }
+        },
+        {
+          "name": "Offset",
+          "properties": {
+            "minimum": 1,
+            "maximum": 1000,
+            "hint": "1 - 100"
+          }
+        }
+      ]
+    }
+  ]
+}

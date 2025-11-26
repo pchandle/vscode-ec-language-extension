@@ -1,39 +1,45 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import Ajv, { AnySchema, ErrorObject, ValidateFunction } from "ajv";
+import Ajv, { ErrorObject } from "ajv";
+import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
-import { findNodeAtLocation, parseTree, Node as JsonNode } from "jsonc-parser";
+import { parse as parseJsonc, Node as JsonNode, findNodeAtLocation, parseTree } from "jsonc-parser";
+import { findPddForVersion } from "../pddLoader";
 
-type WebviewIncomingMessage = { type: "ready" } | { type: "updateDoc"; value: unknown };
+type HostMessage =
+  | { type: "ready" }
+  | {
+      type: "updateDoc";
+      value: unknown;
+    };
 
-type WebviewStateMessage = {
-  type: "state";
-  schema: unknown;
+type WebviewMessage = {
+  type: "pdesState";
   value: unknown | null;
+  pdd?: unknown;
+  pddPath?: string;
   errors: string[];
   parseError?: string;
 };
 
-export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
+export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
   private readonly validator: Ajv;
-  private readonly validateFn: ValidateFunction;
+  private readonly validateFn;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
-    private readonly schema: AnySchema,
-    private readonly diagnostics: vscode.DiagnosticCollection,
-    private readonly expectedType: "supplier" | "protocol"
+    private readonly schema: any,
+    private readonly diagnostics: vscode.DiagnosticCollection
   ) {
-    this.validator = new Ajv({ allErrors: true, strict: true, allowUnionTypes: true });
+    this.validator = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
     addFormats(this.validator);
     this.validateFn = this.validator.compile(this.schema);
   }
 
   public async resolveCustomTextEditor(
     document: vscode.TextDocument,
-    webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken
+    webviewPanel: vscode.WebviewPanel
   ): Promise<void> {
     webviewPanel.webview.options = {
       enableScripts: true,
@@ -43,16 +49,19 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
     const updateWebview = () => {
-      const parseResult = this.parseDocument(document);
-      const validation = this.validateDocument(document, parseResult);
+      const parsed = this.parseDocument(document);
+      const validation = this.validateDocument(document, parsed);
       this.diagnostics.set(document.uri, validation.diagnostics);
+      const version = parsed.value?.protocolDesignVersion;
+      const { match } = typeof version === "number" ? findPddForVersion(this.context, version) : { match: undefined };
 
-      const message: WebviewStateMessage = {
-        type: "state",
-        schema: this.schema,
-        value: parseResult.value ?? null,
+      const message: WebviewMessage = {
+        type: "pdesState",
+        value: parsed.value ?? null,
+        pdd: match?.definition,
+        pddPath: match?.path,
         errors: validation.messages,
-        parseError: parseResult.parseError,
+        parseError: parsed.parseError,
       };
       void webviewPanel.webview.postMessage(message);
     };
@@ -68,8 +77,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
       this.diagnostics.delete(document.uri);
     });
 
-    await this.normalizeOnOpen(document);
-    webviewPanel.webview.onDidReceiveMessage((e: WebviewIncomingMessage) => {
+    webviewPanel.webview.onDidReceiveMessage((e: HostMessage) => {
       if (e.type === "updateDoc") {
         void this.updateTextDocument(document, e.value);
       } else if (e.type === "ready") {
@@ -88,7 +96,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   } {
     const text = document.getText();
     try {
-      const value = JSON.parse(text);
+      const value = parseJsonc(text);
       return { text, value, tree: parseTree(text) ?? undefined };
     } catch (err: any) {
       return { text, parseError: err?.message ?? "Invalid JSON" };
@@ -138,19 +146,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
       return new vscode.Range(0, 0, 0, 1);
     }
 
-    const path = this.jsonPathSegments(error);
-    const node = findNodeAtLocation(tree, path);
-    if (node) {
-      const start = document.positionAt(node.offset);
-      const end = document.positionAt(node.offset + node.length);
-      return new vscode.Range(start, end);
-    }
-
-    return new vscode.Range(0, 0, 0, 1);
-  }
-
-  private jsonPathSegments(error: ErrorObject): (string | number)[] {
-    const segments = (error.instancePath || "")
+    const pathSegments = (error.instancePath || "")
       .split("/")
       .filter((segment) => segment.length > 0)
       .map((segment) => {
@@ -160,10 +156,17 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
 
     if (error.keyword === "required" && error.params && (error.params as any).missingProperty) {
       const missing = (error.params as any).missingProperty;
-      segments.push(missing);
+      pathSegments.push(missing);
     }
 
-    return segments;
+    const node = findNodeAtLocation(tree, pathSegments);
+    if (node) {
+      const start = document.positionAt(node.offset);
+      const end = document.positionAt(node.offset + node.length);
+      return new vscode.Range(start, end);
+    }
+
+    return new vscode.Range(0, 0, 0, 1);
   }
 
   private async updateTextDocument(document: vscode.TextDocument, value: unknown) {
@@ -173,110 +176,6 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     const fullRange = new vscode.Range(new vscode.Position(0, 0), end);
     edit.replace(document.uri, fullRange, jsonText);
     await vscode.workspace.applyEdit(edit);
-  }
-
-  private async normalizeOnOpen(document: vscode.TextDocument) {
-    const text = document.getText();
-    let parsed: any;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      return;
-    }
-
-    if (!parsed || parsed.type !== this.expectedType) {
-      return;
-    }
-
-    if (!this.isNameValid(parsed.name)) {
-      return;
-    }
-
-    const normalized = this.normalizeSpec(parsed);
-    const formatted = JSON.stringify(normalized, null, 2) + "\n";
-    if (formatted === text) {
-      return;
-    }
-
-    const valid = this.validateFn(normalized);
-    if (valid) {
-      await this.updateTextDocument(document, normalized);
-    }
-  }
-
-  private normalizeSpec(obj: any) {
-    const clone = JSON.parse(JSON.stringify(obj));
-    delete clone.suppliers;
-    if (Array.isArray(clone.description)) {
-      clone.description = clone.description.join("\n");
-    }
-    if (clone.policy && typeof clone.policy === "string" && /^-?\d+$/.test(clone.policy)) {
-      clone.policy = parseInt(clone.policy, 10);
-    }
-    if (clone.host && typeof clone.host === "object" && Array.isArray(clone.host.macro)) {
-      clone.host.macro = clone.host.macro.join("\n");
-    }
-    if (clone.join && typeof clone.join === "object" && Array.isArray(clone.join.macro)) {
-      clone.join.macro = clone.join.macro.join("\n");
-    }
-    const normalizeNumericFields = (item: any) => {
-      if (!item || typeof item !== "object") {
-        return;
-      }
-      const toInt = (value: any) => {
-        if (typeof value === "number") {
-          return Number.isFinite(value) ? Math.trunc(value) : value;
-        }
-        if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
-          return parseInt(value.trim(), 10);
-        }
-        return value;
-      };
-
-      if (item.type === "string") {
-        if (item.length !== undefined) {
-          item.length = toInt(item.length);
-        }
-        if (item.hint !== undefined) {
-          item.hint = String(item.hint);
-        }
-      }
-      if (item.type === "integer") {
-        if (item.minimum !== undefined) {
-          item.minimum = toInt(item.minimum);
-        }
-        if (item.maximum !== undefined) {
-          item.maximum = toInt(item.maximum);
-        }
-        if (item.hint !== undefined) {
-          item.hint = toInt(item.hint);
-        }
-      }
-    };
-
-    const normalizeArray = (arr?: any[]) => {
-      if (Array.isArray(arr)) {
-        arr.forEach(normalizeNumericFields);
-      }
-    };
-
-    normalizeArray(clone.requirements);
-    normalizeArray(clone.obligations);
-    normalizeArray(clone.host?.requirements);
-    normalizeArray(clone.host?.obligations);
-    normalizeArray(clone.join?.requirements);
-    normalizeArray(clone.join?.obligations);
-
-    return clone;
-  }
-
-  private isNameValid(name: unknown) {
-    if (typeof name !== "string") {
-      return false;
-    }
-    const class4 = /^\/(?:[a-z0-9-]+\/){3}[a-z0-9-]+$/;
-    const class5 = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
-    return this.expectedType === "protocol" ? class4.test(name) : class5.test(name);
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {
@@ -297,7 +196,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="${csp}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Specification Editor</title>
+  <title>Protocol Design Editor</title>
 </head>
 <body>
   <div id="root"></div>
@@ -312,14 +211,14 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   }
 }
 
-export function loadSchema(context: vscode.ExtensionContext, filename: string): AnySchema | undefined {
-  const schemaPath = path.join(context.extensionPath, "media", filename);
+export function loadPdesSchema(context: vscode.ExtensionContext): any | undefined {
+  const schemaPath = path.join(context.extensionPath, "docs", "pdes.schema.json");
   try {
     const contents = fs.readFileSync(schemaPath, "utf8");
     return JSON.parse(contents);
   } catch (err) {
-    console.error(`Failed to load bundled schema at ${schemaPath}`, err);
-    void vscode.window.showErrorMessage(`Unable to load bundled specification schema: ${filename}`);
+    console.error(`Failed to load pdes schema at ${schemaPath}`, err);
+    void vscode.window.showErrorMessage("Unable to load protocol design schema.");
     return undefined;
   }
 }

@@ -1,0 +1,58 @@
+{
+  "type": "protocol",
+  "policy": 0,
+  "name": "/data/example/default/x64",
+  "description": "Minimal design to validate templates.",
+  "host": {
+    "requirements": [
+      {
+        "type": "abstraction",
+        "name": "My number",
+        "protocol": "/data/integer/default/x64"
+      },
+      {
+        "type": "integer",
+        "name": "Base",
+        "minimum": 1,
+        "maximum": 1000,
+        "hint": "1 - 100"
+      }
+    ],
+    "obligations": [
+      {
+        "type": "integer",
+        "name": "Total",
+        "minimum": 1,
+        "maximum": 1000,
+        "hint": "1 - 100"
+      }
+    ],
+    "macro": "def (acs, my_number, base, size, hosts_number, total, offset, self, trigger, debug_msg) :\nsub /behaviour/add/collaboration-endpoint/host/x64@codevalley( acs, self, trigger, debug_msg) -> {\nsub /behaviour/collect-and-distribute/agent-group/default/x64@codevalley(acs, $, my_number, trigger, debug_msg)\nsub /behaviour/collect-and-distribute/agent-integer/default/x64@codevalley(acs, $, base, total, trigger, debug_msg)\n}\nend"
+  },
+  "join": {
+    "requirements": [
+      {
+        "type": "integer",
+        "name": "Size",
+        "minimum": 1,
+        "maximum": 1000,
+        "hint": "1 - 100"
+      }
+    ],
+    "obligations": [
+      {
+        "type": "abstraction",
+        "name": "Hosts number",
+        "protocol": "/data/integer/default/x64"
+      },
+      {
+        "type": "integer",
+        "name": "Offset",
+        "minimum": 1,
+        "maximum": 1000,
+        "hint": "1 - 100"
+      }
+    ],
+    "macro": "def (acs, my_number, base, size, hosts_number, total, offset, self, trigger, debug_msg) :\nsub /behaviour/add/collaboration-endpoint/join/x64@codevalley( acs, self, trigger, debug_msg) -> {\nsub /behaviour/fold-and-allocate/agent-group/default/x64@codevalley(acs, $, hosts_number, trigger, debug_msg)\nsub /behaviour/fold-and-allocate/agent-integer/default/x64@codevalley(acs, $, size, offset, trigger, debug_msg)\n}\nend"
+  }
+}
