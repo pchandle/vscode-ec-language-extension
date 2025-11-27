@@ -68,11 +68,13 @@ function getLineText(document: TextDocument, line: number): string {
 export function shouldTriggerContractSpecCompletion(
   document: TextDocument,
   position: Position
-): { lineText: string; openParenIndex: number } | null {
+): { lineText: string; openParenIndex: number; keyword: "sub" | "job" } | null {
   const lineText = getLineText(document, position.line);
-  if (!/^\s*sub\s+/i.test(lineText)) {
+  const keywordMatch = lineText.match(/^\s*(sub|job)\s+/i);
+  if (!keywordMatch) {
     return null;
   }
+  const keyword = keywordMatch[1].toLowerCase() as "sub" | "job";
 
   const openParenIndex = lineText.indexOf("(");
   if (openParenIndex === -1 || position.character <= openParenIndex) {
@@ -90,22 +92,31 @@ export function shouldTriggerContractSpecCompletion(
     return null;
   }
 
-  return { lineText, openParenIndex };
+  return { lineText, openParenIndex, keyword };
 }
 
 export function buildContractSpecCompletionItems(
   spec: ContractSpecification,
   position: Position,
   lineText: string,
-  openParenIndex: number
+  openParenIndex: number,
+  keyword: "sub" | "job"
 ): CompletionItem[] | null {
   const requirements = (spec.requirements ?? []).map((req) => normalizeTopicName(req.name)).filter(Boolean) as string[];
   const obligations = (spec.obligations ?? []).map((obl) => normalizeTopicName(obl.name)).filter(Boolean) as string[];
 
   const requirementText = requirements.join(", ");
   const obligationText = obligations.join(", ");
-  const completionText = `${requirementText}) -> ${obligationText}`.trimEnd();
-  const newText = completionText || ") -> ";
+
+  let completionText: string;
+  let newText: string;
+  if (keyword === "job") {
+    completionText = `${requirementText}) ${obligationText}:`.trimEnd();
+    newText = completionText || ") :";
+  } else {
+    completionText = `${requirementText}) -> ${obligationText}`.trimEnd();
+    newText = completionText || ") -> ";
+  }
 
   const editRange: Range = {
     start: { line: position.line, character: openParenIndex + 1 },
@@ -151,19 +162,20 @@ function buildContractCompletionItems(
 
   const classificationText = lineText.slice(0, classificationEnd);
   const taxonomy = classificationText.match(
-    /^\s*sub +(\/([^/]*)\/?)?([^/]*)?\/?([^/@(]*)?(?:\/([^/@(]*))?(?:\/([^/@(]*))?@?([^(]*)?$/
+    /^\s*(sub|job) +(\/([^/]*)\/?)?([^/]*)?\/?([^/@(]*)?(?:\/([^/@(]*))?(?:\/([^/@(]*))?@?([^(]*)?$/
   );
-  const layer = taxonomy?.[2];
-  const verb = taxonomy?.[3];
-  const subject = taxonomy?.[4];
-  const variation = taxonomy?.[5];
-  const platform = taxonomy?.[6];
-  const variationProvided = taxonomy ? taxonomy[5] !== undefined : false;
-  const platformProvided = taxonomy ? taxonomy[6] !== undefined : false;
+  const layer = taxonomy?.[3];
+  const verb = taxonomy?.[4];
+  const subject = taxonomy?.[5];
+  const variation = taxonomy?.[6];
+  const platform = taxonomy?.[7];
+  const variationProvided = taxonomy ? taxonomy[6] !== undefined : false;
+  const platformProvided = taxonomy ? taxonomy[7] !== undefined && taxonomy[7] !== "" : false;
 
   const searchLayer = layer === undefined ? defaults.layer : layer === "." ? defaults.layer : layer;
   const searchVariation = variation === undefined ? defaults.variation : variation === "." ? defaults.variation : variation;
-  const searchPlatform = platform === undefined ? defaults.platform : platform === "." ? defaults.platform : platform;
+  const searchPlatform =
+    platform === undefined || platform === "" ? defaults.platform : platform === "." ? defaults.platform : platform;
   const layerMatches = (itemLayer: string) => !searchLayer || itemLayer === searchLayer;
 
   const completionItems: string[] = [];

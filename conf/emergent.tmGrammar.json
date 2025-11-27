@@ -23,85 +23,12 @@
 			}
 		},
 		{
-			"match": "\\s*?(job)\\s+((/)([0-9a-zA-Z_-]+)(/))?([0-9a-zA-Z_-]+)((/)([0-9a-zA-Z_-]+))?((/)([0-9a-zA-Z_-]+))?((/)([0-9a-zA-Z_-]+))?",
+			"match": "^\\s*(sub|job)\\s+([^\\s@(]+)(@)?([0-9A-Za-z_-]*)?",
 			"captures": {
-				"1": {
-					"name": "keyword"
-				},
-				"3": {
-					"name": "markup.underline.link.emergent"
-				},
-				"4": {
-					"name": "markup.underline.link.emergent"
-				},
-				"5": {
-					"name": "markup.underline.link.emergent"
-				},
-				"6": {
-					"name": "markup.underline.link.emergent"
-				},
-				"8": {
-					"name": "markup.underline.link.emergent"
-				},
-				"9": {
-					"name": "markup.underline.link.emergent"
-				},
-				"11": {
-					"name": "markup.underline.link.emergent"
-				},
-				"12": {
-					"name": "markup.underline.link.emergent"
-				},
-				"14": {
-					"name": "markup.underline.link.emergent"
-				},
-				"15": {
-					"name": "markup.underline.link.emergent"
-				}
-			}
-		},
-		{
-			"match": "^\\s*(sub)\\s+((/)([.0-9a-zA-Z_-]+)(/))?([.0-9a-zA-Z_-]+)(/)([.0-9a-zA-Z_-]+)((/)?([.0-9a-zA-Z_-]+)?)?((/)?([.0-9a-zA-Z_-]+)?)?(@)?([0-9a-zA-Z_-]+)?",
-			"captures": {
-				"1": {
-					"name": "keyword"
-				},
-				"3": {
-					"name": "markup.underline.link.emergent"
-				},
-				"4": {
-					"name": "markup.underline.link.emergent"
-				},
-				"5": {
-					"name": "markup.underline.link.emergent"
-				},
-				"6": {
-					"name": "markup.underline.link.emergent"
-				},
-				"7": {
-					"name": "markup.underline.link.emergent"
-				},
-				"8": {
-					"name": "markup.underline.link.emergent"
-				},
-				"10": {
-					"name": "markup.underline.link.emergent"
-				},
-				"11": {
-					"name": "markup.underline.link.emergent"
-				},
-				"13": {
-					"name": "markup.underline.link.emergent"
-				},
-				"14": {
-					"name": "markup.underline.link.emergent"
-				},
-				"15": {
-					"name": "punctuation.supplier.delimiter.emergent"
-				},
-				"16": {
-					"name": "variable.parameter.supplier.emergent"
-				}
+				"1": { "name": "keyword" },
+				"2": { "name": "markup.underline.link.emergent" },
+				"3": { "name": "punctuation.supplier.delimiter.emergent" },
+				"4": { "name": "variable.parameter.supplier.emergent" }
 			}
 		},
 		{
@@ -186,7 +113,7 @@
 		},
 		{
 			"name": "keyword.keywords.subhostjoin",
-			"match": "\\b(sub|host|join)\\b"
+			"match": "\\b(sub|host|join|job)\\b"
 		},
 		{
 			"name": "keyword.keywords.asset",

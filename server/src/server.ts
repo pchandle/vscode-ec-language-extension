@@ -454,9 +454,18 @@ connection.onCompletion(
 						spec,
 						params.position,
 						specContext.lineText,
-						specContext.openParenIndex
+						specContext.openParenIndex,
+						specContext.keyword
 					);
-					if (specItems) {
+					if (specItems?.length) {
+						const firstEdit = specItems[0].textEdit;
+						// Apply the completion immediately to avoid showing a single-item popup.
+						if (firstEdit && 'range' in firstEdit) {
+							await connection.workspace.applyEdit({
+								changes: { [params.textDocument.uri]: [firstEdit] }
+							});
+							return [];
+						}
 						return specItems;
 					}
 				}

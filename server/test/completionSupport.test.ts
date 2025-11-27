@@ -46,8 +46,23 @@ describe("completionSupport", () => {
     expect(labels).to.include("/data/");
   });
 
+  it("suggests verbs at start for job", () => {
+    const doc = mockDoc("defaults: byte, default, x64, codevalley\njob ");
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 1, character: 4 });
+    const labels = items.map((i) => i.label);
+    expect(labels).to.include("new");
+    expect(labels).to.include("/data/");
+  });
+
   it("suggests subjects for matching verb", () => {
     const doc = mockDoc("defaults: byte, default, x64, codevalley\nsub /byte/new/");
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 1, character: 14 });
+    const labels = items.map((i) => i.label);
+    expect(labels).to.include("/byte/new/integer");
+  });
+
+  it("suggests subjects for matching verb on job", () => {
+    const doc = mockDoc("defaults: byte, default, x64, codevalley\njob /byte/new/");
     const items = buildCompletionItems(contracts, protocols, doc, { line: 1, character: 14 });
     const labels = items.map((i) => i.label);
     expect(labels).to.include("/byte/new/integer");
@@ -71,6 +86,22 @@ describe("completionSupport", () => {
 
   it("suggests contract platforms", () => {
     const line = "sub /byte/new/integer/default/x";
+    const doc = mockDoc(`defaults: byte, base, x64, codevalley\n${line}`);
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 1, character: line.length });
+    const labels = items.map((i) => i.label);
+    expect(labels).to.include("/byte/new/integer/default/x64");
+  });
+
+  it("suggests contract platforms when platform segment is empty", () => {
+    const line = "sub /byte/new/integer/default/";
+    const doc = mockDoc(`defaults: byte, base, x64, codevalley\n${line}`);
+    const items = buildCompletionItems(contracts, protocols, doc, { line: 1, character: line.length });
+    const labels = items.map((i) => i.label);
+    expect(labels).to.include("/byte/new/integer/default/x64");
+  });
+
+  it("suggests contract platforms for job when platform segment is empty", () => {
+    const line = "job /byte/new/integer/default/";
     const doc = mockDoc(`defaults: byte, base, x64, codevalley\n${line}`);
     const items = buildCompletionItems(contracts, protocols, doc, { line: 1, character: line.length });
     const labels = items.map((i) => i.label);
@@ -143,7 +174,7 @@ describe("completionSupport", () => {
     };
 
     const items =
-      context && buildContractSpecCompletionItems(spec, position, context.lineText, context.openParenIndex);
+      context && buildContractSpecCompletionItems(spec, position, context.lineText, context.openParenIndex, "sub");
 
     expect(items?.[0].textEdit && "newText" in items[0].textEdit ? items[0].textEdit.newText : undefined).to.equal(
       "first_requirement, second_req) -> do_thing"
@@ -178,5 +209,24 @@ describe("completionSupport", () => {
     const position = { line: 0, character: line.indexOf("(") + 1 };
     const context = shouldTriggerContractSpecCompletion(doc, position);
     expect(context).to.not.equal(null);
+  });
+
+  it("builds job spec completion with trailing colon", () => {
+    const line = "job /byte/new/integer/default/x64(";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerContractSpecCompletion(doc, position);
+
+    const spec = {
+      requirements: [{ name: "Input" }],
+      obligations: [{ name: "Do Thing" }, { name: "Other" }],
+    };
+
+    const items =
+      context && buildContractSpecCompletionItems(spec, position, context.lineText, context.openParenIndex, "job");
+
+    expect(items?.[0].textEdit && "newText" in items[0].textEdit ? items[0].textEdit.newText : undefined).to.equal(
+      "input) do_thing, other:"
+    );
   });
 });
