@@ -112,22 +112,34 @@ class GatewayClient {
   }
 
   async fetchContractSpec(classification: string): Promise<RemoteContractSpec | null> {
-    const host = await this.ensureHostForClassification(classification);
-    const url = host
-      ? `${this.#config.allowInsecure ? "http" : "https"}://${host}${this.#specPathPrefix}${classification}`
-      : null;
     const cached = this.#specCache[classification];
-    if (!url) {
-      this.#connection?.console.error(`No host available for contract ${classification}`);
-      return cached ?? null;
-    }
+
+    const gatewayUrl = `${this.#apiRoot}${this.#specPathPrefix}${classification}`;
     try {
-      const spec = await this.fetchJson(url);
+      const spec = await this.fetchJson(gatewayUrl);
       this.#specCache[classification] = spec;
       this.persistDiskCache();
       return spec;
     } catch (err: any) {
-      this.#connection?.console.error(`Failed to fetch contract spec ${classification}: ${err.message}`);
+      this.#connection?.console.warn(`Gateway fetch failed for ${classification}: ${err.message}`);
+    }
+
+    const host = await this.ensureHostForClassification(classification);
+    const hostUrl = host
+      ? `${this.#config.allowInsecure ? "http" : "https"}://${host}${this.#specPathPrefix}${classification}`
+      : null;
+    if (!hostUrl) {
+      this.#connection?.console.error(`No host available for contract ${classification}`);
+      return cached ?? null;
+    }
+
+    try {
+      const spec = await this.fetchJson(hostUrl);
+      this.#specCache[classification] = spec;
+      this.persistDiskCache();
+      return spec;
+    } catch (err: any) {
+      this.#connection?.console.error(`Failed to fetch contract spec ${classification} from host ${host}: ${err.message}`);
       if (cached) {
         this.#connection?.console.log(`Serving cached contract spec for ${classification}`);
         return cached;
