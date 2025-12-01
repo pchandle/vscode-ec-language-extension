@@ -12,12 +12,14 @@ import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./for
 import { registerPdesVersionCheck } from "./pdesVersionCheck";
 import { registerExportProtocolSpec } from "./pdesExport";
 import { workspace, ExtensionContext } from "vscode";
+import { loadPddCandidates } from "./pddLoader";
 
 import * as vscode from "vscode";
 
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient/node";
 
 let client: LanguageClient;
+let extensionContext: ExtensionContext | undefined;
 let ecStatusBarItem: vscode.StatusBarItem;
 let specPanel: vscode.WebviewPanel | undefined;
 
@@ -139,6 +141,7 @@ function buildFilenameFromClassification(
 }
 
 export function activate(context: ExtensionContext) {
+  extensionContext = context;
   console.debug("Activating 'emergent' language extension.");
 
   // The server is implemented in node
@@ -801,6 +804,17 @@ async function createNewProtocolSpec() {
     extension: ".pdes",
   });
 
+  const highestPddVersion = (() => {
+    if (!extensionContext) {
+      return 1;
+    }
+    const candidates = loadPddCandidates(extensionContext);
+    const versions = candidates
+      .map((c) => c.definition?.protocolDesignVersion)
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    return versions.length ? Math.max(...versions) : 1;
+  })();
+
   const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, suggestedFilename);
   const targetUri = await vscode.window.showSaveDialog({
     defaultUri,
@@ -813,20 +827,20 @@ async function createNewProtocolSpec() {
   }
 
   const template = {
-    type: "protocol",
-    policy: 0,
-    name: trimmedClassification,
+    protocolDesignVersion: highestPddVersion,
+    classification: trimmedClassification,
     description: "",
-    host: { requirements: [], obligations: [], macro: "" },
-    join: { requirements: [], obligations: [], macro: "" },
+    policy: 0,
+    modes: [],
   };
 
   try {
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify(template, null, 2) + "\n");
     await vscode.workspace.fs.writeFile(targetUri, data);
+    // Ensure VS Code loads the freshly written document before opening the custom editor.
     await vscode.workspace.openTextDocument(targetUri);
-    await vscode.commands.executeCommand("vscode.openWith", targetUri, "protocolSpecEditor");
+    await vscode.commands.executeCommand("vscode.openWith", targetUri, "protocolDesignEditor");
   } catch (error: any) {
     console.error("Failed to create protocol specification", error);
     void vscode.window.showErrorMessage(`Failed to create protocol specification: ${error?.message ?? error}`);
