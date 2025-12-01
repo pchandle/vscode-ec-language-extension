@@ -1,0 +1,16 @@
+{
+  "type": "protocol",
+  "policy": 0,
+  "name": "/byte/example/default/all",
+  "description": "",
+  "host": {
+    "requirements": [],
+    "obligations": [],
+    "macro": ""
+  },
+  "join": {
+    "requirements": [],
+    "obligations": [],
+    "macro": ""
+  }
+}

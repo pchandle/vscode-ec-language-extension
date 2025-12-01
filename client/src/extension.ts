@@ -29,6 +29,7 @@ const v = new Valley();
 const valleyScanIntervalMs = 30 * 60 * 1000;
 
 const CONTRACT_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
+const PROTOCOL_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){3}[a-z0-9-]+$/;
 const DEFAULT_CONTRACT_FILE_EXTENSION = ".cspec";
 const DEFAULT_PROTOCOL_FILE_EXTENSION = ".pspec";
 const DEFAULT_CONTRACT_FILENAME_FORMAT = "{layer}--{verb}--{subject}--{variation}--{platform}";
@@ -105,12 +106,17 @@ function getFilenameFormat(
   };
 }
 
-function buildFilenameFromClassification(type: "contract" | "protocol", classification: string, options?: { silent?: boolean }) {
+function buildFilenameFromClassification(
+  type: "contract" | "protocol",
+  classification: string,
+  options?: { silent?: boolean; extension?: string }
+) {
   const parts = classification.slice(1).split("/");
   const isContract = type === "contract";
   const expected = isContract ? 5 : 4;
   if (parts.length !== expected || parts.some((p) => !p)) {
-    return isContract ? "new-contract.cspec" : "new-protocol.pspec";
+    const ext = options?.extension ?? (isContract ? DEFAULT_CONTRACT_FILE_EXTENSION : DEFAULT_PROTOCOL_FILE_EXTENSION);
+    return isContract ? `new-contract${ext}` : `new-protocol${ext}`;
   }
   const values = isContract
     ? {
@@ -128,7 +134,8 @@ function buildFilenameFromClassification(type: "contract" | "protocol", classifi
       };
   const { format } = getFilenameFormat(type, options);
   const base = renderFilename(format, values);
-  return `${base}${isContract ? DEFAULT_CONTRACT_FILE_EXTENSION : DEFAULT_PROTOCOL_FILE_EXTENSION}`;
+  const ext = options?.extension ?? (isContract ? DEFAULT_CONTRACT_FILE_EXTENSION : DEFAULT_PROTOCOL_FILE_EXTENSION);
+  return `${base}${ext}`;
 }
 
 export function activate(context: ExtensionContext) {
@@ -198,6 +205,11 @@ export function activate(context: ExtensionContext) {
         void openLocalSpecification(uri, position);
       }
     )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("emergent.newProtocolSpec", () => {
+      void createNewProtocolSpec();
+    })
   );
   context.subscriptions.push(
     vscode.commands.registerCommand("emergent.newContractSpec", () => {
@@ -758,6 +770,67 @@ function registerSpecificationLinks(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(selector, provider));
+}
+
+async function createNewProtocolSpec() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    void vscode.window.showWarningMessage("Open a workspace folder to create a protocol specification.");
+    return;
+  }
+
+  const classification = await vscode.window.showInputBox({
+    title: "Protocol Classification",
+    prompt: "Enter protocol classification (/layer/subject/variation/platform)",
+    value: "/layer/subject/variation/platform",
+    validateInput: (value) => {
+      const trimmed = value.trim();
+      return PROTOCOL_CLASSIFICATION_PATTERN.test(trimmed)
+        ? undefined
+        : "Classification must match /layer/subject/variation/platform (lowercase, digits, hyphens).";
+    },
+  });
+
+  if (!classification) {
+    return;
+  }
+
+  const trimmedClassification = classification.trim();
+  const suggestedFilename = buildFilenameFromClassification("protocol", trimmedClassification, {
+    silent: false,
+    extension: ".pdes",
+  });
+
+  const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, suggestedFilename);
+  const targetUri = await vscode.window.showSaveDialog({
+    defaultUri,
+    filters: { "Protocol Specification": ["pdes"] },
+    saveLabel: "Create Protocol Specification",
+  });
+
+  if (!targetUri) {
+    return;
+  }
+
+  const template = {
+    type: "protocol",
+    policy: 0,
+    name: trimmedClassification,
+    description: "",
+    host: { requirements: [], obligations: [], macro: "" },
+    join: { requirements: [], obligations: [], macro: "" },
+  };
+
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(template, null, 2) + "\n");
+    await vscode.workspace.fs.writeFile(targetUri, data);
+    await vscode.workspace.openTextDocument(targetUri);
+    await vscode.commands.executeCommand("vscode.openWith", targetUri, "protocolSpecEditor");
+  } catch (error: any) {
+    console.error("Failed to create protocol specification", error);
+    void vscode.window.showErrorMessage(`Failed to create protocol specification: ${error?.message ?? error}`);
+  }
 }
 
 async function createNewContractSpec() {

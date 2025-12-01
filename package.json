@@ -208,15 +208,20 @@
         "title": "Emergent: Open Specification at Position",
         "category": "Emergent"
       },
-    {
-      "command": "emergent.openLocalSpecificationAtPosition",
-      "title": "Emergent: Open Local Specification at Position",
-      "category": "Emergent"
-    },
-    {
-      "command": "emergent.newContractSpec",
-      "title": "Emergent: New Contract Specification",
-      "category": "Emergent"
+      {
+        "command": "emergent.openLocalSpecificationAtPosition",
+        "title": "Emergent: Open Local Specification at Position",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.newProtocolSpec",
+        "title": "Emergent: New Protocol Specification",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.newContractSpec",
+        "title": "Emergent: New Contract Specification",
+        "category": "Emergent"
       },
       {
         "command": "emergent.reloadSpecifications",
