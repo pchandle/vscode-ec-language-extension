@@ -45392,6 +45392,7 @@
     const [pdd, setPdd] = (0, import_react21.useState)(null);
     const [pddPath, setPddPath] = (0, import_react21.useState)();
     const [protocolCompletions, setProtocolCompletions] = (0, import_react21.useState)([]);
+    const [contractCompletions, setContractCompletions] = (0, import_react21.useState)([]);
     const [hostErrors, setHostErrors] = (0, import_react21.useState)([]);
     const [parseError, setParseError] = (0, import_react21.useState)();
     const [formErrors, setFormErrors] = (0, import_react21.useState)([]);
@@ -45418,6 +45419,7 @@
           setParseError(message.parseError);
           setFormErrors([]);
           setProtocolCompletions([]);
+          setContractCompletions(message.contractCompletions ?? []);
         } else if (message.type === "pdesState") {
           setEditorMode("pdes");
           setSchema(void 0);
@@ -45502,7 +45504,8 @@
           type: { "ui:widget": "select", "ui:placeholder": "Type" },
           protocol: {
             "ui:title": "protocol",
-            "ui:placeholder": "Enter protocol"
+            "ui:placeholder": "Enter protocol",
+            "ui:widget": "ContractProtocolInput"
           }
         }
       });
@@ -45522,7 +45525,7 @@
           obligations: buildRequirementUi()
         }
       };
-    }, []);
+    }, [contractCompletions]);
     const templates2 = (0, import_react21.useMemo)(
       () => ({
         ArrayFieldTemplate: CardArrayFieldTemplate,
@@ -45532,10 +45535,17 @@
       }),
       []
     );
+    const widgets2 = (0, import_react21.useMemo)(
+      () => ({
+        ContractProtocolInput: ContractProtocolCompletionWidget
+      }),
+      []
+    );
     const formContext = (0, import_react21.useMemo)(
       () => ({
         collapsedState,
         formErrors,
+        contractCompletions,
         toggleItem: (path, key) => {
           setCollapsedState((prev) => {
             const next = { ...prev };
@@ -45725,6 +45735,7 @@
           showErrorList: true,
           uiSchema,
           templates: templates2,
+          widgets: widgets2,
           extraErrors,
           formContext,
           noHtml5Validate: true,
@@ -45959,6 +45970,150 @@
     }
     const match = REQUIREMENT_TYPE_OPTIONS.find((item) => item.value === value);
     return match?.label ?? String(value);
+  }
+  function ContractProtocolCompletionWidget(props) {
+    const { value, onChange, id, disabled, readonly, placeholder, formContext } = props;
+    const completions = formContext?.contractCompletions ?? [];
+    const inputRef = (0, import_react21.useRef)(null);
+    const [menu, setMenu] = (0, import_react21.useState)(null);
+    const closeMenu = () => setMenu(null);
+    const openMenu = (query) => {
+      if (!inputRef.current || !completions.length) {
+        closeMenu();
+        return;
+      }
+      const normalized = (query ?? "").toString().trim().toLowerCase();
+      const filtered = completions.filter((c2) => normalized ? c2.toLowerCase().includes(normalized) : true).slice(0, 30);
+      if (!filtered.length) {
+        closeMenu();
+        return;
+      }
+      if (filtered.length === 1) {
+        commitSelection(filtered[0]);
+        return;
+      }
+      const rect = inputRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const belowSpace = viewportHeight - rect.bottom - 8;
+      const aboveSpace = rect.top - 8;
+      const maxHeight = Math.max(140, Math.min(280, Math.max(belowSpace, aboveSpace)));
+      const itemHeight = 32;
+      const desiredHeight = Math.min(maxHeight, Math.max(itemHeight, filtered.length * itemHeight + 4));
+      const placeBelow = belowSpace >= aboveSpace;
+      const top = placeBelow ? rect.bottom + 4 : rect.top - desiredHeight - 4;
+      setMenu({
+        items: filtered,
+        top,
+        left: rect.left,
+        width: rect.width,
+        height: desiredHeight,
+        maxHeight,
+        activeIndex: 0
+      });
+    };
+    (0, import_react21.useEffect)(() => {
+      const handler = () => {
+        if (menu && inputRef.current) {
+          openMenu(inputRef.current.value);
+        }
+      };
+      window.addEventListener("scroll", handler, true);
+      window.addEventListener("resize", handler);
+      return () => {
+        window.removeEventListener("scroll", handler, true);
+        window.removeEventListener("resize", handler);
+      };
+    }, [menu, completions]);
+    const commitSelection = (val) => {
+      onChange(val);
+      closeMenu();
+      inputRef.current?.focus();
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        "input",
+        {
+          id,
+          ref: inputRef,
+          style: styles2.input,
+          type: "text",
+          value: value ?? "",
+          disabled,
+          readOnly: readonly,
+          placeholder,
+          onChange: (e2) => {
+            onChange(e2.target.value);
+            if (menu) {
+              openMenu(e2.target.value);
+            }
+          },
+          onKeyDown: (e2) => {
+            if ((e2.ctrlKey || e2.metaKey) && (e2.key === " " || e2.code === "Space")) {
+              e2.preventDefault();
+              openMenu(inputRef.current?.value ?? "");
+              return;
+            }
+            if (menu) {
+              if (e2.key === "Escape") {
+                e2.preventDefault();
+                closeMenu();
+                return;
+              }
+              if (e2.key === "ArrowDown") {
+                e2.preventDefault();
+                setMenu(
+                  (prev) => prev ? { ...prev, activeIndex: Math.min(prev.items.length - 1, prev.activeIndex + 1) } : prev
+                );
+                return;
+              }
+              if (e2.key === "ArrowUp") {
+                e2.preventDefault();
+                setMenu((prev) => prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev);
+                return;
+              }
+              if (e2.key === "Enter") {
+                e2.preventDefault();
+                const choice = menu.items[menu.activeIndex] ?? menu.items[0];
+                if (choice) {
+                  commitSelection(choice);
+                }
+                return;
+              }
+            }
+          },
+          onBlur: () => {
+            setTimeout(() => closeMenu(), 120);
+          }
+        }
+      ),
+      menu ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        "div",
+        {
+          style: {
+            ...styles2.suggestionPanel,
+            top: menu.top,
+            left: menu.left,
+            width: menu.width,
+            height: menu.height,
+            maxHeight: menu.maxHeight
+          },
+          children: menu.items.map((item, idx) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            "button",
+            {
+              style: { ...styles2.suggestionItem, ...idx === menu.activeIndex ? styles2.suggestionItemActive : {} },
+              onMouseDown: (e2) => {
+                e2.preventDefault();
+                e2.stopPropagation();
+                commitSelection(item);
+              },
+              onMouseEnter: () => setMenu((prev) => prev ? { ...prev, activeIndex: idx } : prev),
+              children: item
+            },
+            item
+          ))
+        }
+      ) : null
+    ] });
   }
   function hasErrorsInSchema(node) {
     if (!node || typeof node !== "object") {
@@ -46238,6 +46393,30 @@
       padding: "8px",
       borderRadius: "6px",
       marginBottom: "10px"
+    },
+    suggestionPanel: {
+      position: "fixed",
+      zIndex: 1e3,
+      background: "var(--vscode-editor-background)",
+      color: "var(--vscode-editor-foreground)",
+      border: "1px solid var(--vscode-editorWidget-border)",
+      borderRadius: 6,
+      boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+      overflowY: "auto"
+    },
+    suggestionItem: {
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      padding: "6px 10px",
+      background: "transparent",
+      border: "none",
+      color: "inherit",
+      cursor: "pointer"
+    },
+    suggestionItemActive: {
+      background: "var(--vscode-inputValidation-infoBackground)",
+      color: "var(--vscode-inputValidation-infoForeground)"
     }
   };
 

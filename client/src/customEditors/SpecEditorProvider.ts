@@ -13,11 +13,13 @@ type WebviewStateMessage = {
   value: unknown | null;
   errors: string[];
   parseError?: string;
+  contractCompletions?: string[];
 };
 
 export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   private readonly validator: Ajv;
   private readonly validateFn: ValidateFunction;
+  private suppressNextUpdateFor = new Set<string>();
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -46,6 +48,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
       const parseResult = this.parseDocument(document);
       const validation = this.validateDocument(document, parseResult);
       this.diagnostics.set(document.uri, validation.diagnostics);
+      const contractCompletions = this.loadProtocolCompletions();
 
       const message: WebviewStateMessage = {
         type: "state",
@@ -53,14 +56,21 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
         value: parseResult.value ?? null,
         errors: validation.messages,
         parseError: parseResult.parseError,
+        contractCompletions,
       };
       void webviewPanel.webview.postMessage(message);
     };
 
     const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.uri.toString() === document.uri.toString()) {
-        updateWebview();
+      if (event.document.uri.toString() !== document.uri.toString()) {
+        return;
       }
+      const key = document.uri.toString();
+      if (this.suppressNextUpdateFor.has(key)) {
+        this.suppressNextUpdateFor.delete(key);
+        return;
+      }
+      updateWebview();
     });
 
     webviewPanel.onDidDispose(() => {
@@ -167,6 +177,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private async updateTextDocument(document: vscode.TextDocument, value: unknown) {
+    this.suppressNextUpdateFor.add(document.uri.toString());
     const edit = new vscode.WorkspaceEdit();
     const jsonText = JSON.stringify(value ?? {}, null, 2) + "\n";
     const end = document.positionAt(document.getText().length);
@@ -277,6 +288,34 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     const class4 = /^\/(?:[a-z0-9-]+\/){3}[a-z0-9-]+$/;
     const class5 = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
     return this.expectedType === "protocol" ? class4.test(name) : class5.test(name);
+  }
+
+  private loadProtocolCompletions(): string[] {
+    try {
+      const cachePath = path.join(require("os").homedir(), ".emergent", "contractCache.json");
+      if (!fs.existsSync(cachePath)) {
+        return [];
+      }
+      const raw = fs.readFileSync(cachePath, "utf8");
+      const data = JSON.parse(raw);
+      const fromObjects: string[] = Array.isArray(data?.protocolCompletionCache)
+        ? data.protocolCompletionCache
+            .map((item: any) =>
+              item?.layer && item?.subject && item?.variation && item?.platform
+                ? `/${item.layer}/${item.subject}/${item.variation}/${item.platform}`
+                : null
+            )
+            .filter(Boolean)
+        : [];
+      const fromRootDoc: string[] =
+        data?.rootDocument && typeof data.rootDocument === "object"
+          ? Object.keys(data.rootDocument).filter((k) => /^\/(?:[a-z0-9-]+\/){3}[a-z0-9-]+$/.test(k))
+          : [];
+      return Array.from(new Set([...fromObjects, ...fromRootDoc]));
+    } catch (err: any) {
+      console.warn("Failed to load contract completions", err?.message ?? err);
+      return [];
+    }
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {

@@ -10,6 +10,7 @@ import {
   RJSFValidationError,
   UiSchema,
   ErrorSchema,
+  WidgetProps,
 } from "@rjsf/utils";
 import { HostMessage, WebviewMessage } from "./types";
 import { vscode } from "./vscode";
@@ -39,6 +40,7 @@ export default function App() {
   const [pdd, setPdd] = useState<any | null>(null);
   const [pddPath, setPddPath] = useState<string | undefined>();
   const [protocolCompletions, setProtocolCompletions] = useState<string[]>([]);
+  const [contractCompletions, setContractCompletions] = useState<string[]>([]);
   const [hostErrors, setHostErrors] = useState<string[]>([]);
   const [parseError, setParseError] = useState<string | undefined>();
   const [formErrors, setFormErrors] = useState<RJSFValidationError[]>([]);
@@ -66,6 +68,7 @@ export default function App() {
         setParseError(message.parseError);
         setFormErrors([]);
         setProtocolCompletions([]);
+        setContractCompletions((message as any).contractCompletions ?? []);
       } else if (message.type === "pdesState") {
         setEditorMode("pdes");
         setSchema(undefined);
@@ -161,6 +164,7 @@ export default function App() {
         protocol: {
           "ui:title": "protocol",
           "ui:placeholder": "Enter protocol",
+          "ui:widget": "ContractProtocolInput",
         },
       },
     });
@@ -181,7 +185,7 @@ export default function App() {
         obligations: buildRequirementUi(),
       },
     };
-  }, []);
+  }, [contractCompletions]);
 
   const templates = useMemo(
     () => ({
@@ -192,11 +196,18 @@ export default function App() {
     }),
     []
   );
+  const widgets = useMemo(
+    () => ({
+      ContractProtocolInput: ContractProtocolCompletionWidget,
+    }),
+    []
+  );
 
-  const formContext = useMemo(
+const formContext = useMemo(
     () => ({
       collapsedState,
       formErrors,
+      contractCompletions,
       toggleItem: (path: string, key: string) => {
         setCollapsedState((prev) => {
           const next = { ...prev };
@@ -405,14 +416,15 @@ export default function App() {
           validator={validator}
           formData={formData ?? {}}
           liveValidate={false}
-          showErrorList
-          uiSchema={uiSchema}
-          templates={templates}
-          extraErrors={extraErrors}
-          formContext={formContext}
-          noHtml5Validate
-          onChange={onChange}
-          onBlur={onBlur}
+        showErrorList
+        uiSchema={uiSchema}
+        templates={templates}
+        widgets={widgets}
+        extraErrors={extraErrors}
+        formContext={formContext}
+        noHtml5Validate
+        onChange={onChange}
+        onBlur={onBlur}
         >
           <></>
         </Form>
@@ -718,6 +730,165 @@ function requirementLabelFromValue(value: unknown) {
   return match?.label ?? String(value);
 }
 
+function ContractProtocolCompletionWidget(props: WidgetProps) {
+  const { value, onChange, id, disabled, readonly, placeholder, formContext } = props;
+  const completions = ((formContext as any)?.contractCompletions as string[]) ?? [];
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [menu, setMenu] = useState<{
+    items: string[];
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+    maxHeight: number;
+    activeIndex: number;
+  } | null>(null);
+
+  const closeMenu = () => setMenu(null);
+
+  const openMenu = (query: string) => {
+    if (!inputRef.current || !completions.length) {
+      closeMenu();
+      return;
+    }
+    const normalized = (query ?? "").toString().trim().toLowerCase();
+    const filtered = completions
+      .filter((c) => (normalized ? c.toLowerCase().includes(normalized) : true))
+      .slice(0, 30);
+    if (!filtered.length) {
+      closeMenu();
+      return;
+    }
+    if (filtered.length === 1) {
+      commitSelection(filtered[0]);
+      return;
+    }
+    const rect = inputRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const belowSpace = viewportHeight - rect.bottom - 8;
+    const aboveSpace = rect.top - 8;
+    const maxHeight = Math.max(140, Math.min(280, Math.max(belowSpace, aboveSpace)));
+    const itemHeight = 32;
+    const desiredHeight = Math.min(maxHeight, Math.max(itemHeight, filtered.length * itemHeight + 4));
+    const placeBelow = belowSpace >= aboveSpace;
+    const top = placeBelow ? rect.bottom + 4 : rect.top - desiredHeight - 4;
+    setMenu({
+      items: filtered,
+      top,
+      left: rect.left,
+      width: rect.width,
+      height: desiredHeight,
+      maxHeight,
+      activeIndex: 0,
+    });
+  };
+
+  useEffect(() => {
+    const handler = () => {
+      if (menu && inputRef.current) {
+        openMenu(inputRef.current.value);
+      }
+    };
+    window.addEventListener("scroll", handler, true);
+    window.addEventListener("resize", handler);
+    return () => {
+      window.removeEventListener("scroll", handler, true);
+      window.removeEventListener("resize", handler);
+    };
+  }, [menu, completions]);
+
+  const commitSelection = (val: string) => {
+    onChange(val);
+    closeMenu();
+    inputRef.current?.focus();
+  };
+
+  return (
+    <>
+      <input
+        id={id}
+        ref={inputRef}
+        style={styles.input}
+        type="text"
+        value={(value as any) ?? ""}
+        disabled={disabled}
+        readOnly={readonly}
+        placeholder={placeholder as string}
+        onChange={(e) => {
+          onChange(e.target.value);
+          if (menu) {
+            openMenu(e.target.value);
+          }
+        }}
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && (e.key === " " || e.code === "Space")) {
+            e.preventDefault();
+            openMenu(inputRef.current?.value ?? "");
+            return;
+          }
+          if (menu) {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              closeMenu();
+              return;
+            }
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setMenu((prev) =>
+                prev ? { ...prev, activeIndex: Math.min(prev.items.length - 1, prev.activeIndex + 1) } : prev
+              );
+              return;
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setMenu((prev) => (prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev));
+              return;
+            }
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const choice = menu.items[menu.activeIndex] ?? menu.items[0];
+              if (choice) {
+                commitSelection(choice);
+              }
+              return;
+            }
+          }
+        }}
+        onBlur={() => {
+          setTimeout(() => closeMenu(), 120);
+        }}
+      />
+      {menu ? (
+        <div
+          style={{
+            ...styles.suggestionPanel,
+            top: menu.top,
+            left: menu.left,
+            width: menu.width,
+            height: menu.height,
+            maxHeight: menu.maxHeight,
+          }}
+        >
+          {menu.items.map((item, idx) => (
+            <button
+              key={item}
+              style={{ ...styles.suggestionItem, ...(idx === menu.activeIndex ? styles.suggestionItemActive : {}) }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                commitSelection(item);
+              }}
+              onMouseEnter={() => setMenu((prev) => (prev ? { ...prev, activeIndex: idx } : prev))}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function hasErrorsInSchema(node: any): boolean {
   if (!node || typeof node !== "object") {
     return false;
@@ -998,5 +1169,29 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px",
     borderRadius: "6px",
     marginBottom: "10px",
+  },
+  suggestionPanel: {
+    position: "fixed",
+    zIndex: 1000,
+    background: "var(--vscode-editor-background)",
+    color: "var(--vscode-editor-foreground)",
+    border: "1px solid var(--vscode-editorWidget-border)",
+    borderRadius: 6,
+    boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+    overflowY: "auto",
+  },
+  suggestionItem: {
+    display: "block",
+    width: "100%",
+    textAlign: "left",
+    padding: "6px 10px",
+    background: "transparent",
+    border: "none",
+    color: "inherit",
+    cursor: "pointer",
+  },
+  suggestionItemActive: {
+    background: "var(--vscode-inputValidation-infoBackground)",
+    color: "var(--vscode-inputValidation-infoForeground)",
   },
 };

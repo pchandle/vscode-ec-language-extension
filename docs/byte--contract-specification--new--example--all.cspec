@@ -1,8 +1,20 @@
 {
   "type": "supplier",
   "name": "/byte/contract-specification/new/example/all",
-  "description": "",
-  "requirements": [],
-  "obligations": [],
+  "description": "This is an example of a contract specification. It is ficticious and should not be used for any design.",
+  "requirements": [
+    {
+      "type": "abstraction",
+      "name": "my clients number",
+      "protocol": "/data/integer/default/x64"
+    }
+  ],
+  "obligations": [
+    {
+      "type": "abstraction",
+      "name": "our bytesequence",
+      "protocol": "/data/bytesequence/default/x64"
+    }
+  ],
   "supplier": "aptissio"
 }

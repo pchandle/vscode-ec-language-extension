@@ -5,6 +5,7 @@ export type HostMessage =
       value: unknown | null;
       errors: string[];
       parseError?: string;
+      contractCompletions?: string[];
     }
   | {
       type: "pdesState";
