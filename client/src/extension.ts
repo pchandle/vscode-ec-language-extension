@@ -812,6 +812,8 @@ async function createNewContractSpec() {
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify(template, null, 2) + "\n");
     await vscode.workspace.fs.writeFile(targetUri, data);
+    // Ensure VS Code loads the freshly written document before opening the custom editor.
+    await vscode.workspace.openTextDocument(targetUri);
     await vscode.commands.executeCommand("vscode.openWith", targetUri, "contractSpecEditor");
   } catch (error: any) {
     console.error("Failed to create contract specification", error);
