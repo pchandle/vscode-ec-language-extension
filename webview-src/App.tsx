@@ -59,6 +59,7 @@ export default function App() {
         const nextValue = message.value ?? {};
         setFormData(nextValue);
         setPdesData(null);
+        setCollapsedState({});
         liveFormDataRef.current = nextValue;
         setFormVersion((v) => v + 1);
         setHostErrors(message.errors ?? []);
@@ -73,6 +74,7 @@ export default function App() {
         setPdesData(nextValue);
         setPdd((message as any).pdd ?? null);
         setPddPath((message as any).pddPath);
+        setCollapsedState({});
         liveFormDataRef.current = nextValue;
         setHostErrors(message.errors ?? []);
         setParseError(message.parseError);
@@ -433,7 +435,7 @@ function CardArrayFieldTemplate<T>(props: ArrayFieldTemplateProps<T>) {
     const prevKeys = prevKeysRef.current;
     const currentKeys = items.map((item) => item.key);
     const newKeys = currentKeys.filter((k) => !prevKeys.includes(k));
-    if (prevKeys.length > 0 && newKeys.length > 0) {
+    if (newKeys.length > 0) {
       (formContext as any)?.setKeys?.(path, false, newKeys);
     }
     prevKeysRef.current = currentKeys;
@@ -465,8 +467,18 @@ function CardArrayFieldTemplate<T>(props: ArrayFieldTemplateProps<T>) {
               </button>
             </>
           ) : null}
-          {canAdd ? (
-            <button type="button" style={styles.addButton} onClick={onAddClick}>
+         {canAdd ? (
+            <button
+              type="button"
+              style={styles.addButton}
+              onClick={() => {
+                onAddClick();
+                const newKey = (path && items.length !== undefined ? `${path}_${items.length}` : undefined) ?? undefined;
+                if ((formContext as any)?.expandItem && newKey) {
+                  (formContext as any).expandItem(path, newKey);
+                }
+              }}
+            >
               + Add {title?.replace(/s$/i, "") ?? "item"}
             </button>
           ) : null}
@@ -492,7 +504,8 @@ function CardArrayFieldTemplate<T>(props: ArrayFieldTemplateProps<T>) {
           const itemErrors = rawItemErrors.length
             ? rawItemErrors
             : ((item as any).rawErrors ?? []) as string[];
-          const collapsed = collapsedMap[item.key] ?? true;
+          const isFirstItem = items.length === 1 && item.index === 0;
+          const collapsed = isFirstItem ? false : collapsedMap[item.key] ?? false;
           const hasAnyErrors = showError || (itemErrors && itemErrors.length > 0);
           return (
             <div

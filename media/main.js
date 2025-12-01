@@ -45411,6 +45411,7 @@
           const nextValue = message.value ?? {};
           setFormData(nextValue);
           setPdesData(null);
+          setCollapsedState({});
           liveFormDataRef.current = nextValue;
           setFormVersion((v2) => v2 + 1);
           setHostErrors(message.errors ?? []);
@@ -45425,6 +45426,7 @@
           setPdesData(nextValue);
           setPdd(message.pdd ?? null);
           setPddPath(message.pddPath);
+          setCollapsedState({});
           liveFormDataRef.current = nextValue;
           setHostErrors(message.errors ?? []);
           setParseError(message.parseError);
@@ -45745,7 +45747,7 @@
       const prevKeys = prevKeysRef.current;
       const currentKeys = items.map((item) => item.key);
       const newKeys = currentKeys.filter((k2) => !prevKeys.includes(k2));
-      if (prevKeys.length > 0 && newKeys.length > 0) {
+      if (newKeys.length > 0) {
         formContext?.setKeys?.(path, false, newKeys);
       }
       prevKeysRef.current = currentKeys;
@@ -45777,10 +45779,24 @@
               }
             )
           ] }) : null,
-          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("button", { type: "button", style: styles2.addButton, onClick: onAddClick, children: [
-            "+ Add ",
-            title?.replace(/s$/i, "") ?? "item"
-          ] }) : null
+          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+            "button",
+            {
+              type: "button",
+              style: styles2.addButton,
+              onClick: () => {
+                onAddClick();
+                const newKey = (path && items.length !== void 0 ? `${path}_${items.length}` : void 0) ?? void 0;
+                if (formContext?.expandItem && newKey) {
+                  formContext.expandItem(path, newKey);
+                }
+              },
+              children: [
+                "+ Add ",
+                title?.replace(/s$/i, "") ?? "item"
+              ]
+            }
+          ) : null
         ] })
       ] }),
       items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.emptyState, children: [
@@ -45796,7 +45812,8 @@
         const rawItemErrors = itemErrorSchema?.__errors ?? [];
         const showError = hasErrorsInSchema(itemErrorSchema) || Boolean(rawItemErrors.length) || Boolean(item.rawErrors && item.rawErrors.length) || hasErrorsInSchema(extraItemErrors);
         const itemErrors = rawItemErrors.length ? rawItemErrors : item.rawErrors ?? [];
-        const collapsed = collapsedMap[item.key] ?? true;
+        const isFirstItem = items.length === 1 && item.index === 0;
+        const collapsed = isFirstItem ? false : collapsedMap[item.key] ?? false;
         const hasAnyErrors = showError || itemErrors && itemErrors.length > 0;
         return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
           "div",
