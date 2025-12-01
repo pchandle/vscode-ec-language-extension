@@ -44548,6 +44548,26 @@
 
   // webview-src/pdes/PdesEditor.tsx
   var import_jsx_runtime48 = __toESM(require_jsx_runtime());
+  var CopyIcon = /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("rect", { x: "7", y: "7", width: "12", height: "12", rx: "2", stroke: "currentColor", strokeWidth: "2" }),
+    /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("rect", { x: "3", y: "3", width: "12", height: "12", rx: "2", stroke: "currentColor", strokeWidth: "2" })
+  ] });
+  var PasteIcon = /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+      "path",
+      {
+        d: "M9 5h6v2h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h2V5Z",
+        stroke: "currentColor",
+        strokeWidth: "2",
+        strokeLinejoin: "round"
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("rect", { x: "9", y: "3", width: "6", height: "4", rx: "1", stroke: "currentColor", strokeWidth: "2" })
+  ] });
+  var TrashIcon = /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("path", { d: "M9 4h6m-8 3h10l-1 13H8L7 7Z", stroke: "currentColor", strokeWidth: "2", strokeLinejoin: "round" }),
+    /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("path", { d: "M5 7h14", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" })
+  ] });
   var propertyFields = {
     abstraction: [{ key: "protocol", label: "Protocol", type: "text" }],
     integer: [
@@ -44810,69 +44830,143 @@
           fields2.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.metaMuted, children: "No properties" }) : null,
           fields2.map((field) => /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("label", { style: styles.propertyRow, children: [
             /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.label, children: field.label }),
-            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+            field.key === "protocol" ? (() => {
+              let inputEl = null;
+              const value2 = topic.properties?.[field.key] ?? "";
+              const updateValue = (nextValue) => {
+                updateModeTopic(modeIndex, topicIndex, {
+                  ...topic,
+                  properties: {
+                    ...topic.properties ?? {},
+                    [field.key]: nextValue
+                  }
+                });
+                if (protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex && inputEl) {
+                  openProtocolMenu(inputEl, modeIndex, topicIndex, String(nextValue ?? ""));
+                }
+              };
+              const copyValue = async () => {
+                try {
+                  await navigator.clipboard.writeText(String(value2 ?? ""));
+                } catch (err) {
+                  console.warn("Copy failed", err);
+                }
+                inputEl?.focus();
+              };
+              const pasteValue = async () => {
+                try {
+                  const text = await navigator.clipboard.readText();
+                  updateValue(text);
+                  inputEl?.focus();
+                } catch (err) {
+                  console.warn("Paste failed", err);
+                }
+              };
+              return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.protocolInputGroup, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+                  "input",
+                  {
+                    ref: (el) => {
+                      inputEl = el;
+                    },
+                    style: { ...styles.input, ...styles.protocolInput },
+                    autoComplete: "off",
+                    spellCheck: false,
+                    type: "text",
+                    value: value2,
+                    onBlur: () => {
+                      setTimeout(() => {
+                        setProtocolMenu(null);
+                        activeProtocolInput.current = null;
+                      }, 120);
+                    },
+                    onKeyDown: (e2) => {
+                      if ((e2.ctrlKey || e2.metaKey) && (e2.key === " " || e2.code === "Space")) {
+                        e2.preventDefault();
+                        openProtocolMenu(e2.target, modeIndex, topicIndex, value2 ?? "");
+                        return;
+                      }
+                      if (e2.key === "Escape") {
+                        setProtocolMenu(null);
+                        activeProtocolInput.current = null;
+                        return;
+                      }
+                      if (protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
+                        if (e2.key === "ArrowDown") {
+                          e2.preventDefault();
+                          setProtocolMenu(
+                            (prev) => prev ? {
+                              ...prev,
+                              activeIndex: Math.min(
+                                prev.items.length - 1,
+                                Math.max(0, prev.activeIndex + 1)
+                              )
+                            } : prev
+                          );
+                          return;
+                        }
+                        if (e2.key === "ArrowUp") {
+                          e2.preventDefault();
+                          setProtocolMenu(
+                            (prev) => prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev
+                          );
+                          return;
+                        }
+                        if (e2.key === "Enter") {
+                          e2.preventDefault();
+                          const choice = protocolMenu.items[protocolMenu.activeIndex] ?? protocolMenu.items[0];
+                          if (choice) {
+                            commitProtocolSelection(choice, modeIndex, topicIndex);
+                          }
+                          return;
+                        }
+                      }
+                    },
+                    onChange: (e2) => {
+                      updateValue(e2.target.value);
+                    }
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.protocolButtons, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+                    "button",
+                    {
+                      type: "button",
+                      style: styles.protocolIconButton,
+                      onMouseDown: (e2) => e2.preventDefault(),
+                      onClick: copyValue,
+                      title: "Copy protocol",
+                      "aria-label": "Copy protocol",
+                      children: CopyIcon
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+                    "button",
+                    {
+                      type: "button",
+                      style: styles.protocolIconButton,
+                      onMouseDown: (e2) => e2.preventDefault(),
+                      onClick: pasteValue,
+                      title: "Paste protocol",
+                      "aria-label": "Paste protocol",
+                      children: PasteIcon
+                    }
+                  )
+                ] })
+              ] });
+            })() : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
               "input",
               {
                 style: styles.input,
-                autoComplete: field.key === "protocol" ? "off" : void 0,
-                spellCheck: field.key === "protocol" ? false : void 0,
                 type: field.type === "number" ? "number" : "text",
                 value: topic.properties?.[field.key] ?? "",
-                onBlur: () => {
-                  setTimeout(() => {
-                    setProtocolMenu(null);
-                    activeProtocolInput.current = null;
-                  }, 120);
-                },
-                onKeyDown: (e2) => {
-                  if (field.key === "protocol" && (e2.ctrlKey || e2.metaKey) && (e2.key === " " || e2.code === "Space")) {
-                    e2.preventDefault();
-                    openProtocolMenu(e2.target, modeIndex, topicIndex, topic.properties?.[field.key] ?? "");
-                    return;
+                onChange: (e2) => updateModeTopic(modeIndex, topicIndex, {
+                  ...topic,
+                  properties: {
+                    ...topic.properties ?? {},
+                    [field.key]: field.type === "number" ? e2.target.value === "" ? void 0 : Number(e2.target.value) : e2.target.value
                   }
-                  if (e2.key === "Escape") {
-                    setProtocolMenu(null);
-                    activeProtocolInput.current = null;
-                    return;
-                  }
-                  if (field.key === "protocol" && protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
-                    if (e2.key === "ArrowDown") {
-                      e2.preventDefault();
-                      setProtocolMenu(
-                        (prev) => prev ? { ...prev, activeIndex: Math.min(prev.items.length - 1, Math.max(0, prev.activeIndex + 1)) } : prev
-                      );
-                      return;
-                    }
-                    if (e2.key === "ArrowUp") {
-                      e2.preventDefault();
-                      setProtocolMenu(
-                        (prev) => prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev
-                      );
-                      return;
-                    }
-                    if (e2.key === "Enter") {
-                      e2.preventDefault();
-                      const choice = protocolMenu.items[protocolMenu.activeIndex] ?? protocolMenu.items[0];
-                      if (choice) {
-                        commitProtocolSelection(choice, modeIndex, topicIndex);
-                      }
-                      return;
-                    }
-                  }
-                },
-                onChange: (e2) => {
-                  const nextValue = field.type === "number" ? e2.target.value === "" ? void 0 : Number(e2.target.value) : e2.target.value;
-                  updateModeTopic(modeIndex, topicIndex, {
-                    ...topic,
-                    properties: {
-                      ...topic.properties ?? {},
-                      [field.key]: nextValue
-                    }
-                  });
-                  if (field.key === "protocol" && protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
-                    openProtocolMenu(e2.target, modeIndex, topicIndex, String(nextValue ?? ""));
-                  }
-                }
+                })
               }
             )
           ] }, field.key))
@@ -44905,7 +44999,7 @@
             /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => toggleMode(index), title: isCollapsed ? "Expand" : "Collapse", children: isCollapsed ? "\u25B8" : "\u25BE" }),
             !isFirst ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => moveMode(index, -1), title: "Move up", children: "\u2191" }) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.iconPlaceholder }),
             !isLast ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.iconButton, onClick: () => moveMode(index, 1), title: "Move down", children: "\u2193" }) : /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.iconPlaceholder }),
-            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.dangerButton, onClick: () => removeMode(index), title: "Delete mode", children: "\u{1F5D1}\uFE0F" })
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("button", { style: styles.dangerButton, onClick: () => removeMode(index), title: "Delete mode", "aria-label": "Delete mode", children: TrashIcon })
           ] })
         ] }),
         !isCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.topicList, children: mode.topics?.map((topic, tIdx) => renderTopic(topic, templateTopics[tIdx], index, tIdx)) }) : null
@@ -45161,6 +45255,31 @@
       gridTemplateColumns: "120px minmax(0, 1fr)",
       gap: 8,
       alignItems: "center"
+    },
+    protocolInputGroup: {
+      display: "flex",
+      gap: 6,
+      alignItems: "center"
+    },
+    protocolButtons: {
+      display: "flex",
+      gap: 6
+    },
+    protocolIconButton: {
+      border: "1px solid var(--vscode-input-border)",
+      background: "var(--vscode-button-secondaryBackground)",
+      color: "var(--vscode-button-secondaryForeground)",
+      borderRadius: 6,
+      padding: "4px 8px",
+      cursor: "pointer",
+      minWidth: 32,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center"
+    },
+    protocolInput: {
+      width: "100%",
+      minWidth: 0
     },
     bannerError: {
       background: "var(--vscode-inputValidation-errorBackground)",

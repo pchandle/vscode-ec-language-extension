@@ -1,6 +1,32 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { buildPreview, PddDefinition, PdesDesign } from "./transform";
 
+const CopyIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="7" y="7" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
+    <rect x="3" y="3" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
+const PasteIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M9 5h6v2h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h2V5Z"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinejoin="round"
+    />
+    <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
+const TrashIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M9 4h6m-8 3h10l-1 13H8L7 7Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    <path d="M5 7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
 type TopicRole = "host" | "join";
 type TopicConstraint = "requirement" | "obligation";
 type TopicType = "abstraction" | "integer" | "string" | "boolean";
@@ -324,81 +350,160 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, protoc
           {fields.map((field) => (
             <label key={field.key} style={styles.propertyRow}>
               <span style={styles.label}>{field.label}</span>
-              <input
-                style={styles.input}
-                autoComplete={field.key === "protocol" ? "off" : undefined}
-                spellCheck={field.key === "protocol" ? false : undefined}
-                type={field.type === "number" ? "number" : "text"}
-                value={topic.properties?.[field.key] ?? ""}
-                onBlur={() => {
-                  // delay to allow click on menu items
-                  setTimeout(() => {
-                    setProtocolMenu(null);
-                    activeProtocolInput.current = null;
-                  }, 120);
-                }}
-                onKeyDown={(e) => {
-                  if (field.key === "protocol" && (e.ctrlKey || e.metaKey) && (e.key === " " || e.code === "Space")) {
-                    e.preventDefault();
-                    openProtocolMenu(e.target as HTMLInputElement, modeIndex, topicIndex, topic.properties?.[field.key] ?? "");
-                    return;
-                  }
-                  if (e.key === "Escape") {
-                    setProtocolMenu(null);
-                    activeProtocolInput.current = null;
-                    return;
-                  }
-                  if (field.key === "protocol" && protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setProtocolMenu((prev) =>
-                        prev
-                          ? { ...prev, activeIndex: Math.min(prev.items.length - 1, Math.max(0, prev.activeIndex + 1)) }
-                          : prev
-                      );
-                      return;
+              {field.key === "protocol" ? (
+                (() => {
+                  let inputEl: HTMLInputElement | null = null;
+                  const value = topic.properties?.[field.key] ?? "";
+                  const updateValue = (nextValue: any) => {
+                    updateModeTopic(modeIndex, topicIndex, {
+                      ...topic,
+                      properties: {
+                        ...(topic.properties ?? {}),
+                        [field.key]: nextValue,
+                      },
+                    });
+                    if (
+                      protocolMenu &&
+                      protocolMenu.modeIndex === modeIndex &&
+                      protocolMenu.topicIndex === topicIndex &&
+                      inputEl
+                    ) {
+                      openProtocolMenu(inputEl, modeIndex, topicIndex, String(nextValue ?? ""));
                     }
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setProtocolMenu((prev) =>
-                        prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev
-                      );
-                      return;
+                  };
+                  const copyValue = async () => {
+                    try {
+                      await navigator.clipboard.writeText(String(value ?? ""));
+                    } catch (err) {
+                      console.warn("Copy failed", err);
                     }
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const choice = protocolMenu.items[protocolMenu.activeIndex] ?? protocolMenu.items[0];
-                      if (choice) {
-                        commitProtocolSelection(choice, modeIndex, topicIndex);
-                      }
-                      return;
+                    inputEl?.focus();
+                  };
+                  const pasteValue = async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      updateValue(text);
+                      inputEl?.focus();
+                    } catch (err) {
+                      console.warn("Paste failed", err);
                     }
+                  };
+                  return (
+                    <div style={styles.protocolInputGroup}>
+                      <input
+                        ref={(el) => {
+                          inputEl = el;
+                        }}
+                        style={{ ...styles.input, ...styles.protocolInput }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        type="text"
+                        value={value}
+                        onBlur={() => {
+                          // delay to allow click on menu items
+                          setTimeout(() => {
+                            setProtocolMenu(null);
+                            activeProtocolInput.current = null;
+                          }, 120);
+                        }}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && (e.key === " " || e.code === "Space")) {
+                            e.preventDefault();
+                            openProtocolMenu(e.target as HTMLInputElement, modeIndex, topicIndex, value ?? "");
+                            return;
+                          }
+                          if (e.key === "Escape") {
+                            setProtocolMenu(null);
+                            activeProtocolInput.current = null;
+                            return;
+                          }
+                          if (
+                            protocolMenu &&
+                            protocolMenu.modeIndex === modeIndex &&
+                            protocolMenu.topicIndex === topicIndex
+                          ) {
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setProtocolMenu((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      activeIndex: Math.min(
+                                        prev.items.length - 1,
+                                        Math.max(0, prev.activeIndex + 1)
+                                      ),
+                                    }
+                                  : prev
+                              );
+                              return;
+                            }
+                            if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setProtocolMenu((prev) =>
+                                prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev
+                              );
+                              return;
+                            }
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const choice = protocolMenu.items[protocolMenu.activeIndex] ?? protocolMenu.items[0];
+                              if (choice) {
+                                commitProtocolSelection(choice, modeIndex, topicIndex);
+                              }
+                              return;
+                            }
+                          }
+                        }}
+                        onChange={(e) => {
+                          updateValue(e.target.value);
+                        }}
+                      />
+                      <div style={styles.protocolButtons}>
+                        <button
+                          type="button"
+                          style={styles.protocolIconButton}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={copyValue}
+                          title="Copy protocol"
+                          aria-label="Copy protocol"
+                        >
+                          {CopyIcon}
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.protocolIconButton}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={pasteValue}
+                          title="Paste protocol"
+                          aria-label="Paste protocol"
+                        >
+                          {PasteIcon}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <input
+                  style={styles.input}
+                  type={field.type === "number" ? "number" : "text"}
+                  value={topic.properties?.[field.key] ?? ""}
+                  onChange={(e) =>
+                    updateModeTopic(modeIndex, topicIndex, {
+                      ...topic,
+                      properties: {
+                        ...(topic.properties ?? {}),
+                        [field.key]:
+                          field.type === "number"
+                            ? e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value)
+                            : e.target.value,
+                      },
+                    })
                   }
-                }}
-                onChange={(e) => {
-                  const nextValue =
-                    field.type === "number"
-                      ? e.target.value === ""
-                        ? undefined
-                        : Number(e.target.value)
-                      : e.target.value;
-                  updateModeTopic(modeIndex, topicIndex, {
-                    ...topic,
-                    properties: {
-                      ...(topic.properties ?? {}),
-                      [field.key]: nextValue,
-                    },
-                  });
-                  if (
-                    field.key === "protocol" &&
-                    protocolMenu &&
-                    protocolMenu.modeIndex === modeIndex &&
-                    protocolMenu.topicIndex === topicIndex
-                  ) {
-                    openProtocolMenu(e.target as HTMLInputElement, modeIndex, topicIndex, String(nextValue ?? ""));
-                  }
-                }}
-              />
+                />
+              )}
             </label>
           ))}
         </div>
@@ -444,8 +549,8 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, protoc
             ) : (
               <span style={styles.iconPlaceholder} />
             )}
-            <button style={styles.dangerButton} onClick={() => removeMode(index)} title="Delete mode">
-              🗑️
+            <button style={styles.dangerButton} onClick={() => removeMode(index)} title="Delete mode" aria-label="Delete mode">
+              {TrashIcon}
             </button>
           </div>
         </div>
@@ -734,6 +839,31 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "120px minmax(0, 1fr)",
     gap: 8,
     alignItems: "center",
+  },
+  protocolInputGroup: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+  },
+  protocolButtons: {
+    display: "flex",
+    gap: 6,
+  },
+  protocolIconButton: {
+    border: "1px solid var(--vscode-input-border)",
+    background: "var(--vscode-button-secondaryBackground)",
+    color: "var(--vscode-button-secondaryForeground)",
+    borderRadius: 6,
+    padding: "4px 8px",
+    cursor: "pointer",
+    minWidth: 32,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  protocolInput: {
+    width: "100%",
+    minWidth: 0,
   },
   bannerError: {
     background: "var(--vscode-inputValidation-errorBackground)",

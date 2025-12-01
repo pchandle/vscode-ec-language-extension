@@ -29,13 +29,13 @@
         {
           "name": "hosted group",
           "properties": {
-            "protocol": "/data/integer"
+            "protocol": "/data/bytesequence/default/x64"
           }
         },
         {
           "name": "joined group",
           "properties": {
-            "protocol": "/data/integer/default/x64"
+            "protocol": "/data/bytesequence/default/x64"
           }
         }
       ]
