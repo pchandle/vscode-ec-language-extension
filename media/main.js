@@ -45374,6 +45374,10 @@
 
   // webview-src/App.tsx
   var import_jsx_runtime49 = __toESM(require_jsx_runtime());
+  var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M9 4h6m-8 3h10l-1 13H8L7 7Z", stroke: "currentColor", strokeWidth: "2", strokeLinejoin: "round" }),
+    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M5 7h14", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" })
+  ] });
   var REQUIREMENT_TYPE_OPTIONS = [
     { value: "abstraction", label: "Protocol" },
     { value: "integer", label: "Integer" },
@@ -45849,7 +45853,7 @@
                     "aria-label": "Remove item",
                     title: "Remove",
                     onClick: item.onDropIndexClick(item.index),
-                    children: "\u{1F5D1}\uFE0F"
+                    children: TrashIcon2
                   }
                 ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton }) })
               ] }),

@@ -17,6 +17,13 @@ import { PdesEditor } from "./pdes/PdesEditor";
 
 type FormData = Record<string, unknown> | null | undefined;
 
+const TrashIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M9 4h6m-8 3h10l-1 13H8L7 7Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    <path d="M5 7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
 const REQUIREMENT_TYPE_OPTIONS = [
   { value: "abstraction", label: "Protocol" },
   { value: "integer", label: "Integer" },
@@ -545,7 +552,7 @@ function CardArrayFieldTemplate<T>(props: ArrayFieldTemplateProps<T>) {
                       title="Remove"
                       onClick={item.onDropIndexClick(item.index)}
                     >
-                      🗑️
+                      {TrashIcon}
                     </button>
                   ) : (
                     <span style={styles.placeholderButton} />
