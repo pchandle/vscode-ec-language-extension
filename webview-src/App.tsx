@@ -31,6 +31,7 @@ export default function App() {
   const [pdesData, setPdesData] = useState<any | null>(null);
   const [pdd, setPdd] = useState<any | null>(null);
   const [pddPath, setPddPath] = useState<string | undefined>();
+  const [protocolCompletions, setProtocolCompletions] = useState<string[]>([]);
   const [hostErrors, setHostErrors] = useState<string[]>([]);
   const [parseError, setParseError] = useState<string | undefined>();
   const [formErrors, setFormErrors] = useState<RJSFValidationError[]>([]);
@@ -56,6 +57,7 @@ export default function App() {
         setHostErrors(message.errors ?? []);
         setParseError(message.parseError);
         setFormErrors([]);
+        setProtocolCompletions([]);
       } else if (message.type === "pdesState") {
         setEditorMode("pdes");
         setSchema(undefined);
@@ -68,6 +70,7 @@ export default function App() {
         setHostErrors(message.errors ?? []);
         setParseError(message.parseError);
         setFormErrors([]);
+        setProtocolCompletions((message as any).protocolCompletions ?? []);
       }
     };
 
@@ -321,6 +324,7 @@ export default function App() {
           value={pdesData}
           pdd={pdd}
           pddPath={pddPath}
+          protocolCompletions={protocolCompletions}
           onChange={(next) => {
             liveFormDataRef.current = next;
             setPdesData(next);

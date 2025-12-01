@@ -13,6 +13,7 @@ export type HostMessage =
       pddPath?: string;
       errors: string[];
       parseError?: string;
+      protocolCompletions?: string[];
     };
 
 export type WebviewMessage =

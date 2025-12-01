@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import * as os from "os";
 import Ajv, { ErrorObject } from "ajv";
 import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
@@ -21,6 +22,7 @@ type WebviewMessage = {
   pddPath?: string;
   errors: string[];
   parseError?: string;
+  protocolCompletions?: string[];
 };
 
 export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
@@ -54,6 +56,7 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
       this.diagnostics.set(document.uri, validation.diagnostics);
       const version = parsed.value?.protocolDesignVersion;
       const { match } = typeof version === "number" ? findPddForVersion(this.context, version) : { match: undefined };
+      const protocolCompletions = this.loadProtocolCompletions();
 
       const message: WebviewMessage = {
         type: "pdesState",
@@ -62,6 +65,7 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
         pddPath: match?.path,
         errors: validation.messages,
         parseError: parsed.parseError,
+        protocolCompletions,
       };
       void webviewPanel.webview.postMessage(message);
     };
@@ -176,6 +180,34 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
     const fullRange = new vscode.Range(new vscode.Position(0, 0), end);
     edit.replace(document.uri, fullRange, jsonText);
     await vscode.workspace.applyEdit(edit);
+  }
+
+  private loadProtocolCompletions(): string[] {
+    try {
+      const cachePath = path.join(os.homedir(), ".emergent", "contractCache.json");
+      if (!fs.existsSync(cachePath)) {
+        return [];
+      }
+      const raw = fs.readFileSync(cachePath, "utf8");
+      const data = JSON.parse(raw);
+      const fromObjects: string[] = Array.isArray(data?.protocolCompletionCache)
+        ? data.protocolCompletionCache
+            .map((item: any) =>
+              item?.layer && item?.subject && item?.variation && item?.platform
+                ? `/${item.layer}/${item.subject}/${item.variation}/${item.platform}`
+                : null
+            )
+            .filter(Boolean)
+        : [];
+      const fromRootDoc: string[] =
+        data?.rootDocument && typeof data.rootDocument === "object"
+          ? Object.keys(data.rootDocument).filter((k) => /^\/[^/]+\/[^/]+\/[^/]+\/[^/]+$/.test(k))
+          : [];
+      return Array.from(new Set([...fromObjects, ...fromRootDoc]));
+    } catch (err: any) {
+      console.warn("Failed to read protocol completions", err?.message ?? err);
+      return [];
+    }
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {

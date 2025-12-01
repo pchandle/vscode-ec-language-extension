@@ -1092,11 +1092,11 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useReducer(reducer, initialArg, init);
           }
-          function useRef2(initialValue) {
+          function useRef3(initialValue) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useRef(initialValue);
           }
-          function useEffect4(create, deps) {
+          function useEffect5(create, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useEffect(create, deps);
           }
@@ -1879,14 +1879,14 @@
           exports2.useContext = useContext;
           exports2.useDebugValue = useDebugValue;
           exports2.useDeferredValue = useDeferredValue;
-          exports2.useEffect = useEffect4;
+          exports2.useEffect = useEffect5;
           exports2.useId = useId;
           exports2.useImperativeHandle = useImperativeHandle;
           exports2.useInsertionEffect = useInsertionEffect;
           exports2.useLayoutEffect = useLayoutEffect;
           exports2.useMemo = useMemo4;
           exports2.useReducer = useReducer2;
-          exports2.useRef = useRef2;
+          exports2.useRef = useRef3;
           exports2.useState = useState5;
           exports2.useSyncExternalStore = useSyncExternalStore;
           exports2.useTransition = useTransition;
@@ -44561,7 +44561,7 @@
     ],
     boolean: []
   };
-  function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChange }) {
+  function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, protocolCompletions, onChange }) {
     const design = value ? {
       ...value,
       classification: value.classification ?? value.name ?? ""
@@ -44592,6 +44592,9 @@
       }
       return map;
     }, [pdd]);
+    const protocolListId = "protocol-completions";
+    const [protocolMenu, setProtocolMenu] = (0, import_react20.useState)(null);
+    const activeProtocolInput = (0, import_react20.useRef)(null);
     const updateDesign = (partial) => {
       onChange({ ...design, ...partial });
     };
@@ -44604,6 +44607,81 @@
       modes[modeIndex] = mode;
       updateDesign({ modes });
     };
+    const buildProtocolMenuState = (input, modeIndex, topicIndex, query) => {
+      if (!protocolCompletions || protocolCompletions.length === 0) {
+        return null;
+      }
+      const normalized = query.trim().toLowerCase();
+      const filtered = protocolCompletions.filter((p2) => normalized ? p2.toLowerCase().includes(normalized) : true).slice(0, 30);
+      if (!filtered.length) {
+        return null;
+      }
+      const rect = input.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const belowSpace = viewportHeight - rect.bottom - 8;
+      const aboveSpace = rect.top - 8;
+      const maxHeight = Math.max(140, Math.min(280, Math.max(belowSpace, aboveSpace)));
+      const itemHeight = 32;
+      const desiredHeight = Math.min(maxHeight, Math.max(itemHeight, filtered.length * itemHeight + 4));
+      const placeBelow = belowSpace >= aboveSpace;
+      const top = placeBelow ? rect.bottom + 4 : rect.top - desiredHeight - 4;
+      return {
+        items: filtered,
+        top,
+        left: rect.left,
+        width: rect.width,
+        maxHeight,
+        height: desiredHeight,
+        modeIndex,
+        topicIndex,
+        activeIndex: 0
+      };
+    };
+    const openProtocolMenu = (input, modeIndex, topicIndex, query) => {
+      const next = buildProtocolMenuState(input, modeIndex, topicIndex, query);
+      if (next) {
+        activeProtocolInput.current = input;
+        setProtocolMenu(next);
+      } else {
+        activeProtocolInput.current = null;
+        setProtocolMenu(null);
+      }
+    };
+    const commitProtocolSelection = (value2, modeIndex, topicIndex) => {
+      const modes = [...design.modes ?? []];
+      const mode = { ...modes[modeIndex] ?? { modeTemplate: "", topics: [] } };
+      const topics = [...mode.topics ?? []];
+      const topic = { ...topics[topicIndex] ?? { name: "", properties: {} } };
+      topics[topicIndex] = {
+        ...topic,
+        properties: { ...topic.properties ?? {}, protocol: value2 }
+      };
+      mode.topics = topics;
+      modes[modeIndex] = mode;
+      updateDesign({ modes });
+      setProtocolMenu(null);
+      activeProtocolInput.current = null;
+    };
+    (0, import_react20.useEffect)(() => {
+      const handleScrollOrResize = () => {
+        setProtocolMenu((prev) => {
+          if (!prev || !activeProtocolInput.current)
+            return null;
+          return buildProtocolMenuState(
+            activeProtocolInput.current,
+            prev.modeIndex,
+            prev.topicIndex,
+            activeProtocolInput.current.value ?? ""
+          );
+        });
+      };
+      window.addEventListener("scroll", handleScrollOrResize, true);
+      window.addEventListener("resize", handleScrollOrResize);
+      return () => {
+        window.removeEventListener("scroll", handleScrollOrResize, true);
+        window.removeEventListener("resize", handleScrollOrResize);
+      };
+    }, []);
     const updateMode = (modeIndex, partial) => {
       const modes = [...design.modes ?? []];
       const mode = { ...modes[modeIndex] ?? { modeTemplate: "", topics: [] } };
@@ -44736,15 +44814,65 @@
               "input",
               {
                 style: styles.input,
+                autoComplete: field.key === "protocol" ? "off" : void 0,
+                spellCheck: field.key === "protocol" ? false : void 0,
                 type: field.type === "number" ? "number" : "text",
                 value: topic.properties?.[field.key] ?? "",
-                onChange: (e2) => updateModeTopic(modeIndex, topicIndex, {
-                  ...topic,
-                  properties: {
-                    ...topic.properties ?? {},
-                    [field.key]: field.type === "number" ? e2.target.value === "" ? void 0 : Number(e2.target.value) : e2.target.value
+                onBlur: () => {
+                  setTimeout(() => {
+                    setProtocolMenu(null);
+                    activeProtocolInput.current = null;
+                  }, 120);
+                },
+                onKeyDown: (e2) => {
+                  if (field.key === "protocol" && (e2.ctrlKey || e2.metaKey) && (e2.key === " " || e2.code === "Space")) {
+                    e2.preventDefault();
+                    openProtocolMenu(e2.target, modeIndex, topicIndex, topic.properties?.[field.key] ?? "");
+                    return;
                   }
-                })
+                  if (e2.key === "Escape") {
+                    setProtocolMenu(null);
+                    activeProtocolInput.current = null;
+                    return;
+                  }
+                  if (field.key === "protocol" && protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
+                    if (e2.key === "ArrowDown") {
+                      e2.preventDefault();
+                      setProtocolMenu(
+                        (prev) => prev ? { ...prev, activeIndex: Math.min(prev.items.length - 1, Math.max(0, prev.activeIndex + 1)) } : prev
+                      );
+                      return;
+                    }
+                    if (e2.key === "ArrowUp") {
+                      e2.preventDefault();
+                      setProtocolMenu(
+                        (prev) => prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev
+                      );
+                      return;
+                    }
+                    if (e2.key === "Enter") {
+                      e2.preventDefault();
+                      const choice = protocolMenu.items[protocolMenu.activeIndex] ?? protocolMenu.items[0];
+                      if (choice) {
+                        commitProtocolSelection(choice, modeIndex, topicIndex);
+                      }
+                      return;
+                    }
+                  }
+                },
+                onChange: (e2) => {
+                  const nextValue = field.type === "number" ? e2.target.value === "" ? void 0 : Number(e2.target.value) : e2.target.value;
+                  updateModeTopic(modeIndex, topicIndex, {
+                    ...topic,
+                    properties: {
+                      ...topic.properties ?? {},
+                      [field.key]: nextValue
+                    }
+                  });
+                  if (field.key === "protocol" && protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
+                    openProtocolMenu(e2.target, modeIndex, topicIndex, String(nextValue ?? ""));
+                  }
+                }
               }
             )
           ] }, field.key))
@@ -44785,6 +44913,36 @@
     };
     const preview = (0, import_react20.useMemo)(() => buildPreview(design, pdd), [design, pdd]);
     return /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.wrapper, children: [
+      protocolMenu ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+        "div",
+        {
+          style: {
+            ...styles.suggestionPanel,
+            top: protocolMenu.top,
+            left: protocolMenu.left,
+            width: protocolMenu.width,
+            maxHeight: protocolMenu.maxHeight,
+            height: protocolMenu.height
+          },
+          children: protocolMenu.items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+            "button",
+            {
+              style: {
+                ...styles.suggestionItem,
+                ...protocolMenu.items[protocolMenu.activeIndex] === item ? styles.suggestionItemActive : {}
+              },
+              onMouseDown: (e2) => {
+                e2.preventDefault();
+                e2.stopPropagation();
+                commitProtocolSelection(item, protocolMenu.modeIndex, protocolMenu.topicIndex);
+              },
+              onMouseEnter: () => setProtocolMenu((prev) => prev ? { ...prev, activeIndex: prev.items.findIndex((i2) => i2 === item) } : prev),
+              children: item
+            },
+            item
+          ))
+        }
+      ) : null,
       renderHeader(),
       parseError ? /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.bannerError, children: [
         "Parse error: ",
@@ -45068,6 +45226,30 @@
       borderRadius: 6,
       padding: 8,
       resize: "vertical"
+    },
+    suggestionPanel: {
+      position: "fixed",
+      zIndex: 50,
+      background: "var(--vscode-editor-background)",
+      color: "var(--vscode-editor-foreground)",
+      border: "1px solid var(--vscode-editorWidget-border)",
+      borderRadius: 6,
+      boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+      overflowY: "auto"
+    },
+    suggestionItem: {
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      padding: "6px 10px",
+      background: "transparent",
+      border: "none",
+      color: "inherit",
+      cursor: "pointer"
+    },
+    suggestionItemActive: {
+      background: "var(--vscode-list-activeSelectionBackground)",
+      color: "var(--vscode-list-activeSelectionForeground)"
     }
   };
 
@@ -45086,6 +45268,7 @@
     const [pdesData, setPdesData] = (0, import_react21.useState)(null);
     const [pdd, setPdd] = (0, import_react21.useState)(null);
     const [pddPath, setPddPath] = (0, import_react21.useState)();
+    const [protocolCompletions, setProtocolCompletions] = (0, import_react21.useState)([]);
     const [hostErrors, setHostErrors] = (0, import_react21.useState)([]);
     const [parseError, setParseError] = (0, import_react21.useState)();
     const [formErrors, setFormErrors] = (0, import_react21.useState)([]);
@@ -45110,6 +45293,7 @@
           setHostErrors(message.errors ?? []);
           setParseError(message.parseError);
           setFormErrors([]);
+          setProtocolCompletions([]);
         } else if (message.type === "pdesState") {
           setEditorMode("pdes");
           setSchema(void 0);
@@ -45122,6 +45306,7 @@
           setHostErrors(message.errors ?? []);
           setParseError(message.parseError);
           setFormErrors([]);
+          setProtocolCompletions(message.protocolCompletions ?? []);
         }
       };
       window.addEventListener("message", handler);
@@ -45351,6 +45536,7 @@
             value: pdesData,
             pdd,
             pddPath,
+            protocolCompletions,
             onChange: (next) => {
               liveFormDataRef.current = next;
               setPdesData(next);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { buildPreview, PddDefinition, PdesDesign } from "./transform";
 
 type TopicRole = "host" | "join";
@@ -34,6 +34,7 @@ type Props = {
   pddPath?: string;
   parseError?: string;
   hostErrors?: string[];
+  protocolCompletions?: string[];
   onChange: (next: PdesDesign) => void;
 };
 
@@ -54,7 +55,7 @@ const propertyFields: Record<
   boolean: [],
 };
 
-export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChange }: Props) {
+export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, protocolCompletions, onChange }: Props) {
   const design = value
     ? {
         ...value,
@@ -89,6 +90,20 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
     return map;
   }, [pdd]);
 
+  const protocolListId = "protocol-completions";
+  const [protocolMenu, setProtocolMenu] = useState<{
+    items: string[];
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+    height: number;
+    modeIndex: number;
+    topicIndex: number;
+    activeIndex: number;
+  } | null>(null);
+  const activeProtocolInput = useRef<HTMLInputElement | null>(null);
+
   const updateDesign = (partial: Partial<PdesDesign>) => {
     onChange({ ...design, ...partial });
   };
@@ -102,6 +117,91 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
     modes[modeIndex] = mode;
     updateDesign({ modes });
   };
+
+  const buildProtocolMenuState = (
+    input: HTMLInputElement,
+    modeIndex: number,
+    topicIndex: number,
+    query: string
+  ): typeof protocolMenu => {
+    if (!protocolCompletions || protocolCompletions.length === 0) {
+      return null;
+    }
+    const normalized = query.trim().toLowerCase();
+    const filtered = protocolCompletions
+      .filter((p) => (normalized ? p.toLowerCase().includes(normalized) : true))
+      .slice(0, 30);
+    if (!filtered.length) {
+      return null;
+    }
+    const rect = input.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const belowSpace = viewportHeight - rect.bottom - 8;
+    const aboveSpace = rect.top - 8;
+    const maxHeight = Math.max(140, Math.min(280, Math.max(belowSpace, aboveSpace)));
+    const itemHeight = 32;
+    const desiredHeight = Math.min(maxHeight, Math.max(itemHeight, filtered.length * itemHeight + 4));
+    const placeBelow = belowSpace >= aboveSpace;
+    const top = placeBelow ? rect.bottom + 4 : rect.top - desiredHeight - 4;
+    return {
+      items: filtered,
+      top,
+      left: rect.left,
+      width: rect.width,
+      maxHeight,
+      height: desiredHeight,
+      modeIndex,
+      topicIndex,
+      activeIndex: 0,
+    };
+  };
+
+  const openProtocolMenu = (input: HTMLInputElement, modeIndex: number, topicIndex: number, query: string) => {
+    const next = buildProtocolMenuState(input, modeIndex, topicIndex, query);
+    if (next) {
+      activeProtocolInput.current = input;
+      setProtocolMenu(next);
+    } else {
+      activeProtocolInput.current = null;
+      setProtocolMenu(null);
+    }
+  };
+
+  const commitProtocolSelection = (value: string, modeIndex: number, topicIndex: number) => {
+    const modes = [...(design.modes ?? [])];
+    const mode = { ...(modes[modeIndex] ?? { modeTemplate: "", topics: [] }) };
+    const topics = [...(mode.topics ?? [])];
+    const topic = { ...(topics[topicIndex] ?? { name: "", properties: {} }) };
+    topics[topicIndex] = {
+      ...topic,
+      properties: { ...(topic.properties ?? {}), protocol: value },
+    };
+    mode.topics = topics;
+    modes[modeIndex] = mode;
+    updateDesign({ modes });
+    setProtocolMenu(null);
+    activeProtocolInput.current = null;
+  };
+
+  useEffect(() => {
+    const handleScrollOrResize = () => {
+      setProtocolMenu((prev) => {
+        if (!prev || !activeProtocolInput.current) return null;
+        return buildProtocolMenuState(
+          activeProtocolInput.current,
+          prev.modeIndex,
+          prev.topicIndex,
+          activeProtocolInput.current.value ?? ""
+        );
+      });
+    };
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, []);
 
   const updateMode = (modeIndex: number, partial: Partial<ModeInstance>) => {
     const modes = [...(design.modes ?? [])];
@@ -226,22 +326,78 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
               <span style={styles.label}>{field.label}</span>
               <input
                 style={styles.input}
+                autoComplete={field.key === "protocol" ? "off" : undefined}
+                spellCheck={field.key === "protocol" ? false : undefined}
                 type={field.type === "number" ? "number" : "text"}
                 value={topic.properties?.[field.key] ?? ""}
-                onChange={(e) =>
+                onBlur={() => {
+                  // delay to allow click on menu items
+                  setTimeout(() => {
+                    setProtocolMenu(null);
+                    activeProtocolInput.current = null;
+                  }, 120);
+                }}
+                onKeyDown={(e) => {
+                  if (field.key === "protocol" && (e.ctrlKey || e.metaKey) && (e.key === " " || e.code === "Space")) {
+                    e.preventDefault();
+                    openProtocolMenu(e.target as HTMLInputElement, modeIndex, topicIndex, topic.properties?.[field.key] ?? "");
+                    return;
+                  }
+                  if (e.key === "Escape") {
+                    setProtocolMenu(null);
+                    activeProtocolInput.current = null;
+                    return;
+                  }
+                  if (field.key === "protocol" && protocolMenu && protocolMenu.modeIndex === modeIndex && protocolMenu.topicIndex === topicIndex) {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setProtocolMenu((prev) =>
+                        prev
+                          ? { ...prev, activeIndex: Math.min(prev.items.length - 1, Math.max(0, prev.activeIndex + 1)) }
+                          : prev
+                      );
+                      return;
+                    }
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setProtocolMenu((prev) =>
+                        prev ? { ...prev, activeIndex: Math.max(0, prev.activeIndex - 1) } : prev
+                      );
+                      return;
+                    }
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const choice = protocolMenu.items[protocolMenu.activeIndex] ?? protocolMenu.items[0];
+                      if (choice) {
+                        commitProtocolSelection(choice, modeIndex, topicIndex);
+                      }
+                      return;
+                    }
+                  }
+                }}
+                onChange={(e) => {
+                  const nextValue =
+                    field.type === "number"
+                      ? e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value)
+                      : e.target.value;
                   updateModeTopic(modeIndex, topicIndex, {
                     ...topic,
                     properties: {
                       ...(topic.properties ?? {}),
-                      [field.key]:
-                        field.type === "number"
-                          ? e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value)
-                          : e.target.value,
+                      [field.key]: nextValue,
                     },
-                  })
-                }
+                  });
+                  if (
+                    field.key === "protocol" &&
+                    protocolMenu &&
+                    protocolMenu.modeIndex === modeIndex &&
+                    protocolMenu.topicIndex === topicIndex
+                  ) {
+                    openProtocolMenu(e.target as HTMLInputElement, modeIndex, topicIndex, String(nextValue ?? ""));
+                  }
+                }}
               />
             </label>
           ))}
@@ -306,6 +462,38 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
 
   return (
     <div style={styles.wrapper}>
+      {protocolMenu ? (
+        <div
+          style={{
+            ...styles.suggestionPanel,
+            top: protocolMenu.top,
+            left: protocolMenu.left,
+            width: protocolMenu.width,
+            maxHeight: protocolMenu.maxHeight,
+            height: protocolMenu.height,
+          }}
+        >
+          {protocolMenu.items.map((item) => (
+            <button
+              key={item}
+              style={{
+                ...styles.suggestionItem,
+                ...(protocolMenu.items[protocolMenu.activeIndex] === item ? styles.suggestionItemActive : {}),
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                commitProtocolSelection(item, protocolMenu.modeIndex, protocolMenu.topicIndex);
+              }}
+              onMouseEnter={() =>
+                setProtocolMenu((prev) => (prev ? { ...prev, activeIndex: prev.items.findIndex((i) => i === item) } : prev))
+              }
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {renderHeader()}
       {parseError ? <div style={styles.bannerError}>Parse error: {parseError}</div> : null}
       {hostErrors && hostErrors.length ? (
@@ -611,5 +799,29 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     padding: 8,
     resize: "vertical",
+  },
+  suggestionPanel: {
+    position: "fixed",
+    zIndex: 50,
+    background: "var(--vscode-editor-background)",
+    color: "var(--vscode-editor-foreground)",
+    border: "1px solid var(--vscode-editorWidget-border)",
+    borderRadius: 6,
+    boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+    overflowY: "auto",
+  },
+  suggestionItem: {
+    display: "block",
+    width: "100%",
+    textAlign: "left",
+    padding: "6px 10px",
+    background: "transparent",
+    border: "none",
+    color: "inherit",
+    cursor: "pointer",
+  },
+  suggestionItemActive: {
+    background: "var(--vscode-list-activeSelectionBackground)",
+    color: "var(--vscode-list-activeSelectionForeground)",
   },
 };
