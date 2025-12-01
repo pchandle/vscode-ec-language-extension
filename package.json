@@ -92,6 +92,16 @@
                 "default": "",
                 "markdownDescription": "Local Protocol Specification Root Directory. Select a folder to store and edit protocol specifications.",
                 "format": "uri"
+              },
+              "specification.contractFilenameFormat": {
+                "type": "string",
+                "default": "{layer}--{verb}--{subject}--{variation}--{platform}",
+                "markdownDescription": "Filename format for new contract specifications (extension is appended automatically: .cspec). Supported tokens: `{layer}`, `{verb}`, `{subject}`, `{variation}`, `{platform}`."
+              },
+              "specification.protocolFilenameFormat": {
+                "type": "string",
+                "default": "{layer}--{subject}--{variation}--{platform}",
+                "markdownDescription": "Filename format for new protocol specifications (extension is appended automatically: .pspec). Supported tokens: `{layer}`, `{subject}`, `{variation}`, `{platform}`."
               }
             }
           },

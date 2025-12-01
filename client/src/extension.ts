@@ -28,6 +28,109 @@ const v = new Valley();
 
 const valleyScanIntervalMs = 30 * 60 * 1000;
 
+const CONTRACT_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
+const DEFAULT_CONTRACT_FILE_EXTENSION = ".cspec";
+const DEFAULT_PROTOCOL_FILE_EXTENSION = ".pspec";
+const DEFAULT_CONTRACT_FILENAME_FORMAT = "{layer}--{verb}--{subject}--{variation}--{platform}";
+const DEFAULT_PROTOCOL_FILENAME_FORMAT = "{layer}--{subject}--{variation}--{platform}";
+const FILENAME_LITERAL_REGEX = /^[a-zA-Z0-9._-]*$/;
+const CONTRACT_FILENAME_TOKENS = ["layer", "verb", "subject", "variation", "platform"];
+const PROTOCOL_FILENAME_TOKENS = ["layer", "subject", "variation", "platform"];
+
+function validateFilenameFormat(format: string, requiredTokens: string[]): string | undefined {
+  if (typeof format !== "string" || !format.trim()) {
+    return "Format must be a non-empty string.";
+  }
+  const tokenRegex = /\{([^}]+)\}/g;
+  const tokensFound = new Set<string>();
+  const invalidTokens: string[] = [];
+  const literals: string[] = [];
+  let match: RegExpExecArray | null;
+  let lastIndex = 0;
+  while ((match = tokenRegex.exec(format)) !== null) {
+    const name = match[1];
+    if (requiredTokens.includes(name)) {
+      tokensFound.add(name);
+    } else {
+      invalidTokens.push(name);
+    }
+    literals.push(format.slice(lastIndex, match.index));
+    lastIndex = match.index + match[0].length;
+  }
+  literals.push(format.slice(lastIndex));
+
+  const missing = requiredTokens.filter((t) => !tokensFound.has(t));
+  if (missing.length) {
+    return `Missing tokens: ${missing.map((t) => `{${t}}`).join(", ")}`;
+  }
+  if (invalidTokens.length) {
+    return `Unknown tokens: ${invalidTokens.map((t) => `{${t}}`).join(", ")}`;
+  }
+  for (const lit of literals) {
+    if (!FILENAME_LITERAL_REGEX.test(lit) || lit.includes("/") || lit.includes("\\")) {
+      return "Contains invalid filename characters outside tokens.";
+    }
+  }
+  return undefined;
+}
+
+function renderFilename(format: string, values: Record<string, string>): string {
+  return Object.keys(values).reduce(
+    (acc, key) => acc.replace(new RegExp(`\\{${key}\\}`, "g"), values[key]),
+    format
+  );
+}
+
+function getFilenameFormat(
+  type: "contract" | "protocol",
+  options?: { silent?: boolean }
+): { format: string; error?: string } {
+  const cfg = vscode.workspace.getConfiguration("specification");
+  const raw =
+    cfg.get<string>(type === "contract" ? "contractFilenameFormat" : "protocolFilenameFormat") ??
+    (type === "contract" ? DEFAULT_CONTRACT_FILENAME_FORMAT : DEFAULT_PROTOCOL_FILENAME_FORMAT);
+  const tokens = type === "contract" ? CONTRACT_FILENAME_TOKENS : PROTOCOL_FILENAME_TOKENS;
+  const error = validateFilenameFormat(raw, tokens);
+  if (error) {
+    const msg = `Invalid ${type} filename format: ${error}`;
+    if (options?.silent) {
+      console.warn(msg);
+    } else {
+      void vscode.window.showWarningMessage(msg);
+    }
+  }
+  return {
+    format: error ? (type === "contract" ? DEFAULT_CONTRACT_FILENAME_FORMAT : DEFAULT_PROTOCOL_FILENAME_FORMAT) : raw,
+    error,
+  };
+}
+
+function buildFilenameFromClassification(type: "contract" | "protocol", classification: string, options?: { silent?: boolean }) {
+  const parts = classification.slice(1).split("/");
+  const isContract = type === "contract";
+  const expected = isContract ? 5 : 4;
+  if (parts.length !== expected || parts.some((p) => !p)) {
+    return isContract ? "new-contract.cspec" : "new-protocol.pspec";
+  }
+  const values = isContract
+    ? {
+        layer: parts[0],
+        verb: parts[1],
+        subject: parts[2],
+        variation: parts[3],
+        platform: parts[4],
+      }
+    : {
+        layer: parts[0],
+        subject: parts[1],
+        variation: parts[2],
+        platform: parts[3],
+      };
+  const { format } = getFilenameFormat(type, options);
+  const base = renderFilename(format, values);
+  return `${base}${isContract ? DEFAULT_CONTRACT_FILE_EXTENSION : DEFAULT_PROTOCOL_FILE_EXTENSION}`;
+}
+
 export function activate(context: ExtensionContext) {
   console.debug("Activating 'emergent' language extension.");
 
@@ -195,6 +298,8 @@ export function activate(context: ExtensionContext) {
   // Update formatting status from configuration
   updateFormattingCfg();
 
+  validateFilenameFormats();
+
   // Init Valley state from context.
   try {
     updateStatusBar(ecStatusBarItem, v.init(context), false);
@@ -256,6 +361,11 @@ function updateGatewayApiUrl() {
 function updateFormattingCfg() {
   const formatting = vscode.workspace.getConfiguration("formatting");
   console.log("Formatting is now", formatting.disabled ? "disabled" : "enabled");
+}
+
+function validateFilenameFormats() {
+  getFilenameFormat("contract", { silent: false });
+  getFilenameFormat("protocol", { silent: false });
 }
 
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -657,14 +767,13 @@ async function createNewContractSpec() {
     return;
   }
 
-  const classificationPattern = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
   const classification = await vscode.window.showInputBox({
     title: "Contract Classification",
     prompt: "Enter contract classification (/layer/verb/subject/variation/platform)",
     value: "/layer/verb/subject/variation/platform",
     validateInput: (value) => {
       const trimmed = value.trim();
-      return classificationPattern.test(trimmed)
+      return CONTRACT_CLASSIFICATION_PATTERN.test(trimmed)
         ? undefined
         : "Classification must match /layer/verb/subject/variation/platform (lowercase, digits, hyphens).";
     },
@@ -677,10 +786,7 @@ async function createNewContractSpec() {
   const trimmedClassification = classification.trim();
   const defaultSupplier = vscode.workspace.getConfiguration("specification").get<string>("defaultSupplier", "") ?? "";
 
-  const suggestedFilename = (() => {
-    const parts = trimmedClassification.slice(1).split("/");
-    return parts.length === 5 && parts.every((p) => p) ? `${parts.join("--")}.cspec` : "new-contract.cspec";
-  })();
+  const suggestedFilename = buildFilenameFromClassification("contract", trimmedClassification, { silent: false });
 
   const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, suggestedFilename);
   const targetUri = await vscode.window.showSaveDialog({
@@ -755,13 +861,7 @@ async function openLocalSpecification(uri?: vscode.Uri | string, position?: vsco
     return;
   }
 
-  const filenameFromClassification = () => {
-    const parts = info.classification.slice(1).split("/");
-    const dashed = parts.join("--");
-    return info.type === "contract" ? `${dashed}.cspec` : `${dashed}.pspec`;
-  };
-
-  const suggestedName = filenameFromClassification();
+  const suggestedName = buildFilenameFromClassification(info.type, info.classification, { silent: true });
   const pattern = new vscode.RelativePattern(rootUri, `**/${suggestedName}`);
   const matches = await vscode.workspace.findFiles(pattern);
 
