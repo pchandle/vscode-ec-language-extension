@@ -101,6 +101,28 @@ export function activate(context: ExtensionContext) {
       void createNewContractSpec();
     })
   );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("emergent.clearSpecificationCache", async () => {
+      try {
+        const cachePath = await client.sendRequest<string>("emergent/getSpecCachePath", null);
+        const choice = await vscode.window.showWarningMessage(
+          `Clear the Emergent specification cache?\n${cachePath}`,
+          { modal: true },
+          "Clear"
+        );
+        if (choice === "Clear") {
+          const cleared = await client.sendRequest<boolean>("emergent/clearSpecCache", null);
+          if (cleared) {
+            vscode.window.showInformationMessage("Emergent specification cache cleared.");
+          } else {
+            vscode.window.showErrorMessage("Failed to clear the Emergent specification cache.");
+          }
+        }
+      } catch (err: any) {
+        vscode.window.showErrorMessage(`Failed to clear cache: ${err?.message ?? err}`);
+      }
+    })
+  );
 
   // Code formatting implemented using API
   const emergentDocumentFormattingEditProvider = vscode.languages.registerDocumentFormattingEditProvider(

@@ -25,8 +25,10 @@ import {
 import {
 	buildCompletionItems,
 	buildContractSpecCompletionItems,
+	buildProtocolSpecCompletionItems,
 	getDefaultsFromText,
-	shouldTriggerContractSpecCompletion
+	shouldTriggerContractSpecCompletion,
+	shouldTriggerProtocolSpecCompletion
 } from './completionSupport';
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 
@@ -231,8 +233,10 @@ connection.onDidChangeWatchedFiles(_change => {
 });
 
 const fetchSpecificationRequest = new RequestType<FetchSpecificationParams, FetchSpecificationResult, void>('emergent/fetchSpecification');
+const clearSpecCacheRequest = new RequestType<null, boolean, void>('emergent/clearSpecCache');
+const getSpecCachePathRequest = new RequestType<null, string, void>('emergent/getSpecCachePath');
 
-type ContractTerm = { name: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number };
+type ContractTerm = { name?: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number };
 
 const MARKDOWN_STYLES = {
 	heading: '#5E994F',
@@ -375,6 +379,18 @@ connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpe
 	return { classification: parsed.classification, specification: spec };
 });
 
+connection.onRequest(clearSpecCacheRequest, async (): Promise<boolean> => {
+	try {
+		gatewayClient.clearCache();
+		return true;
+	} catch (err: any) {
+		connection.console.error(`Failed to clear specification cache: ${err?.message ?? err}`);
+		return false;
+	}
+});
+
+connection.onRequest(getSpecCachePathRequest, (): string => gatewayClient.cacheFilePath);
+
 connection.onHover(async (params): Promise<Hover | null> => {
 	const settings = await getDocumentSettings(params.textDocument.uri);
 	const hoverDebugLogging = settings.hoverDebugLogging;
@@ -439,40 +455,71 @@ connection.onHover(async (params): Promise<Hover | null> => {
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
 	async (params: TextDocumentPositionParams): Promise<CompletionItem[]> => {
-		const document = documents.get(params.textDocument.uri);
-		if (!document) {
-			return [];
-		}
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {
+		return [];
+	}
 
-		const specContext = shouldTriggerContractSpecCompletion(document, params.position);
-		if (specContext) {
-			const parsed = getClassificationFromDocument(document, params);
-			if (parsed?.classification) {
-				const spec = await gatewayClient.fetchContractSpec(parsed.classification);
-				if (spec) {
-					const specItems = buildContractSpecCompletionItems(
-						spec,
-						params.position,
-						specContext.lineText,
-						specContext.openParenIndex,
-						specContext.keyword
-					);
-					if (specItems?.length) {
-						const firstEdit = specItems[0].textEdit;
-						// Apply the completion immediately to avoid showing a single-item popup.
-						if (firstEdit && 'range' in firstEdit) {
-							await connection.workspace.applyEdit({
-								changes: { [params.textDocument.uri]: [firstEdit] }
-							});
+	const specContext = shouldTriggerContractSpecCompletion(document, params.position);
+	if (specContext) {
+		const parsed = getClassificationFromDocument(document, params);
+		if (parsed?.classification) {
+			const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+			if (spec) {
+				const specItems = buildContractSpecCompletionItems(
+					spec,
+					params.position,
+					specContext.lineText,
+					specContext.openParenIndex,
+					specContext.keyword
+				);
+				if (specItems?.length) {
+					const firstEdit = specItems[0].textEdit;
+					// Apply the completion immediately to avoid showing a single-item popup.
+					if (firstEdit && 'range' in firstEdit) {
+						const result = await connection.workspace.applyEdit({
+							changes: { [params.textDocument.uri]: [firstEdit] }
+						});
+						if (result?.applied) {
 							return [];
 						}
-						return specItems;
 					}
+					return specItems;
 				}
 			}
 		}
-		return buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
 	}
+
+	const protocolSpecContext = shouldTriggerProtocolSpecCompletion(document, params.position);
+	if (protocolSpecContext) {
+		const parsed = getClassificationFromDocument(document, params);
+		if (parsed?.classification) {
+			const spec = await gatewayClient.fetchProtocolSpec(parsed.classification);
+			if (spec) {
+				const specItems = buildProtocolSpecCompletionItems(
+					spec,
+					params.position,
+					protocolSpecContext.lineText,
+					protocolSpecContext.openParenIndex,
+					protocolSpecContext.keyword
+				);
+				if (specItems?.length) {
+					const firstEdit = specItems[0].textEdit;
+					if (firstEdit && 'range' in firstEdit) {
+						const result = await connection.workspace.applyEdit({
+							changes: { [params.textDocument.uri]: [firstEdit] }
+						});
+						if (result?.applied) {
+							return [];
+						}
+					}
+					return specItems;
+				}
+			}
+		}
+	}
+	return buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
+}
 );
 
 connection.onCompletionResolve((item): CompletionItem => item);

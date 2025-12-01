@@ -23,6 +23,14 @@ export type ContractSpecification = {
   requirements?: ContractSpecTopic[];
   obligations?: ContractSpecTopic[];
 };
+export type ProtocolRoleSpec = {
+  requirements?: ContractSpecTopic[];
+  obligations?: ContractSpecTopic[];
+};
+export type ProtocolSpecification = {
+  host?: ProtocolRoleSpec;
+  join?: ProtocolRoleSpec;
+};
 
 export function classifyContractName(name: string): ContractClassification | undefined {
   const groups = name.match(/\/(?<layer>[^/]+)\/(?<verb>[^/]+)\/(?<subject>[^/]+)\/(?<variation>[^/]+)\/(?<platform>[^/]+)/);
@@ -65,16 +73,17 @@ function getLineText(document: TextDocument, line: number): string {
   return rawLine.replace(/[\r\n]+$/, "");
 }
 
-export function shouldTriggerContractSpecCompletion(
+function shouldTriggerRoleSpecCompletion<K extends string>(
   document: TextDocument,
-  position: Position
-): { lineText: string; openParenIndex: number; keyword: "sub" | "job" } | null {
+  position: Position,
+  keywords: readonly K[]
+): { lineText: string; openParenIndex: number; keyword: K } | null {
   const lineText = getLineText(document, position.line);
-  const keywordMatch = lineText.match(/^\s*(sub|job)\s+/i);
+  const keywordMatch = lineText.match(new RegExp(`^\\s*(${keywords.join("|")})\\s+`, "i"));
   if (!keywordMatch) {
     return null;
   }
-  const keyword = keywordMatch[1].toLowerCase() as "sub" | "job";
+  const keyword = keywordMatch[1].toLowerCase() as K;
 
   const openParenIndex = lineText.indexOf("(");
   if (openParenIndex === -1 || position.character <= openParenIndex) {
@@ -93,6 +102,20 @@ export function shouldTriggerContractSpecCompletion(
   }
 
   return { lineText, openParenIndex, keyword };
+}
+
+export function shouldTriggerContractSpecCompletion(
+  document: TextDocument,
+  position: Position
+): { lineText: string; openParenIndex: number; keyword: "sub" | "job" } | null {
+  return shouldTriggerRoleSpecCompletion(document, position, ["sub", "job"] as const);
+}
+
+export function shouldTriggerProtocolSpecCompletion(
+  document: TextDocument,
+  position: Position
+): { lineText: string; openParenIndex: number; keyword: "host" | "join" } | null {
+  return shouldTriggerRoleSpecCompletion(document, position, ["host", "join"] as const);
 }
 
 export function buildContractSpecCompletionItems(
@@ -117,6 +140,43 @@ export function buildContractSpecCompletionItems(
     completionText = `${requirementText}) -> ${obligationText}`.trimEnd();
     newText = completionText || ") -> ";
   }
+
+  const editRange: Range = {
+    start: { line: position.line, character: openParenIndex + 1 },
+    end: { line: position.line, character: lineText.length },
+  };
+
+  return [
+    {
+      label: completionText || ") ->",
+      kind: CompletionItemKind.Snippet,
+      preselect: true,
+      sortText: "emergent_completion_000_spec",
+      textEdit: { range: editRange, newText },
+      insertText: newText,
+    },
+  ];
+}
+
+export function buildProtocolSpecCompletionItems(
+  spec: ProtocolSpecification,
+  position: Position,
+  lineText: string,
+  openParenIndex: number,
+  keyword: "host" | "join"
+): CompletionItem[] | null {
+  const roleSpec = keyword === "host" ? spec.host : spec.join;
+  if (!roleSpec) {
+    return null;
+  }
+
+  const requirements = (roleSpec.requirements ?? []).map((req) => normalizeTopicName(req.name)).filter(Boolean) as string[];
+  const obligations = (roleSpec.obligations ?? []).map((obl) => normalizeTopicName(obl.name)).filter(Boolean) as string[];
+
+  const requirementText = requirements.join(", ");
+  const obligationText = obligations.join(", ");
+  const completionText = `${requirementText}) -> ${obligationText}`.trimEnd();
+  const newText = completionText || ") -> ";
 
   const editRange: Range = {
     start: { line: position.line, character: openParenIndex + 1 },

@@ -51,6 +51,19 @@
         }
       },
       {
+        "title": "Specification Cache",
+        "properties": {
+          "cache.specificationPath": {
+            "type": "string",
+            "enum": [
+              "~/.emergent/contractCache.json"
+            ],
+            "default": "~/.emergent/contractCache.json",
+            "markdownDescription": "Read-only location of the specification cache. Use the command 'Emergent: Clear Specification Cache' to wipe it."
+          }
+        }
+      },
+      {
         "title": "Formatting",
         "properties": {
           "formatting.disabled": {
@@ -203,6 +216,11 @@
       {
         "command": "emergent.exportProtocolSpec",
         "title": "Emergent: Export Protocol Spec (from .pdes)",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.clearSpecificationCache",
+        "title": "Emergent: Clear Specification Cache",
         "category": "Emergent"
       }
     ],

@@ -3,25 +3,49 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { Connection } from "vscode-languageserver";
-import { ContractClassification, ProtocolClassification, classifyContractName, classifyProtocolName } from "./completionSupport";
+import {
+  ContractClassification,
+  ProtocolClassification,
+  ProtocolSpecification,
+  classifyContractName,
+  classifyProtocolName,
+} from "./completionSupport";
 
 type GatewayConfig = { hostname: string; port: number; allowInsecure: boolean };
 type NetworkPaths = { rootPrefix: string; specPrefix: string };
 
+type RemoteRequirement = {
+  name?: string;
+  type: string;
+  protocol?: string;
+  hint?: string;
+  length?: number;
+  minimum?: number;
+  maximum?: number;
+};
+
 export type RemoteContractSpec = {
   name: string;
   description?: string;
-  requirements?: Array<{ name: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number }>;
-  obligations?: Array<{ name: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number }>;
+  requirements?: RemoteRequirement[];
+  obligations?: RemoteRequirement[];
   suppliers?: string[];
 };
+
+export type RemoteProtocolSpec = ProtocolSpecification & {
+  name: string;
+  description?: string;
+  policy?: number;
+};
+
+type RemoteSpec = RemoteContractSpec | RemoteProtocolSpec;
 
 class GatewayClient {
   #config: GatewayConfig = { hostname: "localhost", port: 10000, allowInsecure: true };
   #apiRoot = "http://localhost:10000";
   #completionCache: ContractClassification[] = [];
   #protocolCompletionCache: ProtocolClassification[] = [];
-  #specCache: Record<string, RemoteContractSpec> = {};
+  #specCache: Record<string, RemoteSpec> = {};
   #rootDocument: Record<string, string> = {};
   #cacheTimer: NodeJS.Timer | undefined;
   #connection: Connection | undefined;
@@ -62,6 +86,9 @@ class GatewayClient {
   }
   get protocolCache(): ProtocolClassification[] {
     return this.#protocolCompletionCache;
+  }
+  get cacheFilePath(): string {
+    return this.#cacheFilePath;
   }
 
   async refreshContractCache(): Promise<void> {
@@ -112,11 +139,11 @@ class GatewayClient {
   }
 
   async fetchContractSpec(classification: string): Promise<RemoteContractSpec | null> {
-    const cached = this.#specCache[classification];
+    const cached = this.#specCache[classification] as RemoteContractSpec | undefined;
 
     const gatewayUrl = `${this.#apiRoot}${this.#specPathPrefix}${classification}`;
     try {
-      const spec = await this.fetchJson(gatewayUrl);
+      const spec = (await this.fetchJson(gatewayUrl)) as RemoteContractSpec;
       this.#specCache[classification] = spec;
       this.persistDiskCache();
       return spec;
@@ -134,7 +161,7 @@ class GatewayClient {
     }
 
     try {
-      const spec = await this.fetchJson(hostUrl);
+      const spec = (await this.fetchJson(hostUrl)) as RemoteContractSpec;
       this.#specCache[classification] = spec;
       this.persistDiskCache();
       return spec;
@@ -147,6 +174,58 @@ class GatewayClient {
       return null;
     }
   }
+
+  async fetchProtocolSpec(classification: string): Promise<RemoteProtocolSpec | null> {
+    const cached = this.#specCache[classification] as RemoteProtocolSpec | undefined;
+
+    const gatewayUrl = `${this.#apiRoot}${this.#specPathPrefix}${classification}`;
+    try {
+      const spec = (await this.fetchJson(gatewayUrl)) as RemoteProtocolSpec;
+      this.#specCache[classification] = spec;
+      this.persistDiskCache();
+      return spec;
+    } catch (err: any) {
+      this.#connection?.console.warn(`Gateway fetch failed for ${classification}: ${err.message}`);
+    }
+
+    const host = await this.ensureHostForClassification(classification);
+    const hostUrl = host
+      ? `${this.#config.allowInsecure ? "http" : "https"}://${host}${this.#specPathPrefix}${classification}`
+      : null;
+    if (!hostUrl) {
+      this.#connection?.console.error(`No host available for protocol ${classification}`);
+      return cached ?? null;
+    }
+
+    try {
+      const spec = (await this.fetchJson(hostUrl)) as RemoteProtocolSpec;
+      this.#specCache[classification] = spec;
+      this.persistDiskCache();
+      return spec;
+    } catch (err: any) {
+      this.#connection?.console.error(`Failed to fetch protocol spec ${classification} from host ${host}: ${err.message}`);
+      if (cached) {
+        this.#connection?.console.log(`Serving cached protocol spec for ${classification}`);
+        return cached;
+      }
+      return null;
+    }
+  }
+
+  clearCache(): void {
+    this.#completionCache = [];
+    this.#protocolCompletionCache = [];
+    this.#specCache = {};
+    this.#rootDocument = {};
+    try {
+      if (fs.existsSync(this.#cacheFilePath)) {
+        fs.unlinkSync(this.#cacheFilePath);
+      }
+    } catch (err: any) {
+      this.#connection?.console.error(`Failed to clear cache file ${this.#cacheFilePath}: ${err.message}`);
+    }
+  }
+
 
   private async fetchJson(url: string): Promise<any> {
     try {

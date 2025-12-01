@@ -3,11 +3,13 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   buildCompletionItems,
   buildContractSpecCompletionItems,
+  buildProtocolSpecCompletionItems,
   classifyContractName,
   ContractClassification,
   ProtocolClassification,
   classifyProtocolName,
   shouldTriggerContractSpecCompletion,
+  shouldTriggerProtocolSpecCompletion,
 } from "../src/completionSupport";
 
 function mockDoc(text: string) {
@@ -227,6 +229,53 @@ describe("completionSupport", () => {
 
     expect(items?.[0].textEdit && "newText" in items[0].textEdit ? items[0].textEdit.newText : undefined).to.equal(
       "input) do_thing, other:"
+    );
+  });
+
+  it("builds protocol host spec completion after opening parenthesis", () => {
+    const line = "host /byte/integer/default/x64(";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerProtocolSpecCompletion(doc, position);
+
+    const spec = {
+      host: {
+        requirements: [{ name: "First Requirement" }, { name: "Second-Req" }],
+        obligations: [{ name: "Do Thing" }],
+      },
+    };
+
+    const items =
+      context && buildProtocolSpecCompletionItems(spec, position, context.lineText, context.openParenIndex, "host");
+
+    expect(items?.[0].textEdit && "newText" in items[0].textEdit ? items[0].textEdit.newText : undefined).to.equal(
+      "first_requirement, second_req) -> do_thing"
+    );
+    const editRange = items?.[0].textEdit && "range" in items[0].textEdit ? items[0].textEdit.range : null;
+    expect(editRange).to.deep.equal({
+      start: { line: 0, character: line.indexOf("(") + 1 },
+      end: { line: 0, character: line.length },
+    });
+  });
+
+  it("builds protocol join spec completion with closing parenthesis already present", () => {
+    const line = "join /data/integer/default/x64()";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.indexOf("(") + 1 };
+    const context = shouldTriggerProtocolSpecCompletion(doc, position);
+
+    const spec = {
+      join: {
+        requirements: [{ name: "Input" }],
+        obligations: [{ name: "Respond" }, { name: "Ack Result" }],
+      },
+    };
+
+    const items =
+      context && buildProtocolSpecCompletionItems(spec, position, context.lineText, context.openParenIndex, "join");
+
+    expect(items?.[0].textEdit && "newText" in items[0].textEdit ? items[0].textEdit.newText : undefined).to.equal(
+      "input) -> respond, ack_result"
     );
   });
 });
