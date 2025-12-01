@@ -15,6 +15,7 @@
 - `modes`: ordered array; concatenation order drives downstream ordering.
   - Each mode instance:
     - `modeTemplate`: references a mode template name in the `.pdd`.
+    - `collaborationLabel`: freeform label displayed in the editor alongside the template.
     - `topics`: ordered array (order defined by the mode template).
       - Each topic item:
         - `name`: label used in the exported `.pspec`.
@@ -129,6 +130,7 @@ Example `.pdes` (`docs/emergent-pdes-example-v1.json`):
   "modes": [
     {
       "modeTemplate": "group-peers",
+      "collaborationLabel": "Group peers",
       "topics": [
         {
           "name": "My number",
@@ -142,6 +144,7 @@ Example `.pdes` (`docs/emergent-pdes-example-v1.json`):
     },
     {
       "modeTemplate": "collect-peer-sum-and-issue-offsets",
+      "collaborationLabel": "Collect and issue offsets",
       "topics": [
         {
           "name": "Base",

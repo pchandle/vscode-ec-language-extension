@@ -24,6 +24,7 @@ interface TopicInstance {
 
 interface ModeInstance {
   modeTemplate: string;
+  collaborationLabel?: string;
   topics: TopicInstance[];
 }
 
@@ -88,7 +89,7 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
     return map;
   }, [pdd]);
 
-  const updateDesign = (partial: Partial<ProtocolDesign>) => {
+  const updateDesign = (partial: Partial<PdesDesign>) => {
     onChange({ ...design, ...partial });
   };
 
@@ -102,6 +103,13 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
     updateDesign({ modes });
   };
 
+  const updateMode = (modeIndex: number, partial: Partial<ModeInstance>) => {
+    const modes = [...(design.modes ?? [])];
+    const mode = { ...(modes[modeIndex] ?? { modeTemplate: "", topics: [] }) };
+    modes[modeIndex] = { ...mode, ...partial };
+    updateDesign({ modes });
+  };
+
   const addMode = () => {
     if (!newModeTemplate || !templates[newModeTemplate]) {
       return;
@@ -111,7 +119,7 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
       name: t.name || "",
       properties: {},
     }));
-    const modes = [...(design.modes ?? []), { modeTemplate: template.name, topics }];
+    const modes = [...(design.modes ?? []), { modeTemplate: template.name, collaborationLabel: "", topics }];
     updateDesign({ modes });
     setCollapsedModes((prev) => ({ ...prev, [modes.length - 1]: false }));
   };
@@ -253,6 +261,12 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, onChan
         <div style={styles.modeHeader}>
           <div style={styles.modeTitle}>
             <div style={styles.badge}>Mode</div>
+            <input
+              style={styles.modeLabelInput}
+              value={mode.collaborationLabel ?? ""}
+              placeholder="Collaboration label"
+              onChange={(e) => updateMode(index, { collaborationLabel: e.target.value })}
+            />
             <strong>{mode.modeTemplate}</strong>
           </div>
           {!template ? <span style={styles.metaMuted}>Template not found</span> : null}
@@ -441,6 +455,14 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 8,
     fontSize: 14,
+  },
+  modeLabelInput: {
+    border: "1px solid var(--vscode-input-border)",
+    borderRadius: 6,
+    padding: "4px 6px",
+    minWidth: 160,
+    background: "var(--vscode-input-background)",
+    color: "var(--vscode-input-foreground)",
   },
   topicList: {
     display: "grid",

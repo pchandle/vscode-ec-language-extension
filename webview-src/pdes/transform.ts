@@ -28,7 +28,11 @@ export interface PdesDesign {
   classification: string;
   description: string;
   policy: string | number;
-  modes: { modeTemplate: string; topics: { name: string; properties: Record<string, any> }[] }[];
+  modes: {
+    modeTemplate: string;
+    collaborationLabel?: string;
+    topics: { name: string; properties: Record<string, any> }[];
+  }[];
 }
 
 export interface PreviewResult {

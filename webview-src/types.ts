@@ -68,6 +68,7 @@ export interface ProtocolDesignTopicInstance {
 
 export interface ProtocolDesignModeInstance {
   modeTemplate: string;
+  collaborationLabel?: string;
   topics: ProtocolDesignTopicInstance[];
   [key: string]: unknown;
 }

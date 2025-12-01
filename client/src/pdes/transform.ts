@@ -1,7 +1,7 @@
 import { ProtocolDesignDefinition } from "../pddLoader";
 
 export type PdesModeTopicInstance = { name: string; properties: Record<string, any> };
-export type PdesModeInstance = { modeTemplate: string; topics: PdesModeTopicInstance[] };
+export type PdesModeInstance = { modeTemplate: string; collaborationLabel?: string; topics: PdesModeTopicInstance[] };
 export type PdesDesign = {
   protocolDesignVersion: number;
   classification: string;

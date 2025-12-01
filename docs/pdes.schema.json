@@ -24,6 +24,7 @@
         "required": ["modeTemplate", "topics"],
         "properties": {
           "modeTemplate": { "type": "string" },
+          "collaborationLabel": { "type": "string" },
           "topics": {
             "type": "array",
             "items": {

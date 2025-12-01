@@ -6,6 +6,7 @@
   "modes": [
     {
       "modeTemplate": "group-peers",
+      "collaborationLabel": "the number",
       "topics": [
         {
           "name": "My number",
@@ -22,10 +23,25 @@
       ]
     },
     {
-      "modeTemplate": "collect-peer-sum-and-issue-offsets",
+      "modeTemplate": "group-peers",
+      "collaborationLabel": "",
       "topics": [
         {
-          "name": "Base",
+          "name": "hosted group",
+          "properties": {}
+        },
+        {
+          "name": "joined group",
+          "properties": {}
+        }
+      ]
+    },
+    {
+      "modeTemplate": "collect-peer-sum-and-issue-offsets",
+      "collaborationLabel": "allocate tickets",
+      "topics": [
+        {
+          "name": "first ticket number",
           "properties": {
             "minimum": 1,
             "maximum": 1000,
@@ -33,7 +49,7 @@
           }
         },
         {
-          "name": "Total",
+          "name": "total number of tickets",
           "properties": {
             "minimum": 1,
             "maximum": 1000,
@@ -41,7 +57,7 @@
           }
         },
         {
-          "name": "Size",
+          "name": "tickets required",
           "properties": {
             "minimum": 1,
             "maximum": 1000,
@@ -49,7 +65,7 @@
           }
         },
         {
-          "name": "Offset",
+          "name": "first allocated ticket number",
           "properties": {
             "minimum": 1,
             "maximum": 1000,

@@ -44604,6 +44604,12 @@
       modes[modeIndex] = mode;
       updateDesign({ modes });
     };
+    const updateMode = (modeIndex, partial) => {
+      const modes = [...design.modes ?? []];
+      const mode = { ...modes[modeIndex] ?? { modeTemplate: "", topics: [] } };
+      modes[modeIndex] = { ...mode, ...partial };
+      updateDesign({ modes });
+    };
     const addMode = () => {
       if (!newModeTemplate || !templates2[newModeTemplate]) {
         return;
@@ -44613,7 +44619,7 @@
         name: t.name || "",
         properties: {}
       }));
-      const modes = [...design.modes ?? [], { modeTemplate: template.name, topics }];
+      const modes = [...design.modes ?? [], { modeTemplate: template.name, collaborationLabel: "", topics }];
       updateDesign({ modes });
       setCollapsedModes((prev) => ({ ...prev, [modes.length - 1]: false }));
     };
@@ -44755,6 +44761,15 @@
         /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeHeader, children: [
           /* @__PURE__ */ (0, import_jsx_runtime48.jsxs)("div", { style: styles.modeTitle, children: [
             /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("div", { style: styles.badge, children: "Mode" }),
+            /* @__PURE__ */ (0, import_jsx_runtime48.jsx)(
+              "input",
+              {
+                style: styles.modeLabelInput,
+                value: mode.collaborationLabel ?? "",
+                placeholder: "Collaboration label",
+                onChange: (e2) => updateMode(index, { collaborationLabel: e2.target.value })
+              }
+            ),
             /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("strong", { children: mode.modeTemplate })
           ] }),
           !template ? /* @__PURE__ */ (0, import_jsx_runtime48.jsx)("span", { style: styles.metaMuted, children: "Template not found" }) : null,
@@ -44897,6 +44912,14 @@
       alignItems: "center",
       gap: 8,
       fontSize: 14
+    },
+    modeLabelInput: {
+      border: "1px solid var(--vscode-input-border)",
+      borderRadius: 6,
+      padding: "4px 6px",
+      minWidth: 160,
+      background: "var(--vscode-input-background)",
+      color: "var(--vscode-input-foreground)"
     },
     topicList: {
       display: "grid",
