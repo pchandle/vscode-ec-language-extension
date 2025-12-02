@@ -2605,6 +2605,7 @@
             }
             switch (typeof value) {
               case "function":
+              // $FlowIssue symbol is perfectly valid here
               case "symbol":
                 return true;
               case "boolean": {
@@ -3619,6 +3620,7 @@
                 return "SuspenseList";
               case TracingMarkerComponent:
                 return "TracingMarker";
+              // The display name for this tags come from the user-provided type:
               case ClassComponent:
               case FunctionComponent:
               case IncompleteClassComponent:
@@ -4616,6 +4618,10 @@
               return typeof props.is === "string";
             }
             switch (tagName) {
+              // These are reserved SVG and MathML elements.
+              // We don't mind this list too much because we expect it to never grow.
+              // The alternative is to track the namespace in a few places which is convoluted.
+              // https://w3c.github.io/webcomponents/spec/custom/#custom-elements-core-concepts
               case "annotation-xml":
               case "color-profile":
               case "font-face":
@@ -7445,6 +7451,7 @@
           }
           function getEventPriority(domEventName) {
             switch (domEventName) {
+              // Used by SimpleEventPlugin:
               case "cancel":
               case "click":
               case "close":
@@ -7480,14 +7487,20 @@
               case "touchend":
               case "touchstart":
               case "volumechange":
+              // Used by polyfills:
+              // eslint-disable-next-line no-fallthrough
               case "change":
               case "selectionchange":
               case "textInput":
               case "compositionstart":
               case "compositionend":
               case "compositionupdate":
+              // Only enableCreateEventHandleAPI:
+              // eslint-disable-next-line no-fallthrough
               case "beforeblur":
               case "afterblur":
+              // Not used by React but could be by user code:
+              // eslint-disable-next-line no-fallthrough
               case "beforeinput":
               case "blur":
               case "fullscreenchange":
@@ -7512,6 +7525,8 @@
               case "toggle":
               case "touchmove":
               case "wheel":
+              // Not used by React but could be by user code:
+              // eslint-disable-next-line no-fallthrough
               case "mouseenter":
               case "mouseleave":
               case "pointerenter":
@@ -7743,8 +7758,7 @@
             button: 0,
             buttons: 0,
             relatedTarget: function(event) {
-              if (event.relatedTarget === void 0)
-                return event.fromElement === event.srcElement ? event.toElement : event.fromElement;
+              if (event.relatedTarget === void 0) return event.fromElement === event.srcElement ? event.toElement : event.fromElement;
               return event.relatedTarget;
             },
             movementX: function(event) {
@@ -8460,43 +8474,42 @@
             var indexWithinFocus = 0;
             var node = outerNode;
             var parentNode = null;
-            outer:
+            outer: while (true) {
+              var next = null;
               while (true) {
-                var next = null;
-                while (true) {
-                  if (node === anchorNode && (anchorOffset === 0 || node.nodeType === TEXT_NODE)) {
-                    start = length + anchorOffset;
-                  }
-                  if (node === focusNode && (focusOffset === 0 || node.nodeType === TEXT_NODE)) {
-                    end = length + focusOffset;
-                  }
-                  if (node.nodeType === TEXT_NODE) {
-                    length += node.nodeValue.length;
-                  }
-                  if ((next = node.firstChild) === null) {
-                    break;
-                  }
-                  parentNode = node;
-                  node = next;
+                if (node === anchorNode && (anchorOffset === 0 || node.nodeType === TEXT_NODE)) {
+                  start = length + anchorOffset;
                 }
-                while (true) {
-                  if (node === outerNode) {
-                    break outer;
-                  }
-                  if (parentNode === anchorNode && ++indexWithinAnchor === anchorOffset) {
-                    start = length;
-                  }
-                  if (parentNode === focusNode && ++indexWithinFocus === focusOffset) {
-                    end = length;
-                  }
-                  if ((next = node.nextSibling) !== null) {
-                    break;
-                  }
-                  node = parentNode;
-                  parentNode = node.parentNode;
+                if (node === focusNode && (focusOffset === 0 || node.nodeType === TEXT_NODE)) {
+                  end = length + focusOffset;
                 }
+                if (node.nodeType === TEXT_NODE) {
+                  length += node.nodeValue.length;
+                }
+                if ((next = node.firstChild) === null) {
+                  break;
+                }
+                parentNode = node;
                 node = next;
               }
+              while (true) {
+                if (node === outerNode) {
+                  break outer;
+                }
+                if (parentNode === anchorNode && ++indexWithinAnchor === anchorOffset) {
+                  start = length;
+                }
+                if (parentNode === focusNode && ++indexWithinFocus === focusOffset) {
+                  end = length;
+                }
+                if ((next = node.nextSibling) !== null) {
+                  break;
+                }
+                node = parentNode;
+                parentNode = node.parentNode;
+              }
+              node = next;
+            }
             if (start === -1 || end === -1) {
               return null;
             }
@@ -8699,6 +8712,7 @@
           function extractEvents$3(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
             var targetNode = targetInst ? getNodeFromInstance(targetInst) : window;
             switch (domEventName) {
+              // Track the input node that has focus.
               case "focusin":
                 if (isTextInputElement(targetNode) || targetNode.contentEditable === "true") {
                   activeElement$1 = targetNode;
@@ -8711,6 +8725,8 @@
                 activeElementInst$1 = null;
                 lastSelection = null;
                 break;
+              // Don't fire the event while the user is dragging. This matches the
+              // semantics of the native select event.
               case "mousedown":
                 mouseDown = true;
                 break;
@@ -8720,10 +8736,20 @@
                 mouseDown = false;
                 constructSelectEvent(dispatchQueue, nativeEvent, nativeEventTarget);
                 break;
+              // Chrome and IE fire non-standard event when selection is changed (and
+              // sometimes when it hasn't). IE's event fires out of order with respect
+              // to key and input events on deletion, so we discard it.
+              //
+              // Firefox doesn't support selectionchange, so check selection status
+              // after each key entry. The selection changes after keydown and before
+              // keyup, but we check on keydown as well in the case of holding down a
+              // key, when multiple keydown events are fired but only one keyup is.
+              // This is also our approach for IE handling, for the reason above.
               case "selectionchange":
                 if (skipSelectionChangeEvent) {
                   break;
                 }
+              // falls through
               case "keydown":
               case "keyup":
                 constructSelectEvent(dispatchQueue, nativeEvent, nativeEventTarget);
@@ -8806,6 +8832,7 @@
                 if (getEventCharCode(nativeEvent) === 0) {
                   return;
                 }
+              /* falls through */
               case "keydown":
               case "keyup":
                 SyntheticEventCtor = SyntheticKeyboardEvent;
@@ -8826,11 +8853,14 @@
                 if (nativeEvent.button === 2) {
                   return;
                 }
+              /* falls through */
               case "auxclick":
               case "dblclick":
               case "mousedown":
               case "mousemove":
               case "mouseup":
+              // TODO: Disabled elements should not respond to mouse events
+              /* falls through */
               case "mouseout":
               case "mouseover":
               case "contextmenu":
@@ -9038,45 +9068,44 @@
               var targetContainerNode = targetContainer;
               if (targetInst !== null) {
                 var node = targetInst;
-                mainLoop:
-                  while (true) {
-                    if (node === null) {
-                      return;
-                    }
-                    var nodeTag = node.tag;
-                    if (nodeTag === HostRoot || nodeTag === HostPortal) {
-                      var container = node.stateNode.containerInfo;
-                      if (isMatchingRootContainer(container, targetContainerNode)) {
-                        break;
-                      }
-                      if (nodeTag === HostPortal) {
-                        var grandNode = node.return;
-                        while (grandNode !== null) {
-                          var grandTag = grandNode.tag;
-                          if (grandTag === HostRoot || grandTag === HostPortal) {
-                            var grandContainer = grandNode.stateNode.containerInfo;
-                            if (isMatchingRootContainer(grandContainer, targetContainerNode)) {
-                              return;
-                            }
-                          }
-                          grandNode = grandNode.return;
-                        }
-                      }
-                      while (container !== null) {
-                        var parentNode = getClosestInstanceFromNode(container);
-                        if (parentNode === null) {
-                          return;
-                        }
-                        var parentTag = parentNode.tag;
-                        if (parentTag === HostComponent || parentTag === HostText) {
-                          node = ancestorInst = parentNode;
-                          continue mainLoop;
-                        }
-                        container = container.parentNode;
-                      }
-                    }
-                    node = node.return;
+                mainLoop: while (true) {
+                  if (node === null) {
+                    return;
                   }
+                  var nodeTag = node.tag;
+                  if (nodeTag === HostRoot || nodeTag === HostPortal) {
+                    var container = node.stateNode.containerInfo;
+                    if (isMatchingRootContainer(container, targetContainerNode)) {
+                      break;
+                    }
+                    if (nodeTag === HostPortal) {
+                      var grandNode = node.return;
+                      while (grandNode !== null) {
+                        var grandTag = grandNode.tag;
+                        if (grandTag === HostRoot || grandTag === HostPortal) {
+                          var grandContainer = grandNode.stateNode.containerInfo;
+                          if (isMatchingRootContainer(grandContainer, targetContainerNode)) {
+                            return;
+                          }
+                        }
+                        grandNode = grandNode.return;
+                      }
+                    }
+                    while (container !== null) {
+                      var parentNode = getClosestInstanceFromNode(container);
+                      if (parentNode === null) {
+                        return;
+                      }
+                      var parentTag = parentNode.tag;
+                      if (parentTag === HostComponent || parentTag === HostText) {
+                        node = ancestorInst = parentNode;
+                        continue mainLoop;
+                      }
+                      container = container.parentNode;
+                    }
+                  }
+                  node = node.return;
+                }
               }
             }
             batchedUpdates(function() {
@@ -9356,10 +9385,8 @@
                 } else if (typeof nextProp === "number") {
                   setTextContent(domElement, "" + nextProp);
                 }
-              } else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING)
-                ;
-              else if (propKey === AUTOFOCUS)
-                ;
+              } else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING) ;
+              else if (propKey === AUTOFOCUS) ;
               else if (registrationNameDependencies.hasOwnProperty(propKey)) {
                 if (nextProp != null) {
                   if (typeof nextProp !== "function") {
@@ -9575,12 +9602,9 @@
                     styleUpdates[styleName] = "";
                   }
                 }
-              } else if (propKey === DANGEROUSLY_SET_INNER_HTML || propKey === CHILDREN)
-                ;
-              else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING)
-                ;
-              else if (propKey === AUTOFOCUS)
-                ;
+              } else if (propKey === DANGEROUSLY_SET_INNER_HTML || propKey === CHILDREN) ;
+              else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING) ;
+              else if (propKey === AUTOFOCUS) ;
               else if (registrationNameDependencies.hasOwnProperty(propKey)) {
                 if (!updatePayload) {
                   updatePayload = [];
@@ -9639,8 +9663,7 @@
                 if (typeof nextProp === "string" || typeof nextProp === "number") {
                   (updatePayload = updatePayload || []).push(propKey, "" + nextProp);
                 }
-              } else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING)
-                ;
+              } else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING) ;
               else if (registrationNameDependencies.hasOwnProperty(propKey)) {
                 if (nextProp != null) {
                   if (typeof nextProp !== "function") {
@@ -9751,6 +9774,8 @@
               for (var _i = 0; _i < attributes.length; _i++) {
                 var name = attributes[_i].name.toLowerCase();
                 switch (name) {
+                  // Controlled attributes are not validated
+                  // TODO: Only ignore them on controlled tags.
                   case "value":
                     break;
                   case "checked":
@@ -9797,12 +9822,10 @@
               typeof isCustomComponentTag === "boolean") {
                 var serverValue = void 0;
                 var propertyInfo = isCustomComponentTag && enableCustomElementPropertySupport ? null : getPropertyInfo(propKey);
-                if (rawProps[SUPPRESS_HYDRATION_WARNING] === true)
-                  ;
+                if (rawProps[SUPPRESS_HYDRATION_WARNING] === true) ;
                 else if (propKey === SUPPRESS_CONTENT_EDITABLE_WARNING || propKey === SUPPRESS_HYDRATION_WARNING || // Controlled attributes are not validated
                 // TODO: Only ignore them on controlled tags.
-                propKey === "value" || propKey === "checked" || propKey === "selected")
-                  ;
+                propKey === "value" || propKey === "checked" || propKey === "selected") ;
                 else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
                   var serverHTML = domElement.innerHTML;
                   var nextHtml = nextProp ? nextProp[HTML$1] : void 0;
@@ -10020,24 +10043,37 @@
             };
             var isTagValidWithParent = function(tag, parentTag) {
               switch (parentTag) {
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-inselect
                 case "select":
                   return tag === "option" || tag === "optgroup" || tag === "#text";
                 case "optgroup":
                   return tag === "option" || tag === "#text";
+                // Strictly speaking, seeing an <option> doesn't mean we're in a <select>
+                // but
                 case "option":
                   return tag === "#text";
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-intd
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-incaption
+                // No special behavior since these rules fall back to "in body" mode for
+                // all except special table nodes which cause bad parsing behavior anyway.
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-intr
                 case "tr":
                   return tag === "th" || tag === "td" || tag === "style" || tag === "script" || tag === "template";
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-intbody
                 case "tbody":
                 case "thead":
                 case "tfoot":
                   return tag === "tr" || tag === "style" || tag === "script" || tag === "template";
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-incolgroup
                 case "colgroup":
                   return tag === "col" || tag === "template";
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-intable
                 case "table":
                   return tag === "caption" || tag === "colgroup" || tag === "tbody" || tag === "tfoot" || tag === "thead" || tag === "style" || tag === "script" || tag === "template";
+                // https://html.spec.whatwg.org/multipage/syntax.html#parsing-main-inhead
                 case "head":
                   return tag === "base" || tag === "basefont" || tag === "bgsound" || tag === "link" || tag === "meta" || tag === "title" || tag === "noscript" || tag === "noframes" || tag === "style" || tag === "script" || tag === "template";
+                // https://html.spec.whatwg.org/multipage/semantics.html#the-html-element
                 case "html":
                   return tag === "head" || tag === "body" || tag === "frameset";
                 case "frameset":
@@ -10598,8 +10634,7 @@
             {
               if (instance.nodeType === ELEMENT_NODE) {
                 warnForDeletedHydratableElement(parentContainer, instance);
-              } else if (instance.nodeType === COMMENT_NODE)
-                ;
+              } else if (instance.nodeType === COMMENT_NODE) ;
               else {
                 warnForDeletedHydratableText(parentContainer, instance);
               }
@@ -10611,8 +10646,7 @@
               if (parentNode !== null) {
                 if (instance.nodeType === ELEMENT_NODE) {
                   warnForDeletedHydratableElement(parentNode, instance);
-                } else if (instance.nodeType === COMMENT_NODE)
-                  ;
+                } else if (instance.nodeType === COMMENT_NODE) ;
                 else {
                   warnForDeletedHydratableText(parentNode, instance);
                 }
@@ -10624,8 +10658,7 @@
               if (isConcurrentMode || parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) {
                 if (instance.nodeType === ELEMENT_NODE) {
                   warnForDeletedHydratableElement(parentInstance, instance);
-                } else if (instance.nodeType === COMMENT_NODE)
-                  ;
+                } else if (instance.nodeType === COMMENT_NODE) ;
                 else {
                   warnForDeletedHydratableText(parentInstance, instance);
                 }
@@ -10645,15 +10678,13 @@
           function didNotFindHydratableInstanceWithinSuspenseInstance(parentInstance, type, props) {
             {
               var parentNode = parentInstance.parentNode;
-              if (parentNode !== null)
-                warnForInsertedHydratedElement(parentNode, type);
+              if (parentNode !== null) warnForInsertedHydratedElement(parentNode, type);
             }
           }
           function didNotFindHydratableTextInstanceWithinSuspenseInstance(parentInstance, text) {
             {
               var parentNode = parentInstance.parentNode;
-              if (parentNode !== null)
-                warnForInsertedHydratedText(parentNode, text);
+              if (parentNode !== null) warnForInsertedHydratedText(parentNode, text);
             }
           }
           function didNotFindHydratableInstance(parentType, parentProps, parentInstance, type, props, isConcurrentMode) {
@@ -11240,8 +11271,7 @@
                 }
                 case SuspenseComponent: {
                   var suspenseState = returnFiber.memoizedState;
-                  if (suspenseState.dehydrated !== null)
-                    didNotHydrateInstanceWithinSuspenseInstance(suspenseState.dehydrated, instance);
+                  if (suspenseState.dehydrated !== null) didNotHydrateInstanceWithinSuspenseInstance(suspenseState.dehydrated, instance);
                   break;
                 }
               }
@@ -11320,18 +11350,17 @@
                 case SuspenseComponent: {
                   var suspenseState = returnFiber.memoizedState;
                   var _parentInstance = suspenseState.dehydrated;
-                  if (_parentInstance !== null)
-                    switch (fiber.tag) {
-                      case HostComponent:
-                        var _type2 = fiber.type;
-                        var _props2 = fiber.pendingProps;
-                        didNotFindHydratableInstanceWithinSuspenseInstance(_parentInstance, _type2);
-                        break;
-                      case HostText:
-                        var _text2 = fiber.pendingProps;
-                        didNotFindHydratableTextInstanceWithinSuspenseInstance(_parentInstance, _text2);
-                        break;
-                    }
+                  if (_parentInstance !== null) switch (fiber.tag) {
+                    case HostComponent:
+                      var _type2 = fiber.type;
+                      var _props2 = fiber.pendingProps;
+                      didNotFindHydratableInstanceWithinSuspenseInstance(_parentInstance, _type2);
+                      break;
+                    case HostText:
+                      var _text2 = fiber.pendingProps;
+                      didNotFindHydratableTextInstanceWithinSuspenseInstance(_parentInstance, _text2);
+                      break;
+                  }
                   break;
                 }
                 default:
@@ -12620,8 +12649,7 @@
                       var update = createUpdate(NoTimestamp, lane);
                       update.tag = ForceUpdate;
                       var updateQueue = fiber.updateQueue;
-                      if (updateQueue === null)
-                        ;
+                      if (updateQueue === null) ;
                       else {
                         var sharedQueue = updateQueue.shared;
                         var pending = sharedQueue.pending;
@@ -12707,8 +12735,7 @@
               }
             }
             var value = context._currentValue;
-            if (lastFullyObservedContext === context)
-              ;
+            if (lastFullyObservedContext === context) ;
             else {
               var contextItem = {
                 context,
@@ -13005,6 +13032,7 @@
               case CaptureUpdate: {
                 workInProgress2.flags = workInProgress2.flags & ~ShouldCapture | DidCapture;
               }
+              // Intentional fallthrough
               case UpdateState: {
                 var _payload = update.payload;
                 var partialState;
@@ -17942,8 +17970,7 @@
               while (node !== null) {
                 if (node.tag === HostComponent || node.tag === HostText) {
                   appendInitialChild(parent2, node.stateNode);
-                } else if (node.tag === HostPortal)
-                  ;
+                } else if (node.tag === HostPortal) ;
                 else if (node.child !== null) {
                   node.child.return = node;
                   node = node.child;
@@ -18897,20 +18924,19 @@
                       onPostCommit(id, phase, passiveEffectDuration, commitTime2);
                     }
                     var parentFiber = finishedWork.return;
-                    outer:
-                      while (parentFiber !== null) {
-                        switch (parentFiber.tag) {
-                          case HostRoot:
-                            var root3 = parentFiber.stateNode;
-                            root3.passiveEffectDuration += passiveEffectDuration;
-                            break outer;
-                          case Profiler:
-                            var parentStateNode = parentFiber.stateNode;
-                            parentStateNode.passiveEffectDuration += passiveEffectDuration;
-                            break outer;
-                        }
-                        parentFiber = parentFiber.return;
+                    outer: while (parentFiber !== null) {
+                      switch (parentFiber.tag) {
+                        case HostRoot:
+                          var root3 = parentFiber.stateNode;
+                          root3.passiveEffectDuration += passiveEffectDuration;
+                          break outer;
+                        case Profiler:
+                          var parentStateNode = parentFiber.stateNode;
+                          parentStateNode.passiveEffectDuration += passiveEffectDuration;
+                          break outer;
                       }
+                      parentFiber = parentFiber.return;
+                    }
                     break;
                   }
                 }
@@ -19057,20 +19083,19 @@
                       }
                       enqueuePendingPassiveProfilerEffect(finishedWork);
                       var parentFiber = finishedWork.return;
-                      outer:
-                        while (parentFiber !== null) {
-                          switch (parentFiber.tag) {
-                            case HostRoot:
-                              var root3 = parentFiber.stateNode;
-                              root3.effectDuration += effectDuration;
-                              break outer;
-                            case Profiler:
-                              var parentStateNode = parentFiber.stateNode;
-                              parentStateNode.effectDuration += effectDuration;
-                              break outer;
-                          }
-                          parentFiber = parentFiber.return;
+                      outer: while (parentFiber !== null) {
+                        switch (parentFiber.tag) {
+                          case HostRoot:
+                            var root3 = parentFiber.stateNode;
+                            root3.effectDuration += effectDuration;
+                            break outer;
+                          case Profiler:
+                            var parentStateNode = parentFiber.stateNode;
+                            parentStateNode.effectDuration += effectDuration;
+                            break outer;
                         }
+                        parentFiber = parentFiber.return;
+                      }
                     }
                   }
                   break;
@@ -19162,8 +19187,7 @@
                       captureCommitPhaseError(finishedWork, finishedWork.return, error2);
                     }
                   }
-                } else if ((node.tag === OffscreenComponent || node.tag === LegacyHiddenComponent) && node.memoizedState !== null && node !== finishedWork)
-                  ;
+                } else if ((node.tag === OffscreenComponent || node.tag === LegacyHiddenComponent) && node.memoizedState !== null && node !== finishedWork) ;
                 else if (node.child !== null) {
                   node.child.return = node;
                   node = node.child;
@@ -19281,31 +19305,30 @@
           }
           function getHostSibling(fiber) {
             var node = fiber;
-            siblings:
-              while (true) {
-                while (node.sibling === null) {
-                  if (node.return === null || isHostParent(node.return)) {
-                    return null;
-                  }
-                  node = node.return;
+            siblings: while (true) {
+              while (node.sibling === null) {
+                if (node.return === null || isHostParent(node.return)) {
+                  return null;
                 }
-                node.sibling.return = node.return;
-                node = node.sibling;
-                while (node.tag !== HostComponent && node.tag !== HostText && node.tag !== DehydratedFragment) {
-                  if (node.flags & Placement) {
-                    continue siblings;
-                  }
-                  if (node.child === null || node.tag === HostPortal) {
-                    continue siblings;
-                  } else {
-                    node.child.return = node;
-                    node = node.child;
-                  }
+                node = node.return;
+              }
+              node.sibling.return = node.return;
+              node = node.sibling;
+              while (node.tag !== HostComponent && node.tag !== HostText && node.tag !== DehydratedFragment) {
+                if (node.flags & Placement) {
+                  continue siblings;
                 }
-                if (!(node.flags & Placement)) {
-                  return node.stateNode;
+                if (node.child === null || node.tag === HostPortal) {
+                  continue siblings;
+                } else {
+                  node.child.return = node;
+                  node = node.child;
                 }
               }
+              if (!(node.flags & Placement)) {
+                return node.stateNode;
+              }
+            }
           }
           function commitPlacement(finishedWork) {
             var parentFiber = getHostParentFiber(finishedWork);
@@ -19327,6 +19350,7 @@
                 insertOrAppendPlacementNodeIntoContainer(finishedWork, _before, _parent);
                 break;
               }
+              // eslint-disable-next-line-no-fallthrough
               default:
                 throw new Error("Invalid host parent fiber. This error is likely caused by a bug in React. Please file an issue.");
             }
@@ -19341,8 +19365,7 @@
               } else {
                 appendChildToContainer(parent2, stateNode);
               }
-            } else if (tag === HostPortal)
-              ;
+            } else if (tag === HostPortal) ;
             else {
               var child = node.child;
               if (child !== null) {
@@ -19365,8 +19388,7 @@
               } else {
                 appendChild(parent2, stateNode);
               }
-            } else if (tag === HostPortal)
-              ;
+            } else if (tag === HostPortal) ;
             else {
               var child = node.child;
               if (child !== null) {
@@ -19384,27 +19406,26 @@
           function commitDeletionEffects(root3, returnFiber, deletedFiber) {
             {
               var parent2 = returnFiber;
-              findParent:
-                while (parent2 !== null) {
-                  switch (parent2.tag) {
-                    case HostComponent: {
-                      hostParent = parent2.stateNode;
-                      hostParentIsContainer = false;
-                      break findParent;
-                    }
-                    case HostRoot: {
-                      hostParent = parent2.stateNode.containerInfo;
-                      hostParentIsContainer = true;
-                      break findParent;
-                    }
-                    case HostPortal: {
-                      hostParent = parent2.stateNode.containerInfo;
-                      hostParentIsContainer = true;
-                      break findParent;
-                    }
+              findParent: while (parent2 !== null) {
+                switch (parent2.tag) {
+                  case HostComponent: {
+                    hostParent = parent2.stateNode;
+                    hostParentIsContainer = false;
+                    break findParent;
                   }
-                  parent2 = parent2.return;
+                  case HostRoot: {
+                    hostParent = parent2.stateNode.containerInfo;
+                    hostParentIsContainer = true;
+                    break findParent;
+                  }
+                  case HostPortal: {
+                    hostParent = parent2.stateNode.containerInfo;
+                    hostParentIsContainer = true;
+                    break findParent;
+                  }
                 }
+                parent2 = parent2.return;
+              }
               if (hostParent === null) {
                 throw new Error("Expected to find a host parent. This error is likely caused by a bug in React. Please file an issue.");
               }
@@ -19429,6 +19450,7 @@
                   safelyDetachRef(deletedFiber, nearestMountedAncestor);
                 }
               }
+              // eslint-disable-next-line-no-fallthrough
               case HostText: {
                 {
                   var prevHostParent = hostParent;
@@ -20690,6 +20712,9 @@
               case RootFatalErrored: {
                 throw new Error("Root did not complete. This is a bug in React.");
               }
+              // Flow knows about invariant, so it complains if I add a break
+              // statement, but eslint doesn't know about invariant, so it complains
+              // if I do. eslint-disable-next-line no-fallthrough
               case RootErrored: {
                 commitRoot(root3, workInProgressRootRecoverableErrors, workInProgressTransitions);
                 break;
@@ -22316,67 +22341,71 @@
             } else if (typeof type === "string") {
               fiberTag = HostComponent;
             } else {
-              getTag:
-                switch (type) {
-                  case REACT_FRAGMENT_TYPE:
-                    return createFiberFromFragment(pendingProps.children, mode, lanes, key);
-                  case REACT_STRICT_MODE_TYPE:
-                    fiberTag = Mode;
-                    mode |= StrictLegacyMode;
-                    if ((mode & ConcurrentMode) !== NoMode) {
-                      mode |= StrictEffectsMode;
-                    }
-                    break;
-                  case REACT_PROFILER_TYPE:
-                    return createFiberFromProfiler(pendingProps, mode, lanes, key);
-                  case REACT_SUSPENSE_TYPE:
-                    return createFiberFromSuspense(pendingProps, mode, lanes, key);
-                  case REACT_SUSPENSE_LIST_TYPE:
-                    return createFiberFromSuspenseList(pendingProps, mode, lanes, key);
-                  case REACT_OFFSCREEN_TYPE:
-                    return createFiberFromOffscreen(pendingProps, mode, lanes, key);
-                  case REACT_LEGACY_HIDDEN_TYPE:
-                  case REACT_SCOPE_TYPE:
-                  case REACT_CACHE_TYPE:
-                  case REACT_TRACING_MARKER_TYPE:
-                  case REACT_DEBUG_TRACING_MODE_TYPE:
-                  default: {
-                    if (typeof type === "object" && type !== null) {
-                      switch (type.$$typeof) {
-                        case REACT_PROVIDER_TYPE:
-                          fiberTag = ContextProvider;
-                          break getTag;
-                        case REACT_CONTEXT_TYPE:
-                          fiberTag = ContextConsumer;
-                          break getTag;
-                        case REACT_FORWARD_REF_TYPE:
-                          fiberTag = ForwardRef;
-                          {
-                            resolvedType = resolveForwardRefForHotReloading(resolvedType);
-                          }
-                          break getTag;
-                        case REACT_MEMO_TYPE:
-                          fiberTag = MemoComponent;
-                          break getTag;
-                        case REACT_LAZY_TYPE:
-                          fiberTag = LazyComponent;
-                          resolvedType = null;
-                          break getTag;
-                      }
-                    }
-                    var info = "";
-                    {
-                      if (type === void 0 || typeof type === "object" && type !== null && Object.keys(type).length === 0) {
-                        info += " You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.";
-                      }
-                      var ownerName = owner ? getComponentNameFromFiber(owner) : null;
-                      if (ownerName) {
-                        info += "\n\nCheck the render method of `" + ownerName + "`.";
-                      }
-                    }
-                    throw new Error("Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) " + ("but got: " + (type == null ? type : typeof type) + "." + info));
+              getTag: switch (type) {
+                case REACT_FRAGMENT_TYPE:
+                  return createFiberFromFragment(pendingProps.children, mode, lanes, key);
+                case REACT_STRICT_MODE_TYPE:
+                  fiberTag = Mode;
+                  mode |= StrictLegacyMode;
+                  if ((mode & ConcurrentMode) !== NoMode) {
+                    mode |= StrictEffectsMode;
                   }
+                  break;
+                case REACT_PROFILER_TYPE:
+                  return createFiberFromProfiler(pendingProps, mode, lanes, key);
+                case REACT_SUSPENSE_TYPE:
+                  return createFiberFromSuspense(pendingProps, mode, lanes, key);
+                case REACT_SUSPENSE_LIST_TYPE:
+                  return createFiberFromSuspenseList(pendingProps, mode, lanes, key);
+                case REACT_OFFSCREEN_TYPE:
+                  return createFiberFromOffscreen(pendingProps, mode, lanes, key);
+                case REACT_LEGACY_HIDDEN_TYPE:
+                // eslint-disable-next-line no-fallthrough
+                case REACT_SCOPE_TYPE:
+                // eslint-disable-next-line no-fallthrough
+                case REACT_CACHE_TYPE:
+                // eslint-disable-next-line no-fallthrough
+                case REACT_TRACING_MARKER_TYPE:
+                // eslint-disable-next-line no-fallthrough
+                case REACT_DEBUG_TRACING_MODE_TYPE:
+                // eslint-disable-next-line no-fallthrough
+                default: {
+                  if (typeof type === "object" && type !== null) {
+                    switch (type.$$typeof) {
+                      case REACT_PROVIDER_TYPE:
+                        fiberTag = ContextProvider;
+                        break getTag;
+                      case REACT_CONTEXT_TYPE:
+                        fiberTag = ContextConsumer;
+                        break getTag;
+                      case REACT_FORWARD_REF_TYPE:
+                        fiberTag = ForwardRef;
+                        {
+                          resolvedType = resolveForwardRefForHotReloading(resolvedType);
+                        }
+                        break getTag;
+                      case REACT_MEMO_TYPE:
+                        fiberTag = MemoComponent;
+                        break getTag;
+                      case REACT_LAZY_TYPE:
+                        fiberTag = LazyComponent;
+                        resolvedType = null;
+                        break getTag;
+                    }
+                  }
+                  var info = "";
+                  {
+                    if (type === void 0 || typeof type === "object" && type !== null && Object.keys(type).length === 0) {
+                      info += " You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.";
+                    }
+                    var ownerName = owner ? getComponentNameFromFiber(owner) : null;
+                    if (ownerName) {
+                      info += "\n\nCheck the render method of `" + ownerName + "`.";
+                    }
+                  }
+                  throw new Error("Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) " + ("but got: " + (type == null ? type : typeof type) + "." + info));
                 }
+              }
             }
             var fiber = createFiber(fiberTag, pendingProps, key, mode);
             fiber.elementType = type;
@@ -24472,16 +24501,14 @@
         throw new Error("Invalid tilde escape: " + m2);
       }
       function untilde(str) {
-        if (!hasExcape.test(str))
-          return str;
+        if (!hasExcape.test(str)) return str;
         return str.replace(escapeMatcher, escapeReplacer);
       }
       function setter(obj, pointer, value) {
         var part;
         var hasNextPart;
         for (var p2 = 1, len = pointer.length; p2 < len; ) {
-          if (pointer[p2] === "constructor" || pointer[p2] === "prototype" || pointer[p2] === "__proto__")
-            return obj;
+          if (pointer[p2] === "constructor" || pointer[p2] === "prototype" || pointer[p2] === "__proto__") return obj;
           part = untilde(pointer[p2++]);
           hasNextPart = len > p2;
           if (typeof obj[part] === "undefined") {
@@ -24489,28 +24516,22 @@
               part = obj.length;
             }
             if (hasNextPart) {
-              if (pointer[p2] !== "" && pointer[p2] < Infinity || pointer[p2] === "-")
-                obj[part] = [];
-              else
-                obj[part] = {};
+              if (pointer[p2] !== "" && pointer[p2] < Infinity || pointer[p2] === "-") obj[part] = [];
+              else obj[part] = {};
             }
           }
-          if (!hasNextPart)
-            break;
+          if (!hasNextPart) break;
           obj = obj[part];
         }
         var oldValue = obj[part];
-        if (value === void 0)
-          delete obj[part];
-        else
-          obj[part] = value;
+        if (value === void 0) delete obj[part];
+        else obj[part] = value;
         return oldValue;
       }
       function compilePointer(pointer) {
         if (typeof pointer === "string") {
           pointer = pointer.split("/");
-          if (pointer[0] === "")
-            return pointer;
+          if (pointer[0] === "") return pointer;
           throw new Error("Invalid JSON pointer.");
         } else if (Array.isArray(pointer)) {
           for (const part of pointer) {
@@ -24523,26 +24544,20 @@
         throw new Error("Invalid JSON pointer.");
       }
       function get2(obj, pointer) {
-        if (typeof obj !== "object")
-          throw new Error("Invalid input object.");
+        if (typeof obj !== "object") throw new Error("Invalid input object.");
         pointer = compilePointer(pointer);
         var len = pointer.length;
-        if (len === 1)
-          return obj;
+        if (len === 1) return obj;
         for (var p2 = 1; p2 < len; ) {
           obj = obj[untilde(pointer[p2++])];
-          if (len === p2)
-            return obj;
-          if (typeof obj !== "object" || obj === null)
-            return void 0;
+          if (len === p2) return obj;
+          if (typeof obj !== "object" || obj === null) return void 0;
         }
       }
       function set2(obj, pointer, value) {
-        if (typeof obj !== "object")
-          throw new Error("Invalid input object.");
+        if (typeof obj !== "object") throw new Error("Invalid input object.");
         pointer = compilePointer(pointer);
-        if (pointer.length === 0)
-          throw new Error("Invalid JSON pointer for set.");
+        if (pointer.length === 0) throw new Error("Invalid JSON pointer for set.");
         return setter(obj, pointer, value);
       }
       function compile(pointer) {
@@ -24865,10 +24880,10 @@
   var require_isMasked = __commonJS({
     "node_modules/lodash/_isMasked.js"(exports2, module2) {
       var coreJsData2 = require_coreJsData();
-      var maskSrcKey2 = function() {
+      var maskSrcKey2 = (function() {
         var uid = /[^.]+$/.exec(coreJsData2 && coreJsData2.keys && coreJsData2.keys.IE_PROTO || "");
         return uid ? "Symbol(src)_1." + uid : "";
-      }();
+      })();
       function isMasked2(func) {
         return !!maskSrcKey2 && maskSrcKey2 in func;
       }
@@ -25247,14 +25262,14 @@
   var require_defineProperty = __commonJS({
     "node_modules/lodash/_defineProperty.js"(exports2, module2) {
       var getNative2 = require_getNative();
-      var defineProperty2 = function() {
+      var defineProperty2 = (function() {
         try {
           var func = getNative2(Object, "defineProperty");
           func({}, "", {});
           return func;
         } catch (e2) {
         }
-      }();
+      })();
       module2.exports = defineProperty2;
     }
   });
@@ -25368,9 +25383,9 @@
       var objectProto19 = Object.prototype;
       var hasOwnProperty16 = objectProto19.hasOwnProperty;
       var propertyIsEnumerable3 = objectProto19.propertyIsEnumerable;
-      var isArguments2 = baseIsArguments2(/* @__PURE__ */ function() {
+      var isArguments2 = baseIsArguments2(/* @__PURE__ */ (function() {
         return arguments;
-      }()) ? baseIsArguments2 : function(value) {
+      })()) ? baseIsArguments2 : function(value) {
         return isObjectLike2(value) && hasOwnProperty16.call(value, "callee") && !propertyIsEnumerable3.call(value, "callee");
       };
       module2.exports = isArguments2;
@@ -25495,7 +25510,7 @@
       var freeModule4 = freeExports4 && typeof module2 == "object" && module2 && !module2.nodeType && module2;
       var moduleExports4 = freeModule4 && freeModule4.exports === freeExports4;
       var freeProcess2 = moduleExports4 && freeGlobal2.process;
-      var nodeUtil2 = function() {
+      var nodeUtil2 = (function() {
         try {
           var types = freeModule4 && freeModule4.require && freeModule4.require("util").types;
           if (types) {
@@ -25504,7 +25519,7 @@
           return freeProcess2 && freeProcess2.binding && freeProcess2.binding("util");
         } catch (e2) {
         }
-      }();
+      })();
       module2.exports = nodeUtil2;
     }
   });
@@ -26141,7 +26156,7 @@
     "node_modules/lodash/_baseCreate.js"(exports2, module2) {
       var isObject3 = require_isObject();
       var objectCreate2 = Object.create;
-      var baseCreate2 = /* @__PURE__ */ function() {
+      var baseCreate2 = /* @__PURE__ */ (function() {
         function object() {
         }
         return function(proto) {
@@ -26156,7 +26171,7 @@
           object.prototype = void 0;
           return result;
         };
-      }();
+      })();
       module2.exports = baseCreate2;
     }
   });
@@ -29085,8 +29100,7 @@
             throw new Error("No resolver found for " + resolverName);
           }
           const extractedKeywordsOnly = schemas.map((schema) => complexKeywords.reduce((all, key) => {
-            if (schema[key] !== void 0)
-              all[key] = schema[key];
+            if (schema[key] !== void 0) all[key] = schema[key];
             return all;
           }, {}));
           const unique = uniqWith(extractedKeywordsOnly, compare);
@@ -29250,8 +29264,7 @@
               merged2[key] = compacted[0];
             } else {
               const resolver = options.resolvers[key] || options.resolvers.defaultResolver;
-              if (!resolver)
-                throw new Error("No resolver found for key " + key + ". You can provide a resolver for this keyword in the options, or provide a default resolver.");
+              if (!resolver) throw new Error("No resolver found for key " + key + ". You can provide a resolver for this keyword in the options, or provide a default resolver.");
               const merger2 = (schemas2, extraKey = []) => mergeSchemas2(schemas2, null, parents.concat(key, extraKey));
               merged2[key] = resolver(compacted, parents.concat(key), merger2, options);
               if (merged2[key] === void 0) {
@@ -31483,38 +31496,28 @@
     "node_modules/fast-deep-equal/index.js"(exports2, module2) {
       "use strict";
       module2.exports = function equal(a2, b2) {
-        if (a2 === b2)
-          return true;
+        if (a2 === b2) return true;
         if (a2 && b2 && typeof a2 == "object" && typeof b2 == "object") {
-          if (a2.constructor !== b2.constructor)
-            return false;
+          if (a2.constructor !== b2.constructor) return false;
           var length, i2, keys2;
           if (Array.isArray(a2)) {
             length = a2.length;
-            if (length != b2.length)
-              return false;
+            if (length != b2.length) return false;
             for (i2 = length; i2-- !== 0; )
-              if (!equal(a2[i2], b2[i2]))
-                return false;
+              if (!equal(a2[i2], b2[i2])) return false;
             return true;
           }
-          if (a2.constructor === RegExp)
-            return a2.source === b2.source && a2.flags === b2.flags;
-          if (a2.valueOf !== Object.prototype.valueOf)
-            return a2.valueOf() === b2.valueOf();
-          if (a2.toString !== Object.prototype.toString)
-            return a2.toString() === b2.toString();
+          if (a2.constructor === RegExp) return a2.source === b2.source && a2.flags === b2.flags;
+          if (a2.valueOf !== Object.prototype.valueOf) return a2.valueOf() === b2.valueOf();
+          if (a2.toString !== Object.prototype.toString) return a2.toString() === b2.toString();
           keys2 = Object.keys(a2);
           length = keys2.length;
-          if (length !== Object.keys(b2).length)
-            return false;
+          if (length !== Object.keys(b2).length) return false;
           for (i2 = length; i2-- !== 0; )
-            if (!Object.prototype.hasOwnProperty.call(b2, keys2[i2]))
-              return false;
+            if (!Object.prototype.hasOwnProperty.call(b2, keys2[i2])) return false;
           for (i2 = length; i2-- !== 0; ) {
             var key = keys2[i2];
-            if (!equal(a2[key], b2[key]))
-              return false;
+            if (!equal(a2[key], b2[key])) return false;
           }
           return true;
         }
@@ -32670,8 +32673,7 @@
       function findToken(str, token) {
         let ind = 0;
         for (let i2 = 0; i2 < str.length; i2++) {
-          if (str[i2] === token)
-            ind++;
+          if (str[i2] === token) ind++;
         }
         return ind;
       }
@@ -33129,8 +33131,7 @@
         const options = Object.assign({}, opts);
         const uriTokens = [];
         const schemeHandler = getSchemeHandler(options.scheme || component.scheme);
-        if (schemeHandler && schemeHandler.serialize)
-          schemeHandler.serialize(component, options);
+        if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(component, options);
         if (component.path !== void 0) {
           if (!options.skipEscape) {
             component.path = escape(component.path);
@@ -36577,10 +36578,10 @@
   var coreJsData_default = coreJsData;
 
   // node_modules/lodash-es/_isMasked.js
-  var maskSrcKey = function() {
+  var maskSrcKey = (function() {
     var uid = /[^.]+$/.exec(coreJsData_default && coreJsData_default.keys && coreJsData_default.keys.IE_PROTO || "");
     return uid ? "Symbol(src)_1." + uid : "";
-  }();
+  })();
   function isMasked(func) {
     return !!maskSrcKey && maskSrcKey in func;
   }
@@ -37065,9 +37066,9 @@
   var objectProto8 = Object.prototype;
   var hasOwnProperty6 = objectProto8.hasOwnProperty;
   var propertyIsEnumerable2 = objectProto8.propertyIsEnumerable;
-  var isArguments = baseIsArguments_default(/* @__PURE__ */ function() {
+  var isArguments = baseIsArguments_default(/* @__PURE__ */ (function() {
     return arguments;
-  }()) ? baseIsArguments_default : function(value) {
+  })()) ? baseIsArguments_default : function(value) {
     return isObjectLike_default(value) && hasOwnProperty6.call(value, "callee") && !propertyIsEnumerable2.call(value, "callee");
   };
   var isArguments_default = isArguments;
@@ -37150,7 +37151,7 @@
   var freeModule2 = freeExports2 && typeof module == "object" && module && !module.nodeType && module;
   var moduleExports2 = freeModule2 && freeModule2.exports === freeExports2;
   var freeProcess = moduleExports2 && freeGlobal_default.process;
-  var nodeUtil = function() {
+  var nodeUtil = (function() {
     try {
       var types = freeModule2 && freeModule2.require && freeModule2.require("util").types;
       if (types) {
@@ -37159,7 +37160,7 @@
       return freeProcess && freeProcess.binding && freeProcess.binding("util");
     } catch (e2) {
     }
-  }();
+  })();
   var nodeUtil_default = nodeUtil;
 
   // node_modules/lodash-es/isTypedArray.js
@@ -37590,14 +37591,14 @@
   var arrayEach_default = arrayEach;
 
   // node_modules/lodash-es/_defineProperty.js
-  var defineProperty = function() {
+  var defineProperty = (function() {
     try {
       var func = getNative_default(Object, "defineProperty");
       func({}, "", {});
       return func;
     } catch (e2) {
     }
-  }();
+  })();
   var defineProperty_default = defineProperty;
 
   // node_modules/lodash-es/_baseAssignValue.js
@@ -37860,7 +37861,7 @@
 
   // node_modules/lodash-es/_baseCreate.js
   var objectCreate = Object.create;
-  var baseCreate = /* @__PURE__ */ function() {
+  var baseCreate = /* @__PURE__ */ (function() {
     function object() {
     }
     return function(proto) {
@@ -37875,7 +37876,7 @@
       object.prototype = void 0;
       return result;
     };
-  }();
+  })();
   var baseCreate_default = baseCreate;
 
   // node_modules/lodash-es/_initCloneObject.js
@@ -39840,7 +39841,7 @@
     const neverPopulate = arrayMinItemsPopulate === "never";
     const ignoreMinItemsFlagSet = arrayMinItemsPopulate === "requiredOnly";
     const isPopulateAll = arrayMinItemsPopulate === "all" || !neverPopulate && !ignoreMinItemsFlagSet;
-    const computeSkipPopulate = (_b = arrayMinItemsStateBehavior === null || arrayMinItemsStateBehavior === void 0 ? void 0 : arrayMinItemsStateBehavior.computeSkipPopulate) !== null && _b !== void 0 ? _b : () => false;
+    const computeSkipPopulate = (_b = arrayMinItemsStateBehavior === null || arrayMinItemsStateBehavior === void 0 ? void 0 : arrayMinItemsStateBehavior.computeSkipPopulate) !== null && _b !== void 0 ? _b : (() => false);
     const isSkipEmptyDefaults = (experimental_defaultFormStateBehavior === null || experimental_defaultFormStateBehavior === void 0 ? void 0 : experimental_defaultFormStateBehavior.emptyObjectFields) === "skipEmptyDefaults";
     const emptyDefault = isSkipEmptyDefaults ? void 0 : [];
     if (Array.isArray(defaults)) {
@@ -39907,6 +39908,7 @@
   }
   function getDefaultBasedOnSchemaType(validator, rawSchema, computeDefaultsProps = {}, defaults) {
     switch (getSchemaType(rawSchema)) {
+      // We need to recurse for object schema inner default values.
       case "object": {
         return getObjectDefaults(validator, rawSchema, computeDefaultsProps, defaults);
       }
@@ -42023,8 +42025,7 @@
     return n = Object.assign ? Object.assign.bind() : function(e2) {
       for (var n2 = 1; n2 < arguments.length; n2++) {
         var r2 = arguments[n2];
-        for (var t in r2)
-          Object.prototype.hasOwnProperty.call(r2, t) && (e2[t] = r2[t]);
+        for (var t in r2) Object.prototype.hasOwnProperty.call(r2, t) && (e2[t] = r2[t]);
       }
       return e2;
     }, n.apply(this, arguments);
@@ -42138,8 +42139,7 @@
   }
   function Se(e2) {
     let n2 = e2.length;
-    for (; n2 > 0 && e2[n2 - 1] <= " "; )
-      n2--;
+    for (; n2 > 0 && e2[n2 - 1] <= " "; ) n2--;
     return e2.slice(0, n2);
   }
   function ze(e2, n2) {
@@ -42147,9 +42147,7 @@
   }
   function Ee(e2, n2, r2) {
     if (Array.isArray(r2)) {
-      for (let n3 = 0; n3 < r2.length; n3++)
-        if (ze(e2, r2[n3]))
-          return true;
+      for (let n3 = 0; n3 < r2.length; n3++) if (ze(e2, r2[n3])) return true;
       return false;
     }
     return r2(e2, n2);
@@ -42165,8 +42163,7 @@
     r2.inTable = true;
     let a2 = [[]], c2 = "";
     function i2() {
-      if (!c2)
-        return;
+      if (!c2) return;
       const e3 = a2[a2.length - 1];
       e3.push.apply(e3, n2(c2, r2)), c2 = "";
     }
@@ -42176,11 +42173,11 @@
   }
   function Le(e2, n2, r2) {
     r2.inline = true;
-    const t = e2[2] ? e2[2].replace(G, "").split("|").map(Re) : [], o2 = e2[3] ? function(e3, n3, r3) {
+    const t = e2[2] ? e2[2].replace(G, "").split("|").map(Re) : [], o2 = e2[3] ? (function(e3, n3, r3) {
       return e3.trim().split("\n").map(function(e4) {
         return Be(e4, n3, r3, true);
       });
-    }(e2[3], n2, r2) : [], a2 = Be(e2[1], n2, r2, !!o2.length);
+    })(e2[3], n2, r2) : [], a2 = Be(e2[1], n2, r2, !!o2.length);
     return r2.inline = false, o2.length ? { align: t, cells: o2, header: a2, type: "25" } : { children: a2, type: "21" };
   }
   function Oe(e2, n2) {
@@ -42213,8 +42210,7 @@
   function De(e2) {
     try {
       const n2 = decodeURIComponent(e2).replace(/[^A-Za-z0-9/:]/g, "");
-      if (we.test(n2))
-        return null;
+      if (we.test(n2)) return null;
     } catch (e3) {
       return null;
     }
@@ -42254,73 +42250,62 @@
   function Qe(e2, n2, r2) {
     let t = e2;
     const o2 = n2.split(".");
-    for (; o2.length && (t = t[o2[0]], void 0 !== t); )
-      o2.shift();
+    for (; o2.length && (t = t[o2[0]], void 0 !== t); ) o2.shift();
     return t || r2;
   }
   function We(r2 = "", t = {}) {
     t.overrides = t.overrides || {}, t.namedCodesToUnicode = t.namedCodesToUnicode ? n({}, a, t.namedCodesToUnicode) : a;
     const l2 = t.slugify || Ae, G2 = t.sanitizer || De, U2 = t.createElement || e.createElement, V2 = [s, y, h, t.enforceAtxHeadings ? z : S, E, M, ke, xe], H2 = [...V2, w, A, B, O];
     function Q2(e2, n2) {
-      for (let r3 = 0; r3 < e2.length; r3++)
-        if (e2[r3].test(n2))
-          return true;
+      for (let r3 = 0; r3 < e2.length; r3++) if (e2[r3].test(n2)) return true;
       return false;
     }
     function W2(e2, r3, ...o2) {
       const a2 = Qe(t.overrides, e2 + ".props", {});
-      return U2(function(e3, n2) {
+      return U2((function(e3, n2) {
         const r4 = Qe(n2, e3);
         return r4 ? "function" == typeof r4 || "object" == typeof r4 && "render" in r4 ? r4 : Qe(n2, e3 + ".component", e3) : e3;
-      }(e2, t.overrides), n({}, r3, a2, { className: He(null == r3 ? void 0 : r3.className, a2.className) || void 0 }), ...o2);
+      })(e2, t.overrides), n({}, r3, a2, { className: He(null == r3 ? void 0 : r3.className, a2.className) || void 0 }), ...o2);
     }
     function re2(e2) {
       e2 = e2.replace(b, "");
       let n2 = false;
       t.forceInline ? n2 = true : t.forceBlock || (n2 = false === Z.test(e2));
       const r3 = fe2(se2(n2 ? e2 : Se(e2).replace(oe, "") + "\n\n", { inline: n2 }));
-      for (; $e(r3[r3.length - 1]) && !r3[r3.length - 1].trim(); )
-        r3.pop();
-      if (null === t.wrapper)
-        return r3;
+      for (; $e(r3[r3.length - 1]) && !r3[r3.length - 1].trim(); ) r3.pop();
+      if (null === t.wrapper) return r3;
       const o2 = t.wrapper || (n2 ? "span" : "div");
       let a2;
-      if (r3.length > 1 || t.forceWrapper)
-        a2 = r3;
+      if (r3.length > 1 || t.forceWrapper) a2 = r3;
       else {
-        if (1 === r3.length)
-          return a2 = r3[0], "string" == typeof a2 ? W2("span", { key: "outer" }, a2) : a2;
+        if (1 === r3.length) return a2 = r3[0], "string" == typeof a2 ? W2("span", { key: "outer" }, a2) : a2;
         a2 = null;
       }
       return U2(o2, { key: "outer" }, a2);
     }
     function ce2(e2, n2) {
-      if (!n2 || !n2.trim())
-        return null;
+      if (!n2 || !n2.trim()) return null;
       const r3 = n2.match(u);
       return r3 ? r3.reduce(function(n3, r4) {
         const t2 = r4.indexOf("=");
         if (-1 !== t2) {
-          const a2 = function(e3) {
+          const a2 = (function(e3) {
             return -1 !== e3.indexOf("-") && null === e3.match(L) && (e3 = e3.replace(T, function(e4, n4) {
               return n4.toUpperCase();
             })), e3;
-          }(r4.slice(0, t2)).trim(), c2 = function(e3) {
+          })(r4.slice(0, t2)).trim(), c2 = (function(e3) {
             const n4 = e3[0];
             return ('"' === n4 || "'" === n4) && e3.length >= 2 && e3[e3.length - 1] === n4 ? e3.slice(1, -1) : e3;
-          }(r4.slice(t2 + 1).trim()), u2 = o[a2] || a2;
-          if ("ref" === u2)
-            return n3;
-          const l3 = n3[u2] = function(e3, n4, r5, t3) {
-            return "style" === n4 ? function(e4) {
+          })(r4.slice(t2 + 1).trim()), u2 = o[a2] || a2;
+          if ("ref" === u2) return n3;
+          const l3 = n3[u2] = (function(e3, n4, r5, t3) {
+            return "style" === n4 ? (function(e4) {
               const n5 = [];
               let r6 = "", t4 = false, o2 = false, a3 = "";
-              if (!e4)
-                return n5;
+              if (!e4) return n5;
               for (let c4 = 0; c4 < e4.length; c4++) {
                 const i2 = e4[c4];
-                if ('"' !== i2 && "'" !== i2 || t4 || (o2 ? i2 === a3 && (o2 = false, a3 = "") : (o2 = true, a3 = i2)), "(" === i2 && r6.endsWith("url") ? t4 = true : ")" === i2 && t4 && (t4 = false), ";" !== i2 || o2 || t4)
-                  r6 += i2;
+                if ('"' !== i2 && "'" !== i2 || t4 || (o2 ? i2 === a3 && (o2 = false, a3 = "") : (o2 = true, a3 = i2)), "(" === i2 && r6.endsWith("url") ? t4 = true : ")" === i2 && t4 && (t4 = false), ";" !== i2 || o2 || t4) r6 += i2;
                 else {
                   const e5 = r6.trim();
                   if (e5) {
@@ -42342,13 +42327,12 @@
                 }
               }
               return n5;
-            }(r5).reduce(function(n5, [r6, o2]) {
+            })(r5).reduce(function(n5, [r6, o2]) {
               return n5[r6.replace(/(-[a-z])/g, (e4) => e4[1].toUpperCase())] = t3(o2, e3, r6), n5;
             }, {}) : -1 !== i.indexOf(n4) ? t3(Fe(r5), e3, n4) : (r5.match(j) && (r5 = Fe(r5.slice(1, r5.length - 1))), "true" === r5 || "false" !== r5 && r5);
-          }(e2, a2, c2, G2);
+          })(e2, a2, c2, G2);
           "string" == typeof l3 && (A.test(l3) || O.test(l3)) && (n3[u2] = re2(l3.trim()));
-        } else
-          "style" !== r4 && (n3[o[r4] || r4] = true);
+        } else "style" !== r4 && (n3[o[r4] || r4] = true);
         return n3;
       }, {}) : null;
     }
@@ -42363,8 +42347,7 @@
       return n2 > 0 && n2 < e2.length - 1 && ("=" === e2[n2 + 1] || "-" === e2[n2 + 1]);
     }, o: Te(E), i: 1, u: (e2, n2, r3) => ({ children: Pe(n2, e2[1], r3), level: "=" === e2[2] ? 1 : 2, type: "9" }) }, 11: { t: ["<"], o: Me(A), i: 1, u(e2, n2, r3) {
       const [, t2] = e2[3].match(ae), o2 = RegExp("^" + t2, "gm"), a2 = e2[3].replace(o2, ""), i2 = Q2(H2, a2) ? Ne : Pe, u2 = e2[1].toLowerCase(), l3 = -1 !== c.indexOf(u2), s2 = (l3 ? u2 : e2[1]).trim(), f2 = { attrs: ce2(s2, e2[2]), noInnerParse: l3, tag: s2 };
-      if (r3.inAnchor = r3.inAnchor || "a" === u2, l3)
-        f2.text = e2[3];
+      if (r3.inAnchor = r3.inAnchor || "a" === u2, l3) f2.text = e2[3];
       else {
         const e3 = r3.inHTML;
         r3.inHTML = true, f2.children = i2(n2, a2, r3), r3.inHTML = e3;
@@ -42377,15 +42360,12 @@
       let n2 = e2[1], r3 = false;
       return -1 !== n2.indexOf("@") && -1 === n2.indexOf("//") && (r3 = true, n2 = n2.replace("mailto:", "")), { children: [{ text: n2, type: "27" }], target: r3 ? "mailto:" + n2 : n2, type: "15" };
     } }, 17: { t: (e2, n2) => !n2.inAnchor && !t.disableAutoLink && (ze(e2, "http://") || ze(e2, "https://")), o: Ce(C), i: 0, u: (e2) => ({ children: [{ text: e2[1], type: "27" }], target: e2[1], title: void 0, type: "15" }) }, 20: qe(W2, 1), 33: qe(W2, 2), 19: { t: ["\n"], o: Te(m), i: 3, u: Ue, l: () => "\n" }, 21: { o: je(function(e2, n2) {
-      if (n2.inline || n2.simple || n2.inHTML && -1 === e2.indexOf("\n\n") && -1 === n2.prevCapture.indexOf("\n\n"))
-        return null;
+      if (n2.inline || n2.simple || n2.inHTML && -1 === e2.indexOf("\n\n") && -1 === n2.prevCapture.indexOf("\n\n")) return null;
       let r3 = "", t2 = 0;
       for (; ; ) {
         const n3 = e2.indexOf("\n", t2), o3 = e2.slice(t2, -1 === n3 ? void 0 : n3 + 1);
-        if (Q2(V2, o3))
-          break;
-        if (r3 += o3, -1 === n3 || !o3.trim())
-          break;
+        if (Q2(V2, o3)) break;
+        if (r3 += o3, -1 === n3 || !o3.trim()) break;
         t2 = n3 + 1;
       }
       const o2 = Se(r3);
@@ -42410,36 +42390,33 @@
       return ("*" === n2 || "_" === n2) && e2[1] !== n2;
     }, o: Ie(K), i: 3, u: (e2, n2, r3) => ({ children: n2(e2[2], r3) }), l: (e2, n2, r3) => W2("em", { key: r3.key }, n2(e2.children, r3)) }, 30: { t: ["\\"], o: Ie(ne), i: 1, u: (e2) => ({ text: e2[1], type: "27" }) }, 31: { t: ["=="], o: Ie(X), i: 3, u: Ge, l: (e2, n2, r3) => W2("mark", { key: r3.key }, n2(e2.children, r3)) }, 32: { t: ["~~"], o: Ie(Y), i: 3, u: Ge, l: (e2, n2, r3) => W2("del", { key: r3.key }, n2(e2.children, r3)) } };
     true === t.disableParsingRawHTML && (delete le2[11], delete le2[13]);
-    const se2 = function(e2) {
+    const se2 = (function(e2) {
       var n2 = Object.keys(e2);
       function r3(t2, o2) {
         var a2 = [];
-        if (o2.prevCapture = o2.prevCapture || "", t2.trim())
-          for (; t2; )
-            for (var c2 = 0; c2 < n2.length; ) {
-              var i2 = n2[c2], u2 = e2[i2];
-              if (!u2.t || Ee(t2, o2, u2.t)) {
-                var l3 = u2.o(t2, o2);
-                if (l3 && l3[0]) {
-                  t2 = t2.substring(l3[0].length);
-                  var s2 = u2.u(l3, r3, o2);
-                  o2.prevCapture += l3[0], s2.type || (s2.type = i2), a2.push(s2);
-                  break;
-                }
-                c2++;
-              } else
-                c2++;
+        if (o2.prevCapture = o2.prevCapture || "", t2.trim()) for (; t2; ) for (var c2 = 0; c2 < n2.length; ) {
+          var i2 = n2[c2], u2 = e2[i2];
+          if (!u2.t || Ee(t2, o2, u2.t)) {
+            var l3 = u2.o(t2, o2);
+            if (l3 && l3[0]) {
+              t2 = t2.substring(l3[0].length);
+              var s2 = u2.u(l3, r3, o2);
+              o2.prevCapture += l3[0], s2.type || (s2.type = i2), a2.push(s2);
+              break;
             }
+            c2++;
+          } else c2++;
+        }
         return o2.prevCapture = "", a2;
       }
       return n2.sort(function(n3, r4) {
         return e2[n3].i - e2[r4].i || (n3 < r4 ? -1 : 1);
       }), function(e3, n3) {
-        return r3(function(e4) {
+        return r3((function(e4) {
           return e4.replace(k, "\n").replace(v, "").replace(N, "    ");
-        }(e3), n3);
+        })(e3), n3);
       };
-    }(le2), fe2 = /* @__PURE__ */ function(e2, n2) {
+    })(le2), fe2 = /* @__PURE__ */ (function(e2, n2) {
       return function r3(t2, o2 = {}) {
         if (Array.isArray(t2)) {
           const e3 = o2.key, n3 = [];
@@ -42451,25 +42428,23 @@
           }
           return o2.key = e3, n3;
         }
-        return function(r4, t3, o3) {
+        return (function(r4, t3, o3) {
           const a2 = e2[r4.type].l;
           return n2 ? n2(() => a2(r4, t3, o3), r4, t3, o3) : a2(r4, t3, o3);
-        }(t2, r3, o2);
+        })(t2, r3, o2);
       };
-    }(le2, t.renderRule), _e2 = re2(r2);
+    })(le2, t.renderRule), _e2 = re2(r2);
     return ie2.length ? W2("div", null, _e2, W2("footer", { key: "footer" }, ie2.map(function(e2) {
       return W2("div", { id: l2(e2.identifier, Ae), key: e2.identifier }, e2.identifier, fe2(se2(e2.footnote, { inline: true })));
     }))) : _e2;
   }
   var index_modern_default = (n2) => {
-    let { children: t, options: o2 } = n2, a2 = function(e2, n3) {
-      if (null == e2)
-        return {};
+    let { children: t, options: o2 } = n2, a2 = (function(e2, n3) {
+      if (null == e2) return {};
       var r2, t2, o3 = {}, a3 = Object.keys(e2);
-      for (t2 = 0; t2 < a3.length; t2++)
-        n3.indexOf(r2 = a3[t2]) >= 0 || (o3[r2] = e2[r2]);
+      for (t2 = 0; t2 < a3.length; t2++) n3.indexOf(r2 = a3[t2]) >= 0 || (o3[r2] = e2[r2]);
       return o3;
-    }(n2, r);
+    })(n2, r);
     return e.cloneElement(We(null == t ? "" : t, o2), a2);
   };
 
@@ -44685,8 +44660,7 @@
     (0, import_react20.useEffect)(() => {
       const handleScrollOrResize = () => {
         setProtocolMenu((prev) => {
-          if (!prev || !activeProtocolInput.current)
-            return null;
+          if (!prev || !activeProtocolInput.current) return null;
           return buildProtocolMenuState(
             activeProtocolInput.current,
             prev.modeIndex,
@@ -44724,8 +44698,7 @@
     const moveMode = (index, delta) => {
       const modes = [...design.modes ?? []];
       const target = index + delta;
-      if (target < 0 || target >= modes.length)
-        return;
+      if (target < 0 || target >= modes.length) return;
       const [item] = modes.splice(index, 1);
       modes.splice(target, 0, item);
       updateDesign({ modes });

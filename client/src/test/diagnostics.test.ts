@@ -7,7 +7,9 @@ import * as vscode from 'vscode';
 import * as assert from 'assert';
 import { getDocUri, activate } from './helper';
 
-suite('Should get diagnostics', () => {
+// Diagnostics are currently disabled in the language server.
+// Skip these sample tests until diagnostics are re-enabled or replaced with fixtures.
+suite.skip('Should get diagnostics (skipped)', () => {
 	const docUri = getDocUri('diagnostics.txt');
 
 	test('Diagnoses uppercase texts', async () => {

@@ -73,96 +73,96 @@
           }
         }
       },
-          {
-            "title": "Specification Defaults",
-            "properties": {
-              "specification.defaultSupplier": {
-                "type": "string",
-                "default": "",
-                "description": "Default supplier value used when creating a new contract specification."
-              },
-              "specification.localContractRoot": {
-                "type": "string",
-                "default": "",
-                "markdownDescription": "Local Contract Specification Root Directory. Select a folder to store and edit contract specifications.",
-                "format": "uri"
-              },
-              "specification.localProtocolRoot": {
-                "type": "string",
-                "default": "",
-                "markdownDescription": "Local Protocol Specification Root Directory. Select a folder to store and edit protocol specifications.",
-                "format": "uri"
-              },
-              "specification.contractFilenameFormat": {
-                "type": "string",
-                "default": "{layer}--{verb}--{subject}--{variation}--{platform}",
-                "markdownDescription": "Filename format for new contract specifications (extension is appended automatically: .cspec). Supported tokens: `{layer}`, `{verb}`, `{subject}`, `{variation}`, `{platform}`."
-              },
-              "specification.protocolFilenameFormat": {
-                "type": "string",
-                "default": "{layer}--{subject}--{variation}--{platform}",
-                "markdownDescription": "Filename format for new protocol specifications (extension is appended automatically: .pspec). Supported tokens: `{layer}`, `{subject}`, `{variation}`, `{platform}`."
-              }
-            }
+      {
+        "title": "Specification Defaults",
+        "properties": {
+          "specification.defaultSupplier": {
+            "type": "string",
+            "default": "",
+            "description": "Default supplier value used when creating a new contract specification."
           },
-  {
-    "title": "Hover",
-    "properties": {
-      "emergent.hover.disabled": {
-        "scope": "resource",
-        "type": "boolean",
-        "default": true,
-        "description": "Disable hover popups for Emergent Coding files."
-      }
-    }
-  },
-  {
-    "title": "Protocol Design Definitions",
-    "properties": {
-      "protocolDesign.definitionPaths": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "default": [],
-        "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder."
+          "specification.localContractRoot": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Local Contract Specification Root Directory. Select a folder to store and edit contract specifications.",
+            "format": "uri"
+          },
+          "specification.localProtocolRoot": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Local Protocol Specification Root Directory. Select a folder to store and edit protocol specifications.",
+            "format": "uri"
+          },
+          "specification.contractFilenameFormat": {
+            "type": "string",
+            "default": "{layer}--{verb}--{subject}--{variation}--{platform}",
+            "markdownDescription": "Filename format for new contract specifications (extension is appended automatically: .cspec). Supported tokens: `{layer}`, `{verb}`, `{subject}`, `{variation}`, `{platform}`."
+          },
+          "specification.protocolFilenameFormat": {
+            "type": "string",
+            "default": "{layer}--{subject}--{variation}--{platform}",
+            "markdownDescription": "Filename format for new protocol specifications (extension is appended automatically: .pspec). Supported tokens: `{layer}`, `{subject}`, `{variation}`, `{platform}`."
+          }
+        }
       },
-      "protocolDesign.activeDefinition": {
-        "type": "string",
-        "default": "",
-        "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`."
-      }
-    }
-  },
-  {
-    "title": "Extension Debugging",
-    "properties": {
-      "emergent.maxNumberOfProblems": {
-                "scope": "resource",
+      {
+        "title": "Hover",
+        "properties": {
+          "emergent.hover.disabled": {
+            "scope": "resource",
+            "type": "boolean",
+            "default": true,
+            "description": "Disable hover popups for Emergent Coding files."
+          }
+        }
+      },
+      {
+        "title": "Protocol Design Definitions",
+        "properties": {
+          "protocolDesign.definitionPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder."
+          },
+          "protocolDesign.activeDefinition": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`."
+          }
+        }
+      },
+      {
+        "title": "Extension Debugging",
+        "properties": {
+          "emergent.maxNumberOfProblems": {
+            "scope": "resource",
             "type": "number",
             "default": 100,
             "description": "Controls the maximum number of problems produced by the language server."
           },
-              "emergent.trace.server": {
-                "scope": "window",
-                "type": "string",
-                "enum": [
-                  "off",
-                  "messages",
-                  "verbose"
-                ],
-                "default": "verbose",
-                "description": "Traces the communication between VS Code and the language server."
-              },
-              "emergent.hoverDebugLogging": {
-                "scope": "window",
-                "type": "boolean",
-                "default": false,
-                "description": "Emit detailed hover classification and fetch logging to the Language Server output."
-              }
-            }
+          "emergent.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "verbose",
+            "description": "Traces the communication between VS Code and the language server."
+          },
+          "emergent.hoverDebugLogging": {
+            "scope": "window",
+            "type": "boolean",
+            "default": false,
+            "description": "Emit detailed hover classification and fetch logging to the Language Server output."
           }
-        ],
+        }
+      }
+    ],
     "languages": [
       {
         "id": "emergent",
@@ -262,23 +262,23 @@
         "viewType": "protocolSpecEditor",
         "displayName": "Protocol Specification Editor",
         "selector": [
+          {
+            "filenamePattern": "*.pspec"
+          }
+        ],
+        "priority": "default"
+      },
       {
-        "filenamePattern": "*.pspec"
+        "viewType": "protocolDesignEditor",
+        "displayName": "Protocol Design Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.pdes"
+          }
+        ],
+        "priority": "default"
       }
-    ],
-    "priority": "default"
-  },
-  {
-    "viewType": "protocolDesignEditor",
-    "displayName": "Protocol Design Editor",
-    "selector": [
-      {
-        "filenamePattern": "*.pdes"
-      }
-    ],
-    "priority": "default"
-  }
-]
+    ]
   },
   "scripts": {
     "build": "npm run build:webview && npm run compile",
@@ -293,6 +293,9 @@
     "test:server": "mocha -r ts-node/register server/test/**/*.ts"
   },
   "devDependencies": {
+    "@rjsf/core": "^5.18.3",
+    "@rjsf/utils": "^5.18.3",
+    "@rjsf/validator-ajv8": "^5.18.3",
     "@types/mocha": "^9.1.0",
     "@types/node": "^16.11.7",
     "@types/node-fetch": "^2.6.2",
@@ -301,17 +304,14 @@
     "@typescript-eslint/eslint-plugin": "^5.30.0",
     "@typescript-eslint/parser": "^5.30.0",
     "@vscode/test-electron": "^2.1.2",
-    "@rjsf/core": "^5.18.3",
-    "@rjsf/utils": "^5.18.3",
-    "@rjsf/validator-ajv8": "^5.18.3",
-    "eslint": "^8.13.0",
-    "mocha": "^9.2.1",
     "chai": "^4.3.7",
-    "ts-node": "^10.9.2",
-    "typescript": "^4.8.4",
-    "esbuild": "^0.20.2",
+    "esbuild": "^0.27.0",
+    "eslint": "^8.13.0",
+    "mocha": "^11.7.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.8.4"
   },
   "dependencies": {
     "ajv": "^8.12.0",
