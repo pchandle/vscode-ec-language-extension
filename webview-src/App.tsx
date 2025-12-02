@@ -15,6 +15,7 @@ import {
 import { HostMessage, WebviewMessage } from "./types";
 import { vscode } from "./vscode";
 import { PdesEditor } from "./pdes/PdesEditor";
+import { SafeTextareaWidget } from "./widgets/SafeTextareaWidget";
 
 type FormData = Record<string, unknown> | null | undefined;
 
@@ -106,7 +107,7 @@ export default function App() {
       }
       if (node.properties.type) {
         node.properties.type.enum = REQUIREMENT_TYPE_OPTIONS.map((opt) => opt.value);
-        node.properties.type.enumNames = REQUIREMENT_TYPE_OPTIONS.map((opt) => opt.label);
+        // Labels are supplied via uiSchema (ui:enumNames) to avoid deprecated enumNames
       }
       if (node.properties.protocol) {
         node.properties.protocol.title = "protocol";
@@ -160,7 +161,11 @@ export default function App() {
       items: {
         "ui:ObjectFieldTemplate": RequirementObjectTemplate,
         "ui:order": ["type", "name", "protocol", "minimum", "maximum", "length", "hint"],
-        type: { "ui:widget": "select", "ui:placeholder": "Type" },
+        type: {
+          "ui:widget": "select",
+          "ui:placeholder": "Type",
+          "ui:enumNames": REQUIREMENT_TYPE_OPTIONS.map((opt) => opt.label),
+        },
         protocol: {
           "ui:title": "protocol",
           "ui:placeholder": "Enter protocol",
@@ -199,6 +204,7 @@ export default function App() {
   const widgets = useMemo(
     () => ({
       ContractProtocolInput: ContractProtocolCompletionWidget,
+      TextareaWidget: SafeTextareaWidget,
     }),
     []
   );

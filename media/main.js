@@ -24464,10 +24464,10 @@
               return jsxWithValidation(type, props, key, false);
             }
           }
-          var jsx4 = jsxWithValidationDynamic;
+          var jsx5 = jsxWithValidationDynamic;
           var jsxs3 = jsxWithValidationStatic;
           exports2.Fragment = REACT_FRAGMENT_TYPE;
-          exports2.jsx = jsx4;
+          exports2.jsx = jsx5;
           exports2.jsxs = jsxs3;
         })();
       }
@@ -45345,11 +45345,47 @@
     }
   };
 
-  // webview-src/App.tsx
+  // webview-src/widgets/SafeTextareaWidget.tsx
   var import_jsx_runtime49 = __toESM(require_jsx_runtime());
-  var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M9 4h6m-8 3h10l-1 13H8L7 7Z", stroke: "currentColor", strokeWidth: "2", strokeLinejoin: "round" }),
-    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M5 7h14", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" })
+  var SafeTextareaWidget = ({
+    value = "",
+    onChange,
+    options,
+    disabled,
+    readonly,
+    autofocus,
+    placeholder,
+    id,
+    label,
+    required,
+    rawErrors
+  }) => {
+    const handleChange = (event) => {
+      onChange(event.target.value);
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+      "textarea",
+      {
+        id,
+        value,
+        placeholder,
+        disabled,
+        readOnly: readonly,
+        autoFocus: autofocus,
+        onChange: handleChange,
+        "aria-label": label,
+        "aria-required": required,
+        "aria-invalid": Array.isArray(rawErrors) && rawErrors.length > 0,
+        rows: options?.rows ?? 3
+      }
+    );
+  };
+
+  // webview-src/App.tsx
+  var import_jsx_runtime50 = __toESM(require_jsx_runtime());
+  var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("path", { d: "M9 4h6m-8 3h10l-1 13H8L7 7Z", stroke: "currentColor", strokeWidth: "2", strokeLinejoin: "round" }),
+    /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("path", { d: "M5 7h14", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" })
   ] });
   var REQUIREMENT_TYPE_OPTIONS = [
     { value: "abstraction", label: "Protocol" },
@@ -45426,7 +45462,6 @@
         }
         if (node.properties.type) {
           node.properties.type.enum = REQUIREMENT_TYPE_OPTIONS.map((opt) => opt.value);
-          node.properties.type.enumNames = REQUIREMENT_TYPE_OPTIONS.map((opt) => opt.label);
         }
         if (node.properties.protocol) {
           node.properties.protocol.title = "protocol";
@@ -45474,7 +45509,11 @@
         items: {
           "ui:ObjectFieldTemplate": RequirementObjectTemplate,
           "ui:order": ["type", "name", "protocol", "minimum", "maximum", "length", "hint"],
-          type: { "ui:widget": "select", "ui:placeholder": "Type" },
+          type: {
+            "ui:widget": "select",
+            "ui:placeholder": "Type",
+            "ui:enumNames": REQUIREMENT_TYPE_OPTIONS.map((opt) => opt.label)
+          },
           protocol: {
             "ui:title": "protocol",
             "ui:placeholder": "Enter protocol",
@@ -45510,7 +45549,8 @@
     );
     const widgets2 = (0, import_react21.useMemo)(
       () => ({
-        ContractProtocolInput: ContractProtocolCompletionWidget
+        ContractProtocolInput: ContractProtocolCompletionWidget,
+        TextareaWidget: SafeTextareaWidget
       }),
       []
     );
@@ -45612,8 +45652,8 @@
       }, delayMs);
     };
     if (editorMode === "pdes") {
-      return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.container, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.container, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
           "style",
           {
             dangerouslySetInnerHTML: {
@@ -45626,19 +45666,19 @@
             }
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("header", { style: styles2.header, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.title, children: "Protocol Design" }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.okBadge, children: "Valid" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("header", { style: styles2.header, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.title, children: "Protocol Design" }),
+          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.okBadge, children: "Valid" }) })
         ] }),
-        parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerError, children: [
+        parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerError, children: [
           "Unable to parse JSON: ",
           parseError
         ] }) : null,
-        hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerWarning, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) })
+        hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerWarning, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
+          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) })
         ] }) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
           PdesEditor,
           {
             value: pdesData,
@@ -45660,8 +45700,8 @@
         )
       ] });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.container, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.container, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
         "style",
         {
           dangerouslySetInnerHTML: {
@@ -45674,10 +45714,10 @@
           }
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("header", { style: styles2.header, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.title, children: "Contract Specification" }),
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.headerActions, children: [
-          hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("header", { style: styles2.header, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.title, children: "Contract Specification" }),
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.headerActions, children: [
+          hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
             "button",
             {
               type: "button",
@@ -45687,18 +45727,18 @@
               children: errorsCollapsed ? "Show errors" : "Hide errors"
             }
           ) : null,
-          hasErrors ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.okBadge, children: "Valid" })
+          hasErrors ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.okBadge, children: "Valid" })
         ] })
       ] }),
-      parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerError, children: [
+      parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerError, children: [
         "Unable to parse JSON: ",
         parseError
       ] }) : null,
-      hostErrors.length > 0 && !errorsCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerWarning, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Schema validation" }),
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) })
+      hostErrors.length > 0 && !errorsCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerWarning, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Schema validation" }),
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) })
       ] }) : null,
-      !schema ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerInfo, children: "Loading schema\u2026" }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+      !schema ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Loading schema\u2026" }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
         lib_default,
         {
           schema: enhancedSchema ?? schema,
@@ -45714,7 +45754,7 @@
           noHtml5Validate: true,
           onChange,
           onBlur,
-          children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_jsx_runtime49.Fragment, {})
+          children: /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(import_jsx_runtime50.Fragment, {})
         }
       )
     ] });
@@ -45736,15 +45776,15 @@
       }
       prevKeysRef.current = currentKeys;
     }, [items, formContext, path]);
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.arraySection, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionHeader, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionTitle, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.arraySection, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionHeader, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionTitle, children: [
           title,
-          required ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
+          required ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionActions, children: [
-          items.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionActions, children: [
+          items.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(import_jsx_runtime50.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
               "button",
               {
                 type: "button",
@@ -45753,7 +45793,7 @@
                 children: "Expand all"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
               "button",
               {
                 type: "button",
@@ -45763,7 +45803,7 @@
               }
             )
           ] }) : null,
-          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(
             "button",
             {
               type: "button",
@@ -45783,7 +45823,7 @@
           ) : null
         ] })
       ] }),
-      items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.emptyState, children: [
+      items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.emptyState, children: [
         "No ",
         title?.toLowerCase() ?? "items",
         " yet."
@@ -45799,7 +45839,7 @@
         const isFirstItem = items.length === 1 && item.index === 0;
         const collapsed = isFirstItem ? false : collapsedMap[item.key] ?? false;
         const hasAnyErrors = showError || itemErrors && itemErrors.length > 0;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(
           "div",
           {
             style: {
@@ -45809,9 +45849,9 @@
               boxShadow: hasAnyErrors ? "0 0 0 1px #f0b400" : void 0
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardHeader, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardActionsLeft, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.cardHeader, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.cardActionsLeft, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
                     "button",
                     {
                       type: "button",
@@ -45821,7 +45861,7 @@
                       children: collapsed ? "\u25B8" : "\u25BE"
                     }
                   ),
-                  item.hasMoveUp ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  item.hasMoveUp ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
                     "button",
                     {
                       type: "button",
@@ -45830,8 +45870,8 @@
                       onClick: item.onReorderClick(item.index, item.index - 1),
                       children: "\u2191"
                     }
-                  ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton }),
-                  item.hasMoveDown ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  ) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.placeholderButton }),
+                  item.hasMoveDown ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
                     "button",
                     {
                       type: "button",
@@ -45840,13 +45880,13 @@
                       onClick: item.onReorderClick(item.index, item.index + 1),
                       children: "\u2193"
                     }
-                  ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton })
+                  ) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.placeholderButton })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardTitle, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.typeBadge, children: displayType }),
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.cardName, children: displayName })
+                /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.cardTitle, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.typeBadge, children: displayType }),
+                  /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.cardName, children: displayName })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.cardActionsRight, children: item.hasRemove ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.cardActionsRight, children: item.hasRemove ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
                   "button",
                   {
                     type: "button",
@@ -45856,10 +45896,10 @@
                     onClick: item.onDropIndexClick(item.index),
                     children: TrashIcon2
                   }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.placeholderButton }) })
+                ) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.placeholderButton }) })
               ] }),
-              !collapsed ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.cardBody, children: item.children }) : null,
-              showError && itemErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.itemErrorList, children: itemErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) }) : null
+              !collapsed ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.cardBody, children: item.children }) : null,
+              showError && itemErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.itemErrorList, children: itemErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) }) : null
             ]
           },
           item.key
@@ -45870,42 +45910,42 @@
   function CompactFieldTemplate(props) {
     const { id, classNames, label, required, description, children, rawErrors, schema, hidden } = props;
     if (hidden) {
-      return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: { display: "none" }, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: { display: "none" }, children });
     }
     const isArrayField = schema?.type === "array";
     const isRoot = id === "root";
     const isArrayItemWrapper = schema?.type === "object" && (id.includes("_requirements_") || id.includes("_obligations_"));
     if (isArrayField || isRoot || isArrayItemWrapper) {
-      return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: classNames, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { className: classNames, children });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: classNames, style: styles2.fieldRow, children: [
-      label ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { htmlFor: id, style: styles2.fieldLabel, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { className: classNames, style: styles2.fieldRow, children: [
+      label ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("label", { htmlFor: id, style: styles2.fieldLabel, children: [
         label,
-        required ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
+        required ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
       ] }) : null,
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.fieldControl, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.fieldControl, children: [
         children,
         description,
-        rawErrors && rawErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.inlineErrors, children: rawErrors.map((error) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { children: error }, error)) }) : null
+        rawErrors && rawErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.inlineErrors, children: rawErrors.map((error) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { children: error }, error)) }) : null
       ] })
     ] });
   }
   function SectionObjectTemplate(props) {
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.objectSection, children: [
-      props.title ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionTitle, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.objectSection, children: [
+      props.title ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionTitle, children: [
         props.title,
-        props.required ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
+        props.required ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
       ] }) }) : null,
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectGrid, children: props.properties.map(
-        (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectGrid, children: props.properties.map(
+        (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
       ) })
     ] });
   }
   function RequirementObjectTemplate(props) {
     const typeValue = props.formData?.type;
     const allowed = allowedRequirementProps(typeValue);
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectSection, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectGrid, children: props.properties.filter((property2) => allowed.has(property2.name)).map(
-      (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectSection, children: /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectGrid, children: props.properties.filter((property2) => allowed.has(property2.name)).map(
+      (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
     ) }) });
   }
   function allowedRequirementProps(typeValue) {
@@ -45932,9 +45972,9 @@
     if (!errors || errors.length === 0) {
       return null;
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.formErrorList, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: errors.map((error, index) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: error.stack }, index)) })
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.formErrorList, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: errors.map((error, index) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: error.stack }, index)) })
     ] });
   }
   function requirementLabelFromValue(value) {
@@ -46002,8 +46042,8 @@
       closeMenu();
       inputRef.current?.focus();
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(import_jsx_runtime50.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
         "input",
         {
           id,
@@ -46059,7 +46099,7 @@
           }
         }
       ),
-      menu ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+      menu ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
         "div",
         {
           style: {
@@ -46070,7 +46110,7 @@
             height: menu.height,
             maxHeight: menu.maxHeight
           },
-          children: menu.items.map((item, idx) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          children: menu.items.map((item, idx) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
             "button",
             {
               style: { ...styles2.suggestionItem, ...idx === menu.activeIndex ? styles2.suggestionItemActive : {} },
@@ -46394,11 +46434,11 @@
   };
 
   // webview-src/main.tsx
-  var import_jsx_runtime50 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime51 = __toESM(require_jsx_runtime());
   var rootElement = document.getElementById("root");
   if (rootElement) {
     const root2 = (0, import_client.createRoot)(rootElement);
-    root2.render(/* @__PURE__ */ (0, import_jsx_runtime50.jsx)(App, {}));
+    root2.render(/* @__PURE__ */ (0, import_jsx_runtime51.jsx)(App, {}));
   }
 })();
 /*! Bundled license information:

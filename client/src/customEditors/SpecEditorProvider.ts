@@ -323,8 +323,9 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     const nonce = this.getNonce();
     const csp = [
       "default-src 'none';",
+      "sandbox allow-scripts;",
       `img-src ${webview.cspSource} data:;`,
-      `script-src ${webview.cspSource} 'nonce-${nonce}' 'unsafe-eval';`,
+      `script-src ${webview.cspSource} 'nonce-${nonce}';`,
       `style-src ${webview.cspSource} 'unsafe-inline';`,
       `font-src ${webview.cspSource};`,
       `connect-src ${webview.cspSource};`,
