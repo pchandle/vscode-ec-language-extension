@@ -1,0 +1,1 @@
+# Intentionally left empty to ensure npm pack includes build output (e.g. client/out, server/out) when vsce collects files.

@@ -13,6 +13,7 @@ client/server/**
 docs/fetched-specs/**
 logs/**
 scripts/**
+.npm-cache/**
 !client/node_modules/vscode-jsonrpc/**
 !client/node_modules/vscode-languageclient/**
 !client/node_modules/vscode-languageserver-protocol/**

@@ -18,7 +18,22 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "main": "./client/out/extension",
+  "main": "./client/out/extension.js",
+  "activationEvents": [
+    "onLanguage:emergent",
+    "onCommand:emergent.showSpecificationPanel",
+    "onCommand:emergent.reloadSpecifications",
+    "onCommand:emergent.openSpecificationAtPosition",
+    "onCommand:emergent.openLocalSpecificationAtPosition",
+    "onCommand:emergent.newProtocolSpec",
+    "onCommand:emergent.newContractSpec",
+    "onCommand:emergent.exportProtocolSpec",
+    "onCommand:emergent.clearSpecificationCache",
+    "onCommand:emergent.showFetchError",
+    "onCustomEditor:contractSpecEditor",
+    "onCustomEditor:protocolSpecEditor",
+    "onCustomEditor:protocolDesignEditor"
+  ],
   "contributes": {
     "configuration": [
       {
