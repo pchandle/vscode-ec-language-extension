@@ -1,0 +1,30 @@
+// Canonical expression sample for lexer/parser tests
+defaults: data, default, x64, aptissio
+
+job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS)
+
+  // numeric literals (signed, hex, octal, binary)
+  -42 -> NEG_INT
+  0x2A -> HEX_INT
+  0o52 -> OCT_INT
+  -0b00101010 -> BIN_INT
+
+  // boolean literals (case-insensitive)
+  true -> BOOL_TRUE
+  FALSE -> BOOL_FALSE
+
+  // string literal with escapes and line continuation
+  "Hello \\\"quote\\\"\\n" \
+    + " world" -> HELLO_STR
+
+  // arithmetic, comparison, logical operators with precedence
+  (lhs * 2 + rhs / 3 - 5) % 4 == 1 && !FLAGS -> CHECK_EXPR
+
+  // block + if/else + inline expression weave
+  if CHECK_EXPR then
+    "ok"
+  else
+    "fail"
+  end -> STATUS_OUT
+
+end
