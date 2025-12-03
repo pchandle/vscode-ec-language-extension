@@ -3,5 +3,24 @@
   "classification": "/byte/example/default/all",
   "description": "",
   "policy": 0,
-  "modes": []
+  "modes": [
+    {
+      "modeTemplate": "group-peers",
+      "collaborationLabel": "",
+      "topics": [
+        {
+          "name": "hosted group",
+          "properties": {
+            "protocol": "/data/integer/default/x64"
+          }
+        },
+        {
+          "name": "joined group",
+          "properties": {
+            "protocol": "/data/integer/default/x64"
+          }
+        }
+      ]
+    }
+  ]
 }
