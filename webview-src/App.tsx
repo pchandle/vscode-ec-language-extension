@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import Form, { IChangeEvent } from "@rjsf/core";
-import validator from "@rjsf/validator-ajv8";
 import {
   ArrayFieldTemplateProps,
   ErrorListProps,
@@ -16,6 +15,7 @@ import { HostMessage, WebviewMessage } from "./types";
 import { vscode } from "./vscode";
 import { PdesEditor } from "./pdes/PdesEditor";
 import { SafeTextareaWidget } from "./widgets/SafeTextareaWidget";
+import { getValidatorForSchema, validateWithPrecompiledValidator } from "./validation/validatorMap";
 
 type FormData = Record<string, unknown> | null | undefined;
 
@@ -201,6 +201,29 @@ export default function App() {
     }),
     []
   );
+
+  const formValidator = useMemo(() => {
+    const baseSchema = schema as RJSFSchema | undefined;
+    if (!baseSchema) {
+      return undefined;
+    }
+    const validator = getValidatorForSchema((enhancedSchema ?? baseSchema)?.$id as string | undefined);
+    if (!validator) {
+      return undefined;
+    }
+    if (!enhancedSchema) {
+      return validator;
+    }
+    // Wrap to force validation against the base schema while the UI uses an enhanced copy
+    return {
+      ...validator,
+      validateFormData: (formData: any, _schema: any, customValidate: any, transformErrors: any, ui: UiSchema) =>
+        validator.validateFormData(formData, baseSchema as any, customValidate, transformErrors, ui),
+      rawValidation: (_schema: any, formData: any) => (validator as any).rawValidation(baseSchema as any, formData),
+      isValid: (_schema: any, formData: any, _rootSchema: any) =>
+        (validator as any).isValid(baseSchema as any, formData, baseSchema as any),
+    };
+  }, [enhancedSchema, schema]);
   const widgets = useMemo(
     () => ({
       ContractProtocolInput: ContractProtocolCompletionWidget,
@@ -299,16 +322,14 @@ const formContext = useMemo(
     }
     validationTimer.current = window.setTimeout(() => {
       const activeSchema = enhancedSchema ?? schema;
-      if (!activeSchema) {
+      if (!activeSchema || !schema) {
         return;
       }
-      const result = validator.validateFormData(
-        (liveFormDataRef.current ?? {}) as any,
-        activeSchema as any,
-        undefined,
-        undefined,
-        uiSchema
-      );
+      const result = validateWithPrecompiledValidator(liveFormDataRef.current ?? {}, activeSchema, schema, uiSchema);
+      if (!result) {
+        console.warn("No precompiled validator found for schema", (activeSchema as any)?.$id);
+        return;
+      }
       setFormErrors(result.errors ?? []);
       const nextErrorSchema = result.errorSchema;
       setExtraErrors(hasErrorsInSchema(nextErrorSchema) ? nextErrorSchema : undefined);
@@ -414,23 +435,25 @@ const formContext = useMemo(
 
       {!schema ? (
         <div style={styles.bannerInfo}>Loading schema…</div>
+      ) : !formValidator ? (
+        <div style={styles.bannerError}>Missing validator for schema {(schema as any)?.$id ?? "(unknown)"}.</div>
       ) : parseError ? (
         <div style={styles.bannerInfo}>Fix the JSON syntax to enable the form.</div>
       ) : (
         <Form
           schema={enhancedSchema ?? schema}
-          validator={validator}
+          validator={formValidator}
           formData={formData ?? {}}
           liveValidate={false}
-        showErrorList
-        uiSchema={uiSchema}
-        templates={templates}
-        widgets={widgets}
-        extraErrors={extraErrors}
-        formContext={formContext}
-        noHtml5Validate
-        onChange={onChange}
-        onBlur={onBlur}
+          showErrorList={false}
+          uiSchema={uiSchema}
+          templates={templates}
+          widgets={widgets}
+          extraErrors={extraErrors}
+          formContext={formContext}
+          noHtml5Validate
+          onChange={onChange}
+          onBlur={onBlur}
         >
           <></>
         </Form>

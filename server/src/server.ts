@@ -5,8 +5,6 @@
 import {
 	createConnection,
 	TextDocuments,
-	Diagnostic,
-	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
@@ -18,6 +16,7 @@ import {
 	TextDocumentSyncKind,
 	InitializeResult
 } from 'vscode-languageserver/node';
+import { performance } from 'perf_hooks';
 
 import {
 	TextDocument
@@ -31,6 +30,7 @@ import {
 	shouldTriggerProtocolSpecCompletion
 } from './completionSupport';
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
+import { collectDiagnostics } from './diagnostics';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -51,6 +51,22 @@ let gatewayConfig: { hostname: string; port: number; allowInsecure: boolean; net
 	allowInsecure: true,
 	network: '31'
 };
+
+type TraceLevel = 'off' | 'messages' | 'verbose';
+const validationDebounceMs = 200;
+const pendingValidation: Map<string, NodeJS.Timeout> = new Map();
+
+function logTrace(level: TraceLevel | undefined, message: string, data?: Record<string, string | number | boolean | null>) {
+	if (!level || level === 'off') {
+		return;
+	}
+	const suffix = data && Object.keys(data).length ? ` ${JSON.stringify(data)}` : '';
+	connection.console.log(`[trace] ${message}${suffix}`);
+}
+
+function traceDuration(level: TraceLevel | undefined, operation: string, started: number, data?: Record<string, string | number | boolean | null>) {
+	logTrace(level, `${operation} ${Math.round(performance.now() - started)}ms`, data);
+}
 
 
 connection.onInitialize((params: InitializeParams) => {
@@ -119,16 +135,18 @@ interface EmergentSettings {
 	gatewayNetwork: string;
 	hoverDisabled?: boolean;
 	hover?: { disabled?: boolean };
+	traceServer?: TraceLevel;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
 const defaultSettings: EmergentSettings = {
-	maxNumberOfProblems: 1000,
+	maxNumberOfProblems: 100,
 	hoverDebugLogging: false,
 	gatewayNetwork: '31',
-	hoverDisabled: true
+	hoverDisabled: true,
+	traceServer: 'off'
 };
 let globalSettings: EmergentSettings = defaultSettings;
 
@@ -151,7 +169,7 @@ connection.onDidChangeConfiguration(change => {
 	}
 
 	// Revalidate all open text documents
-	// documents.all().forEach(validateTextDocument);
+	documents.all().forEach(scheduleValidation);
 });
 
 function getDocumentSettings(resource: string): Thenable<EmergentSettings> {
@@ -169,63 +187,63 @@ function getDocumentSettings(resource: string): Thenable<EmergentSettings> {
 	return result;
 }
 
+function clearScheduledValidation(uri: string) {
+	const handle = pendingValidation.get(uri);
+	if (handle) {
+		clearTimeout(handle);
+		pendingValidation.delete(uri);
+	}
+}
+
+async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+	const settings = await getDocumentSettings(textDocument.uri);
+	const traceLevel = settings.traceServer ?? 'off';
+	const started = performance.now();
+	const diagnostics = collectDiagnostics(textDocument, {
+		maxNumberOfProblems: settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
+	});
+
+	if (hasDiagnosticRelatedInformationCapability) {
+		for (const diagnostic of diagnostics) {
+			diagnostic.relatedInformation = [
+				{
+					location: {
+						uri: textDocument.uri,
+						range: Object.assign({}, diagnostic.range)
+					},
+					message: 'Uppercase tokens are treated as potential issues.'
+				}
+			];
+		}
+	}
+
+	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+	traceDuration(traceLevel, 'diagnostics', started, { uri: textDocument.uri });
+}
+
+function scheduleValidation(textDocument: TextDocument): void {
+	clearScheduledValidation(textDocument.uri);
+	const handle = setTimeout(() => {
+		pendingValidation.delete(textDocument.uri);
+		void validateTextDocument(textDocument);
+	}, validationDebounceMs);
+	pendingValidation.set(textDocument.uri, handle);
+}
+
 // Only keep settings for open documents
 documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
+	clearScheduledValidation(e.document.uri);
+	connection.sendDiagnostics({ uri: e.document.uri, diagnostics: [] });
 });
 
-// The content of a text document has changed. This event is emitted
-// when the text document first opened or when its content has changed.
+// Rebuild (validate) on open/change with a deterministic debounce.
+documents.onDidOpen(event => {
+	scheduleValidation(event.document);
+});
 documents.onDidChangeContent(change => {
-	// validateTextDocument(change.document);
+	scheduleValidation(change.document);
 });
-
-// async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-// 	// In this simple example we get the settings for every validate run.
-// 	const settings = await getDocumentSettings(textDocument.uri);
-
-// 	// The validator creates diagnostics for all uppercase words length 2 and more
-// 	const text = textDocument.getText();
-// 	const pattern = /\b[A-Z]{2,}\b/g;
-// 	let m: RegExpExecArray | null;
-
-// 	let problems = 0;
-// 	const diagnostics: Diagnostic[] = [];
-// 	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-// 		problems++;
-// 		const diagnostic: Diagnostic = {
-// 			severity: DiagnosticSeverity.Warning,
-// 			range: {
-// 				start: textDocument.positionAt(m.index),
-// 				end: textDocument.positionAt(m.index + m[0].length)
-// 			},
-// 			message: `${m[0]} is all uppercase.`,
-// 			source: 'ex'
-// 		};
-// 		if (hasDiagnosticRelatedInformationCapability) {
-// 			diagnostic.relatedInformation = [
-// 				{
-// 					location: {
-// 						uri: textDocument.uri,
-// 						range: Object.assign({}, diagnostic.range)
-// 					},
-// 					message: 'Spelling matters'
-// 				},
-// 				{
-// 					location: {
-// 						uri: textDocument.uri,
-// 						range: Object.assign({}, diagnostic.range)
-// 					},
-// 					message: 'Particularly for names'
-// 				}
-// 			];
-// 		}
-// 		diagnostics.push(diagnostic);
-// 	}
-
-// 	// Send the computed diagnostics to VSCode.
-// 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-// }
 
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
@@ -393,6 +411,8 @@ connection.onRequest(getSpecCachePathRequest, (): string => gatewayClient.cacheF
 
 connection.onHover(async (params): Promise<Hover | null> => {
 	const settings = await getDocumentSettings(params.textDocument.uri);
+	const traceLevel = settings.traceServer ?? 'off';
+	const started = performance.now();
 	const hoverDebugLogging = settings.hoverDebugLogging;
 	const hoverDisabled = settings.hoverDisabled ?? settings.hover?.disabled ?? true;
 	const debugLog = (message: string) => {
@@ -401,12 +421,14 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		}
 	};
 	if (hoverDisabled) {
+		traceDuration(traceLevel, 'hover', started, { reason: 'disabled', uri: params.textDocument.uri });
 		return null;
 	}
 
 	const document = documents.get(params.textDocument.uri);
 	if (!document) {
 		connection.console.warn(`Hover: document not found for ${params.textDocument.uri}`);
+		traceDuration(traceLevel, 'hover', started, { reason: 'missingDocument', uri: params.textDocument.uri });
 		return null;
 	}
 
@@ -437,6 +459,7 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		debugLog(
 			`Hover: incomplete classification (layer=${layer}, verb=${verb}, subject=${subject}, variation=${variation}, platform=${platform})`
 		);
+		traceDuration(traceLevel, 'hover', started, { reason: 'incomplete', uri: params.textDocument.uri });
 		return null;
 	}
 
@@ -445,18 +468,24 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const spec = await gatewayClient.fetchContractSpec(classification);
 	if (!spec) {
 		debugLog(`Hover: no spec returned for ${classification}`);
+		traceDuration(traceLevel, 'hover', started, { reason: 'noSpec', uri: params.textDocument.uri });
 		return null;
 	}
 	debugLog(`Hover: rendering hover for ${classification}`);
-
-	return { contents: { kind: MarkupKind.Markdown, value: renderStyledHover(spec, classification) } };
+	const hoverResult = { contents: { kind: MarkupKind.Markdown, value: renderStyledHover(spec, classification) } };
+	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri });
+	return hoverResult;
 });
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
 	async (params: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+	const settings = await getDocumentSettings(params.textDocument.uri);
+	const traceLevel = settings.traceServer ?? 'off';
+	const started = performance.now();
 	const document = documents.get(params.textDocument.uri);
 	if (!document) {
+		traceDuration(traceLevel, 'completion', started, { reason: 'missingDocument', uri: params.textDocument.uri });
 		return [];
 	}
 
@@ -481,9 +510,11 @@ connection.onCompletion(
 							changes: { [params.textDocument.uri]: [firstEdit] }
 						});
 						if (result?.applied) {
+							traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri, kind: 'contractSpec:applied' });
 							return [];
 						}
 					}
+					traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri, kind: 'contractSpec:list' });
 					return specItems;
 				}
 			}
@@ -510,15 +541,19 @@ connection.onCompletion(
 							changes: { [params.textDocument.uri]: [firstEdit] }
 						});
 						if (result?.applied) {
+							traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri, kind: 'protocolSpec:applied' });
 							return [];
 						}
 					}
+					traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri, kind: 'protocolSpec:list' });
 					return specItems;
 				}
 			}
 		}
 	}
-	return buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
+	const result = buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
+	traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri });
+	return result;
 }
 );
 

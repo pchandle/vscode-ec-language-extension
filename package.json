@@ -289,6 +289,7 @@
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
     "build:webview": "node ./scripts/build-webview.js",
     "watch:webview": "node ./scripts/build-webview.js --watch",
+    "test:validators": "TS_NODE_TRANSPILE_ONLY=1 TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\",\"target\":\"es2020\",\"esModuleInterop\":true,\"resolveJsonModule\":true,\"moduleResolution\":\"node\",\"jsx\":\"react-jsx\"}' node -r ts-node/register ./scripts/test-precompiled-validators.ts",
     "test": "sh ./scripts/e2e.sh",
     "test:server": "mocha -r ts-node/register server/test/**/*.ts"
   },

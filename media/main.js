@@ -29224,7 +29224,7 @@
         properties: propertiesResolver,
         items: itemsResolver
       };
-      function merger(rootSchema, options, totalSchemas) {
+      function merger(rootSchema3, options, totalSchemas) {
         totalSchemas = totalSchemas || [];
         options = defaultsDeep(options, {
           ignoreAdditionalProperties: false,
@@ -29279,7 +29279,7 @@
             ...callGroupResolver(complexKeysArr[index], resolverKeyword, schemas, mergeSchemas2, options, parents)
           }), merged2);
         }
-        const allSchemas = flattenDeep2(getAllOf(rootSchema));
+        const allSchemas = flattenDeep2(getAllOf(rootSchema3));
         const merged = mergeSchemas2(allSchemas);
         return merged;
       }
@@ -31586,26 +31586,26 @@
         maxProperties: true,
         minProperties: true
       };
-      function _traverse(opts, pre, post, schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex) {
+      function _traverse(opts, pre, post, schema, jsonPtr, rootSchema3, parentJsonPtr, parentKeyword, parentSchema, keyIndex) {
         if (schema && typeof schema == "object" && !Array.isArray(schema)) {
-          pre(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
+          pre(schema, jsonPtr, rootSchema3, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
           for (var key in schema) {
             var sch = schema[key];
             if (Array.isArray(sch)) {
               if (key in traverse.arrayKeywords) {
                 for (var i2 = 0; i2 < sch.length; i2++)
-                  _traverse(opts, pre, post, sch[i2], jsonPtr + "/" + key + "/" + i2, rootSchema, jsonPtr, key, schema, i2);
+                  _traverse(opts, pre, post, sch[i2], jsonPtr + "/" + key + "/" + i2, rootSchema3, jsonPtr, key, schema, i2);
               }
             } else if (key in traverse.propsKeywords) {
               if (sch && typeof sch == "object") {
                 for (var prop in sch)
-                  _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key, schema, prop);
+                  _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key + "/" + escapeJsonPtr(prop), rootSchema3, jsonPtr, key, schema, prop);
               }
             } else if (key in traverse.keywords || opts.allKeys && !(key in traverse.skipKeywords)) {
-              _traverse(opts, pre, post, sch, jsonPtr + "/" + key, rootSchema, jsonPtr, key, schema);
+              _traverse(opts, pre, post, sch, jsonPtr + "/" + key, rootSchema3, jsonPtr, key, schema);
             }
           }
-          post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
+          post(schema, jsonPtr, rootSchema3, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
         }
       }
       function escapeJsonPtr(str) {
@@ -38211,7 +38211,7 @@
     const remaining = omit_default(object, [key]);
     return [remaining, value];
   }
-  function findSchemaDefinitionRecursive($ref, rootSchema = {}, recurseList = []) {
+  function findSchemaDefinitionRecursive($ref, rootSchema3 = {}, recurseList = []) {
     const ref = $ref || "";
     let decodedRef;
     if (ref.startsWith("#")) {
@@ -38219,7 +38219,7 @@
     } else {
       throw new Error(`Could not find a definition for ${$ref}.`);
     }
-    const current = import_jsonpointer.default.get(rootSchema, decodedRef);
+    const current = import_jsonpointer.default.get(rootSchema3, decodedRef);
     if (current === void 0) {
       throw new Error(`Could not find a definition for ${$ref}.`);
     }
@@ -38234,7 +38234,7 @@
         throw new Error(`Definition for ${firstRef} contains a circular reference through ${circularPath}`);
       }
       const [remaining, theRef] = splitKeyElementFromObject(REF_KEY, current);
-      const subSchema = findSchemaDefinitionRecursive(theRef, rootSchema, [...recurseList, ref]);
+      const subSchema = findSchemaDefinitionRecursive(theRef, rootSchema3, [...recurseList, ref]);
       if (Object.keys(remaining).length > 0) {
         return { ...remaining, ...subSchema };
       }
@@ -38242,9 +38242,9 @@
     }
     return current;
   }
-  function findSchemaDefinition($ref, rootSchema = {}) {
+  function findSchemaDefinition($ref, rootSchema3 = {}) {
     const recurseList = [];
-    return findSchemaDefinitionRecursive($ref, rootSchema, recurseList);
+    return findSchemaDefinitionRecursive($ref, rootSchema3, recurseList);
   }
 
   // node_modules/lodash-es/_baseHas.js
@@ -38629,7 +38629,7 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/getMatchingOption.js
-  function getMatchingOption(validator, formData, options, rootSchema, discriminatorField) {
+  function getMatchingOption(validator, formData, options, rootSchema3, discriminatorField) {
     if (formData === void 0) {
       return 0;
     }
@@ -38642,7 +38642,7 @@
       if (discriminatorField && has_default(option, [PROPERTIES_KEY, discriminatorField])) {
         const value = get_default(formData, discriminatorField);
         const discriminator = get_default(option, [PROPERTIES_KEY, discriminatorField], {});
-        if (validator.isValid(discriminator, value, rootSchema)) {
+        if (validator.isValid(discriminator, value, rootSchema3)) {
           return i2;
         }
       } else if (option[PROPERTIES_KEY]) {
@@ -38665,10 +38665,10 @@
           augmentedSchema = Object.assign({}, option, requiresAnyOf);
         }
         delete augmentedSchema.required;
-        if (validator.isValid(augmentedSchema, formData, rootSchema)) {
+        if (validator.isValid(augmentedSchema, formData, rootSchema3)) {
           return i2;
         }
-      } else if (validator.isValid(option, formData, rootSchema)) {
+      } else if (validator.isValid(option, formData, rootSchema3)) {
         return i2;
       }
     }
@@ -38676,8 +38676,8 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/getFirstMatchingOption.js
-  function getFirstMatchingOption(validator, formData, options, rootSchema, discriminatorField) {
-    return getMatchingOption(validator, formData, options, rootSchema, discriminatorField);
+  function getFirstMatchingOption(validator, formData, options, rootSchema3, discriminatorField) {
+    return getMatchingOption(validator, formData, options, rootSchema3, discriminatorField);
   }
 
   // node_modules/lodash-es/_baseSet.js
@@ -39085,31 +39085,31 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/retrieveSchema.js
-  function retrieveSchema(validator, schema, rootSchema = {}, rawFormData, experimental_customMergeAllOf) {
-    return retrieveSchemaInternal(validator, schema, rootSchema, rawFormData, void 0, void 0, experimental_customMergeAllOf)[0];
+  function retrieveSchema(validator, schema, rootSchema3 = {}, rawFormData, experimental_customMergeAllOf) {
+    return retrieveSchemaInternal(validator, schema, rootSchema3, rawFormData, void 0, void 0, experimental_customMergeAllOf)[0];
   }
-  function resolveCondition(validator, schema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+  function resolveCondition(validator, schema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
     const { if: expression, then, else: otherwise, ...resolvedSchemaLessConditional } = schema;
-    const conditionValue = validator.isValid(expression, formData || {}, rootSchema);
+    const conditionValue = validator.isValid(expression, formData || {}, rootSchema3);
     let resolvedSchemas = [resolvedSchemaLessConditional];
     let schemas = [];
     if (expandAllBranches) {
       if (then && typeof then !== "boolean") {
-        schemas = schemas.concat(retrieveSchemaInternal(validator, then, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
+        schemas = schemas.concat(retrieveSchemaInternal(validator, then, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
       }
       if (otherwise && typeof otherwise !== "boolean") {
-        schemas = schemas.concat(retrieveSchemaInternal(validator, otherwise, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
+        schemas = schemas.concat(retrieveSchemaInternal(validator, otherwise, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
       }
     } else {
       const conditionalSchema = conditionValue ? then : otherwise;
       if (conditionalSchema && typeof conditionalSchema !== "boolean") {
-        schemas = schemas.concat(retrieveSchemaInternal(validator, conditionalSchema, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
+        schemas = schemas.concat(retrieveSchemaInternal(validator, conditionalSchema, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
       }
     }
     if (schemas.length) {
       resolvedSchemas = schemas.map((s2) => mergeSchemas(resolvedSchemaLessConditional, s2));
     }
-    return resolvedSchemas.flatMap((s2) => retrieveSchemaInternal(validator, s2, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
+    return resolvedSchemas.flatMap((s2) => retrieveSchemaInternal(validator, s2, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
   }
   function getAllPermutationsOfXxxOf(listOfLists) {
     const allPermutations = listOfLists.reduce(
@@ -39125,19 +39125,19 @@
     );
     return allPermutations;
   }
-  function resolveSchema(validator, schema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
-    const updatedSchemas = resolveReference(validator, schema, rootSchema, expandAllBranches, recurseList, formData);
+  function resolveSchema(validator, schema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+    const updatedSchemas = resolveReference(validator, schema, rootSchema3, expandAllBranches, recurseList, formData);
     if (updatedSchemas.length > 1 || updatedSchemas[0] !== schema) {
       return updatedSchemas;
     }
     if (DEPENDENCIES_KEY in schema) {
-      const resolvedSchemas = resolveDependencies(validator, schema, rootSchema, expandAllBranches, recurseList, formData);
+      const resolvedSchemas = resolveDependencies(validator, schema, rootSchema3, expandAllBranches, recurseList, formData);
       return resolvedSchemas.flatMap((s2) => {
-        return retrieveSchemaInternal(validator, s2, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
+        return retrieveSchemaInternal(validator, s2, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
       });
     }
     if (ALL_OF_KEY in schema && Array.isArray(schema.allOf)) {
-      const allOfSchemaElements = schema.allOf.map((allOfSubschema) => retrieveSchemaInternal(validator, allOfSubschema, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
+      const allOfSchemaElements = schema.allOf.map((allOfSubschema) => retrieveSchemaInternal(validator, allOfSubschema, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf));
       const allPermutations = getAllPermutationsOfXxxOf(allOfSchemaElements);
       return allPermutations.map((permutation) => ({
         ...schema,
@@ -39146,14 +39146,14 @@
     }
     return [schema];
   }
-  function resolveReference(validator, schema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
-    const updatedSchema = resolveAllReferences(schema, rootSchema, recurseList);
+  function resolveReference(validator, schema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+    const updatedSchema = resolveAllReferences(schema, rootSchema3, recurseList);
     if (updatedSchema !== schema) {
-      return retrieveSchemaInternal(validator, updatedSchema, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
+      return retrieveSchemaInternal(validator, updatedSchema, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
     }
     return [schema];
   }
-  function resolveAllReferences(schema, rootSchema, recurseList) {
+  function resolveAllReferences(schema, rootSchema3, recurseList) {
     if (!isObject(schema)) {
       return schema;
     }
@@ -39164,14 +39164,14 @@
         return resolvedSchema;
       }
       recurseList.push($ref);
-      const refSchema = findSchemaDefinition($ref, rootSchema);
+      const refSchema = findSchemaDefinition($ref, rootSchema3);
       resolvedSchema = { ...refSchema, ...localSchema };
     }
     if (PROPERTIES_KEY in resolvedSchema) {
       const childrenLists = [];
       const updatedProps = transform_default(resolvedSchema[PROPERTIES_KEY], (result, value, key) => {
         const childList = [...recurseList];
-        result[key] = resolveAllReferences(value, rootSchema, childList);
+        result[key] = resolveAllReferences(value, rootSchema3, childList);
         childrenLists.push(childList);
       }, {});
       merge_default(recurseList, uniq_default(flattenDeep_default(childrenLists)));
@@ -39180,12 +39180,12 @@
     if (ITEMS_KEY in resolvedSchema && !Array.isArray(resolvedSchema.items) && typeof resolvedSchema.items !== "boolean") {
       resolvedSchema = {
         ...resolvedSchema,
-        items: resolveAllReferences(resolvedSchema.items, rootSchema, recurseList)
+        items: resolveAllReferences(resolvedSchema.items, rootSchema3, recurseList)
       };
     }
     return deepEquals(schema, resolvedSchema) ? schema : resolvedSchema;
   }
-  function stubExistingAdditionalProperties(validator, theSchema, rootSchema, aFormData, experimental_customMergeAllOf) {
+  function stubExistingAdditionalProperties(validator, theSchema, rootSchema3, aFormData, experimental_customMergeAllOf) {
     const schema = {
       ...theSchema,
       properties: { ...theSchema.properties }
@@ -39198,7 +39198,7 @@
       let additionalProperties = {};
       if (typeof schema.additionalProperties !== "boolean") {
         if (REF_KEY in schema.additionalProperties) {
-          additionalProperties = retrieveSchema(validator, { $ref: get_default(schema.additionalProperties, [REF_KEY]) }, rootSchema, formData, experimental_customMergeAllOf);
+          additionalProperties = retrieveSchema(validator, { $ref: get_default(schema.additionalProperties, [REF_KEY]) }, rootSchema3, formData, experimental_customMergeAllOf);
         } else if ("type" in schema.additionalProperties) {
           additionalProperties = { ...schema.additionalProperties };
         } else if (ANY_OF_KEY in schema.additionalProperties || ONE_OF_KEY in schema.additionalProperties) {
@@ -39217,16 +39217,16 @@
     });
     return schema;
   }
-  function retrieveSchemaInternal(validator, schema, rootSchema, rawFormData, expandAllBranches = false, recurseList = [], experimental_customMergeAllOf) {
+  function retrieveSchemaInternal(validator, schema, rootSchema3, rawFormData, expandAllBranches = false, recurseList = [], experimental_customMergeAllOf) {
     if (!isObject(schema)) {
       return [{}];
     }
-    const resolvedSchemas = resolveSchema(validator, schema, rootSchema, expandAllBranches, recurseList, rawFormData, experimental_customMergeAllOf);
+    const resolvedSchemas = resolveSchema(validator, schema, rootSchema3, expandAllBranches, recurseList, rawFormData, experimental_customMergeAllOf);
     return resolvedSchemas.flatMap((s2) => {
       var _a;
       let resolvedSchema = s2;
       if (IF_KEY in resolvedSchema) {
-        return resolveCondition(validator, resolvedSchema, rootSchema, expandAllBranches, recurseList, rawFormData, experimental_customMergeAllOf);
+        return resolveCondition(validator, resolvedSchema, rootSchema3, expandAllBranches, recurseList, rawFormData, experimental_customMergeAllOf);
       }
       if (ALL_OF_KEY in resolvedSchema) {
         if (expandAllBranches) {
@@ -39260,12 +39260,12 @@
       }
       const hasAdditionalProperties = ADDITIONAL_PROPERTIES_KEY in resolvedSchema && resolvedSchema.additionalProperties !== false;
       if (hasAdditionalProperties) {
-        return stubExistingAdditionalProperties(validator, resolvedSchema, rootSchema, rawFormData, experimental_customMergeAllOf);
+        return stubExistingAdditionalProperties(validator, resolvedSchema, rootSchema3, rawFormData, experimental_customMergeAllOf);
       }
       return resolvedSchema;
     });
   }
-  function resolveAnyOrOneOfSchemas(validator, schema, rootSchema, expandAllBranches, rawFormData) {
+  function resolveAnyOrOneOfSchemas(validator, schema, rootSchema3, expandAllBranches, rawFormData) {
     let anyOrOneOf;
     const { oneOf, anyOf, ...remaining } = schema;
     if (Array.isArray(oneOf)) {
@@ -39277,9 +39277,9 @@
       const formData = rawFormData === void 0 && expandAllBranches ? {} : rawFormData;
       const discriminator = getDiscriminatorFieldFromSchema(schema);
       anyOrOneOf = anyOrOneOf.map((s2) => {
-        return resolveAllReferences(s2, rootSchema, []);
+        return resolveAllReferences(s2, rootSchema3, []);
       });
-      const option = getFirstMatchingOption(validator, formData, anyOrOneOf, rootSchema, discriminator);
+      const option = getFirstMatchingOption(validator, formData, anyOrOneOf, rootSchema3, discriminator);
       if (expandAllBranches) {
         return anyOrOneOf.map((item) => mergeSchemas(remaining, item));
       }
@@ -39287,12 +39287,12 @@
     }
     return [schema];
   }
-  function resolveDependencies(validator, schema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+  function resolveDependencies(validator, schema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
     const { dependencies, ...remainingSchema } = schema;
-    const resolvedSchemas = resolveAnyOrOneOfSchemas(validator, remainingSchema, rootSchema, expandAllBranches, formData);
-    return resolvedSchemas.flatMap((resolvedSchema) => processDependencies(validator, dependencies, resolvedSchema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf));
+    const resolvedSchemas = resolveAnyOrOneOfSchemas(validator, remainingSchema, rootSchema3, expandAllBranches, formData);
+    return resolvedSchemas.flatMap((resolvedSchema) => processDependencies(validator, dependencies, resolvedSchema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf));
   }
-  function processDependencies(validator, dependencies, resolvedSchema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+  function processDependencies(validator, dependencies, resolvedSchema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
     let schemas = [resolvedSchema];
     for (const dependencyKey in dependencies) {
       if (!expandAllBranches && get_default(formData, [dependencyKey]) === void 0) {
@@ -39305,9 +39305,9 @@
       if (Array.isArray(dependencyValue)) {
         schemas[0] = withDependentProperties(resolvedSchema, dependencyValue);
       } else if (isObject(dependencyValue)) {
-        schemas = withDependentSchema(validator, resolvedSchema, rootSchema, dependencyKey, dependencyValue, expandAllBranches, recurseList, formData, experimental_customMergeAllOf);
+        schemas = withDependentSchema(validator, resolvedSchema, rootSchema3, dependencyKey, dependencyValue, expandAllBranches, recurseList, formData, experimental_customMergeAllOf);
       }
-      return schemas.flatMap((schema) => processDependencies(validator, remainingDependencies, schema, rootSchema, expandAllBranches, recurseList, formData, experimental_customMergeAllOf));
+      return schemas.flatMap((schema) => processDependencies(validator, remainingDependencies, schema, rootSchema3, expandAllBranches, recurseList, formData, experimental_customMergeAllOf));
     }
     return schemas;
   }
@@ -39318,8 +39318,8 @@
     const required = Array.isArray(schema.required) ? Array.from(/* @__PURE__ */ new Set([...schema.required, ...additionallyRequired])) : additionallyRequired;
     return { ...schema, required };
   }
-  function withDependentSchema(validator, schema, rootSchema, dependencyKey, dependencyValue, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
-    const dependentSchemas = retrieveSchemaInternal(validator, dependencyValue, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
+  function withDependentSchema(validator, schema, rootSchema3, dependencyKey, dependencyValue, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+    const dependentSchemas = retrieveSchemaInternal(validator, dependencyValue, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
     return dependentSchemas.flatMap((dependent) => {
       const { oneOf, ...dependentSchema } = dependent;
       schema = mergeSchemas(schema, dependentSchema);
@@ -39330,13 +39330,13 @@
         if (typeof subschema === "boolean" || !(REF_KEY in subschema)) {
           return [subschema];
         }
-        return resolveReference(validator, subschema, rootSchema, expandAllBranches, recurseList, formData);
+        return resolveReference(validator, subschema, rootSchema3, expandAllBranches, recurseList, formData);
       });
       const allPermutations = getAllPermutationsOfXxxOf(resolvedOneOfs);
-      return allPermutations.flatMap((resolvedOneOf) => withExactlyOneSubschema(validator, schema, rootSchema, dependencyKey, resolvedOneOf, expandAllBranches, recurseList, formData, experimental_customMergeAllOf));
+      return allPermutations.flatMap((resolvedOneOf) => withExactlyOneSubschema(validator, schema, rootSchema3, dependencyKey, resolvedOneOf, expandAllBranches, recurseList, formData, experimental_customMergeAllOf));
     });
   }
-  function withExactlyOneSubschema(validator, schema, rootSchema, dependencyKey, oneOf, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
+  function withExactlyOneSubschema(validator, schema, rootSchema3, dependencyKey, oneOf, expandAllBranches, recurseList, formData, experimental_customMergeAllOf) {
     const validSubschemas = oneOf.filter((subschema) => {
       if (typeof subschema === "boolean" || !subschema || !subschema.properties) {
         return false;
@@ -39349,7 +39349,7 @@
             [dependencyKey]: conditionPropertySchema
           }
         };
-        return validator.isValid(conditionSchema, formData, rootSchema) || expandAllBranches;
+        return validator.isValid(conditionSchema, formData, rootSchema3) || expandAllBranches;
       }
       return false;
     });
@@ -39361,7 +39361,7 @@
       const subschema = s2;
       const [dependentSubschema] = splitKeyElementFromObject(dependencyKey, subschema.properties);
       const dependentSchema = { ...subschema, properties: dependentSubschema };
-      const schemas = retrieveSchemaInternal(validator, dependentSchema, rootSchema, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
+      const schemas = retrieveSchemaInternal(validator, dependentSchema, rootSchema3, formData, expandAllBranches, recurseList, experimental_customMergeAllOf);
       return schemas.map((s3) => mergeSchemas(schema, s3));
     });
   }
@@ -39376,7 +39376,7 @@
       }
     }
   };
-  function calculateIndexScore(validator, rootSchema, schema, formData, experimental_customMergeAllOf) {
+  function calculateIndexScore(validator, rootSchema3, schema, formData, experimental_customMergeAllOf) {
     let totalScore = 0;
     if (schema) {
       if (isObject_default(schema.properties)) {
@@ -39386,19 +39386,19 @@
             return score;
           }
           if (has_default(value, REF_KEY)) {
-            const newSchema = retrieveSchema(validator, value, rootSchema, formValue, experimental_customMergeAllOf);
-            return score + calculateIndexScore(validator, rootSchema, newSchema, formValue || {}, experimental_customMergeAllOf);
+            const newSchema = retrieveSchema(validator, value, rootSchema3, formValue, experimental_customMergeAllOf);
+            return score + calculateIndexScore(validator, rootSchema3, newSchema, formValue || {}, experimental_customMergeAllOf);
           }
           if ((has_default(value, ONE_OF_KEY) || has_default(value, ANY_OF_KEY)) && formValue) {
             const key2 = has_default(value, ONE_OF_KEY) ? ONE_OF_KEY : ANY_OF_KEY;
             const discriminator = getDiscriminatorFieldFromSchema(value);
-            return score + getClosestMatchingOption(validator, rootSchema, formValue, get_default(value, key2), -1, discriminator, experimental_customMergeAllOf);
+            return score + getClosestMatchingOption(validator, rootSchema3, formValue, get_default(value, key2), -1, discriminator, experimental_customMergeAllOf);
           }
           if (value.type === "object") {
             if (isObject_default(formValue)) {
               score += 1;
             }
-            return score + calculateIndexScore(validator, rootSchema, value, formValue, experimental_customMergeAllOf);
+            return score + calculateIndexScore(validator, rootSchema3, value, formValue, experimental_customMergeAllOf);
           }
           if (value.type === guessType(formValue)) {
             let newScore = score + 1;
@@ -39417,9 +39417,9 @@
     }
     return totalScore;
   }
-  function getClosestMatchingOption(validator, rootSchema, formData, options, selectedOption = -1, discriminatorField, experimental_customMergeAllOf) {
+  function getClosestMatchingOption(validator, rootSchema3, formData, options, selectedOption = -1, discriminatorField, experimental_customMergeAllOf) {
     const resolvedOptions = options.map((option) => {
-      return resolveAllReferences(option, rootSchema, []);
+      return resolveAllReferences(option, rootSchema3, []);
     });
     const simpleDiscriminatorMatch = getOptionMatchingSimpleDiscriminator(formData, options, discriminatorField);
     if (isNumber_default(simpleDiscriminatorMatch)) {
@@ -39427,7 +39427,7 @@
     }
     const allValidIndexes = resolvedOptions.reduce((validList, option, index) => {
       const testOptions = [JUNK_OPTION, option];
-      const match = getFirstMatchingOption(validator, formData, testOptions, rootSchema, discriminatorField);
+      const match = getFirstMatchingOption(validator, formData, testOptions, rootSchema3, discriminatorField);
       if (match === 1) {
         validList.push(index);
       }
@@ -39443,7 +39443,7 @@
     const { bestIndex } = allValidIndexes.reduce((scoreData, index) => {
       const { bestScore } = scoreData;
       const option = resolvedOptions[index];
-      const score = calculateIndexScore(validator, rootSchema, option, formData, experimental_customMergeAllOf);
+      const score = calculateIndexScore(validator, rootSchema3, option, formData, experimental_customMergeAllOf);
       scoreCount.add(score);
       if (score > bestScore) {
         return { bestIndex: index, bestScore: score };
@@ -39538,8 +39538,8 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/isSelect.js
-  function isSelect(validator, theSchema, rootSchema = {}, experimental_customMergeAllOf) {
-    const schema = retrieveSchema(validator, theSchema, rootSchema, void 0, experimental_customMergeAllOf);
+  function isSelect(validator, theSchema, rootSchema3 = {}, experimental_customMergeAllOf) {
+    const schema = retrieveSchema(validator, theSchema, rootSchema3, void 0, experimental_customMergeAllOf);
     const altSchemas = schema.oneOf || schema.anyOf;
     if (Array.isArray(schema.enum)) {
       return true;
@@ -39551,11 +39551,11 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/isMultiSelect.js
-  function isMultiSelect(validator, schema, rootSchema, experimental_customMergeAllOf) {
+  function isMultiSelect(validator, schema, rootSchema3, experimental_customMergeAllOf) {
     if (!schema.uniqueItems || !schema.items || typeof schema.items === "boolean") {
       return false;
     }
-    return isSelect(validator, schema.items, rootSchema, experimental_customMergeAllOf);
+    return isSelect(validator, schema.items, rootSchema3, experimental_customMergeAllOf);
   }
 
   // node_modules/@rjsf/utils/lib/constIsAjvDataReference.js
@@ -39668,7 +39668,7 @@
     }
   }
   function computeDefaults(validator, rawSchema, computeDefaultsProps = {}) {
-    const { parentDefaults, rawFormData, rootSchema = {}, includeUndefinedValues = false, _recurseList = [], experimental_defaultFormStateBehavior = void 0, experimental_customMergeAllOf = void 0, required, shouldMergeDefaultsIntoFormData = false } = computeDefaultsProps;
+    const { parentDefaults, rawFormData, rootSchema: rootSchema3 = {}, includeUndefinedValues = false, _recurseList = [], experimental_defaultFormStateBehavior = void 0, experimental_customMergeAllOf = void 0, required, shouldMergeDefaultsIntoFormData = false } = computeDefaultsProps;
     let formData = isObject(rawFormData) ? rawFormData : {};
     const schema = isObject(rawSchema) ? rawSchema : {};
     let defaults = parentDefaults;
@@ -39685,7 +39685,7 @@
       const refName = schema[REF_KEY];
       if (!_recurseList.includes(refName)) {
         updatedRecurseList = _recurseList.concat(refName);
-        schemaToCompute = findSchemaDefinition(refName, rootSchema);
+        schemaToCompute = findSchemaDefinition(refName, rootSchema3);
       }
       if (schemaToCompute && !defaults) {
         defaults = schema.default;
@@ -39698,11 +39698,11 @@
         ...getDefaultBasedOnSchemaType(validator, schema, computeDefaultsProps, defaults),
         ...formData
       };
-      const resolvedSchema = resolveDependencies(validator, schema, rootSchema, false, [], defaultFormData, experimental_customMergeAllOf);
+      const resolvedSchema = resolveDependencies(validator, schema, rootSchema3, false, [], defaultFormData, experimental_customMergeAllOf);
       schemaToCompute = resolvedSchema[0];
     } else if (isFixedItems(schema)) {
       defaults = schema.items.map((itemSchema, idx) => computeDefaults(validator, itemSchema, {
-        rootSchema,
+        rootSchema: rootSchema3,
         includeUndefinedValues,
         _recurseList,
         experimental_defaultFormStateBehavior,
@@ -39725,7 +39725,7 @@
           constAsDefaults: "never"
         };
       }
-      schemaToCompute = oneOf[getClosestMatchingOption(validator, rootSchema, rawFormData !== null && rawFormData !== void 0 ? rawFormData : schema.default, oneOf, 0, discriminator, experimental_customMergeAllOf)];
+      schemaToCompute = oneOf[getClosestMatchingOption(validator, rootSchema3, rawFormData !== null && rawFormData !== void 0 ? rawFormData : schema.default, oneOf, 0, discriminator, experimental_customMergeAllOf)];
       schemaToCompute = mergeSchemas(remaining, schemaToCompute);
     } else if (ANY_OF_KEY in schema) {
       const { anyOf, ...remaining } = schema;
@@ -39733,12 +39733,12 @@
         return void 0;
       }
       const discriminator = getDiscriminatorFieldFromSchema(schema);
-      schemaToCompute = anyOf[getClosestMatchingOption(validator, rootSchema, rawFormData !== null && rawFormData !== void 0 ? rawFormData : schema.default, anyOf, 0, discriminator, experimental_customMergeAllOf)];
+      schemaToCompute = anyOf[getClosestMatchingOption(validator, rootSchema3, rawFormData !== null && rawFormData !== void 0 ? rawFormData : schema.default, anyOf, 0, discriminator, experimental_customMergeAllOf)];
       schemaToCompute = mergeSchemas(remaining, schemaToCompute);
     }
     if (schemaToCompute) {
       return computeDefaults(validator, schemaToCompute, {
-        rootSchema,
+        rootSchema: rootSchema3,
         includeUndefinedValues,
         _recurseList: updatedRecurseList,
         experimental_defaultFormStateBehavior: experimental_dfsb_to_compute,
@@ -39757,15 +39757,15 @@
     if (shouldMergeDefaultsIntoFormData) {
       const { arrayMinItems = {} } = experimental_defaultFormStateBehavior || {};
       const { mergeExtraDefaults } = arrayMinItems;
-      const matchingFormData = ensureFormDataMatchingSchema(validator, schema, rootSchema, rawFormData, experimental_defaultFormStateBehavior, experimental_customMergeAllOf);
+      const matchingFormData = ensureFormDataMatchingSchema(validator, schema, rootSchema3, rawFormData, experimental_defaultFormStateBehavior, experimental_customMergeAllOf);
       if (!isObject(rawFormData) || ALL_OF_KEY in schema) {
         defaultsWithFormData = mergeDefaultsWithFormData(defaultsWithFormData, matchingFormData, mergeExtraDefaults, true);
       }
     }
     return defaultsWithFormData;
   }
-  function ensureFormDataMatchingSchema(validator, schema, rootSchema, formData, experimental_defaultFormStateBehavior, experimental_customMergeAllOf) {
-    const isSelectField = !isConstant(schema) && isSelect(validator, schema, rootSchema, experimental_customMergeAllOf);
+  function ensureFormDataMatchingSchema(validator, schema, rootSchema3, formData, experimental_defaultFormStateBehavior, experimental_customMergeAllOf) {
+    const isSelectField = !isConstant(schema) && isSelect(validator, schema, rootSchema3, experimental_customMergeAllOf);
     let validFormData = formData;
     if (isSelectField) {
       const getOptionsList = optionsList(schema);
@@ -39778,11 +39778,11 @@
     }
     return validFormData;
   }
-  function getObjectDefaults(validator, rawSchema, { rawFormData, rootSchema = {}, includeUndefinedValues = false, _recurseList = [], experimental_defaultFormStateBehavior = void 0, experimental_customMergeAllOf = void 0, required, shouldMergeDefaultsIntoFormData } = {}, defaults) {
+  function getObjectDefaults(validator, rawSchema, { rawFormData, rootSchema: rootSchema3 = {}, includeUndefinedValues = false, _recurseList = [], experimental_defaultFormStateBehavior = void 0, experimental_customMergeAllOf = void 0, required, shouldMergeDefaultsIntoFormData } = {}, defaults) {
     {
       const formData = isObject(rawFormData) ? rawFormData : {};
       const schema = rawSchema;
-      const retrievedSchema = (experimental_defaultFormStateBehavior === null || experimental_defaultFormStateBehavior === void 0 ? void 0 : experimental_defaultFormStateBehavior.allOf) === "populateDefaults" && ALL_OF_KEY in schema ? retrieveSchema(validator, schema, rootSchema, formData, experimental_customMergeAllOf) : schema;
+      const retrievedSchema = (experimental_defaultFormStateBehavior === null || experimental_defaultFormStateBehavior === void 0 ? void 0 : experimental_defaultFormStateBehavior.allOf) === "populateDefaults" && ALL_OF_KEY in schema ? retrieveSchema(validator, schema, rootSchema3, formData, experimental_customMergeAllOf) : schema;
       const parentConst = retrievedSchema[CONST_KEY];
       const objectDefaults = Object.keys(retrievedSchema.properties || {}).reduce((acc, key) => {
         var _a;
@@ -39790,7 +39790,7 @@
         const hasParentConst = isObject(parentConst) && parentConst[key] !== void 0;
         const hasConst = (isObject(propertySchema) && CONST_KEY in propertySchema || hasParentConst) && (experimental_defaultFormStateBehavior === null || experimental_defaultFormStateBehavior === void 0 ? void 0 : experimental_defaultFormStateBehavior.constAsDefaults) !== "never" && !constIsAjvDataReference(propertySchema);
         const computedDefault = computeDefaults(validator, propertySchema, {
-          rootSchema,
+          rootSchema: rootSchema3,
           _recurseList,
           experimental_defaultFormStateBehavior,
           experimental_customMergeAllOf,
@@ -39817,7 +39817,7 @@
         keys2.forEach((key) => {
           var _a;
           const computedDefault = computeDefaults(validator, additionalPropertiesSchema, {
-            rootSchema,
+            rootSchema: rootSchema3,
             _recurseList,
             experimental_defaultFormStateBehavior,
             experimental_customMergeAllOf,
@@ -39833,7 +39833,7 @@
       return objectDefaults;
     }
   }
-  function getArrayDefaults(validator, rawSchema, { rawFormData, rootSchema = {}, _recurseList = [], experimental_defaultFormStateBehavior = void 0, experimental_customMergeAllOf = void 0, required, shouldMergeDefaultsIntoFormData } = {}, defaults) {
+  function getArrayDefaults(validator, rawSchema, { rawFormData, rootSchema: rootSchema3 = {}, _recurseList = [], experimental_defaultFormStateBehavior = void 0, experimental_customMergeAllOf = void 0, required, shouldMergeDefaultsIntoFormData } = {}, defaults) {
     var _a, _b;
     const schema = rawSchema;
     const arrayMinItemsStateBehavior = (_a = experimental_defaultFormStateBehavior === null || experimental_defaultFormStateBehavior === void 0 ? void 0 : experimental_defaultFormStateBehavior.arrayMinItems) !== null && _a !== void 0 ? _a : {};
@@ -39848,7 +39848,7 @@
       defaults = defaults.map((item, idx) => {
         const schemaItem = getInnerSchemaForArrayItem(schema, AdditionalItemsHandling.Fallback, idx);
         return computeDefaults(validator, schemaItem, {
-          rootSchema,
+          rootSchema: rootSchema3,
           _recurseList,
           experimental_defaultFormStateBehavior,
           experimental_customMergeAllOf,
@@ -39865,7 +39865,7 @@
       } else {
         const itemDefaults = rawFormData.map((item, idx) => {
           return computeDefaults(validator, schemaItem, {
-            rootSchema,
+            rootSchema: rootSchema3,
             _recurseList,
             experimental_defaultFormStateBehavior,
             experimental_customMergeAllOf,
@@ -39889,7 +39889,7 @@
       }
     }
     const defaultsLength = Array.isArray(defaults) ? defaults.length : 0;
-    if (!schema.minItems || isMultiSelect(validator, schema, rootSchema, experimental_customMergeAllOf) || computeSkipPopulate(validator, schema, rootSchema) || schema.minItems <= defaultsLength) {
+    if (!schema.minItems || isMultiSelect(validator, schema, rootSchema3, experimental_customMergeAllOf) || computeSkipPopulate(validator, schema, rootSchema3) || schema.minItems <= defaultsLength) {
       return defaults ? defaults : emptyDefault;
     }
     const defaultEntries = defaults || [];
@@ -39897,7 +39897,7 @@
     const fillerDefault = fillerSchema.default;
     const fillerEntries = new Array(schema.minItems - defaultsLength).fill(computeDefaults(validator, fillerSchema, {
       parentDefaults: fillerDefault,
-      rootSchema,
+      rootSchema: rootSchema3,
       _recurseList,
       experimental_defaultFormStateBehavior,
       experimental_customMergeAllOf,
@@ -39917,13 +39917,13 @@
       }
     }
   }
-  function getDefaultFormState(validator, theSchema, formData, rootSchema, includeUndefinedValues = false, experimental_defaultFormStateBehavior, experimental_customMergeAllOf) {
+  function getDefaultFormState(validator, theSchema, formData, rootSchema3, includeUndefinedValues = false, experimental_defaultFormStateBehavior, experimental_customMergeAllOf) {
     if (!isObject(theSchema)) {
       throw new Error("Invalid schema: " + theSchema);
     }
-    const schema = retrieveSchema(validator, theSchema, rootSchema, formData, experimental_customMergeAllOf);
+    const schema = retrieveSchema(validator, theSchema, rootSchema3, formData, experimental_customMergeAllOf);
     const defaults = computeDefaults(validator, schema, {
-      rootSchema,
+      rootSchema: rootSchema3,
       includeUndefinedValues,
       experimental_defaultFormStateBehavior,
       experimental_customMergeAllOf,
@@ -39957,25 +39957,25 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/isFilesArray.js
-  function isFilesArray(validator, schema, uiSchema = {}, rootSchema, experimental_customMergeAllOf) {
+  function isFilesArray(validator, schema, uiSchema = {}, rootSchema3, experimental_customMergeAllOf) {
     if (uiSchema[UI_WIDGET_KEY] === "files") {
       return true;
     }
     if (schema.items) {
-      const itemsSchema = retrieveSchema(validator, schema.items, rootSchema, void 0, experimental_customMergeAllOf);
+      const itemsSchema = retrieveSchema(validator, schema.items, rootSchema3, void 0, experimental_customMergeAllOf);
       return itemsSchema.type === "string" && itemsSchema.format === "data-url";
     }
     return false;
   }
 
   // node_modules/@rjsf/utils/lib/schema/getDisplayLabel.js
-  function getDisplayLabel(validator, schema, uiSchema = {}, rootSchema, globalOptions, experimental_customMergeAllOf) {
+  function getDisplayLabel(validator, schema, uiSchema = {}, rootSchema3, globalOptions, experimental_customMergeAllOf) {
     const uiOptions = getUiOptions(uiSchema, globalOptions);
     const { label = true } = uiOptions;
     let displayLabel = !!label;
     const schemaType = getSchemaType(schema);
     if (schemaType === "array") {
-      displayLabel = isMultiSelect(validator, schema, rootSchema, experimental_customMergeAllOf) || isFilesArray(validator, schema, uiSchema, rootSchema, experimental_customMergeAllOf) || isCustomWidget(uiSchema);
+      displayLabel = isMultiSelect(validator, schema, rootSchema3, experimental_customMergeAllOf) || isFilesArray(validator, schema, uiSchema, rootSchema3, experimental_customMergeAllOf) || isCustomWidget(uiSchema);
     }
     if (schemaType === "object") {
       displayLabel = false;
@@ -40006,7 +40006,7 @@
 
   // node_modules/@rjsf/utils/lib/schema/sanitizeDataForNewSchema.js
   var NO_VALUE = Symbol("no Value");
-  function sanitizeDataForNewSchema(validator, rootSchema, newSchema, oldSchema, data = {}, experimental_customMergeAllOf) {
+  function sanitizeDataForNewSchema(validator, rootSchema3, newSchema, oldSchema, data = {}, experimental_customMergeAllOf) {
     let newFormData;
     if (has_default(newSchema, PROPERTIES_KEY)) {
       const removeOldSchemaData = {};
@@ -40025,10 +40025,10 @@
         let oldKeyedSchema = get_default(oldSchema, [PROPERTIES_KEY, key], {});
         let newKeyedSchema = get_default(newSchema, [PROPERTIES_KEY, key], {});
         if (has_default(oldKeyedSchema, REF_KEY)) {
-          oldKeyedSchema = retrieveSchema(validator, oldKeyedSchema, rootSchema, formValue, experimental_customMergeAllOf);
+          oldKeyedSchema = retrieveSchema(validator, oldKeyedSchema, rootSchema3, formValue, experimental_customMergeAllOf);
         }
         if (has_default(newKeyedSchema, REF_KEY)) {
-          newKeyedSchema = retrieveSchema(validator, newKeyedSchema, rootSchema, formValue, experimental_customMergeAllOf);
+          newKeyedSchema = retrieveSchema(validator, newKeyedSchema, rootSchema3, formValue, experimental_customMergeAllOf);
         }
         const oldSchemaTypeForKey = get_default(oldKeyedSchema, "type");
         const newSchemaTypeForKey = get_default(newKeyedSchema, "type");
@@ -40037,7 +40037,7 @@
             delete removeOldSchemaData[key];
           }
           if (newSchemaTypeForKey === "object" || newSchemaTypeForKey === "array" && Array.isArray(formValue)) {
-            const itemData = sanitizeDataForNewSchema(validator, rootSchema, newKeyedSchema, oldKeyedSchema, formValue, experimental_customMergeAllOf);
+            const itemData = sanitizeDataForNewSchema(validator, rootSchema3, newKeyedSchema, oldKeyedSchema, formValue, experimental_customMergeAllOf);
             if (itemData !== void 0 || newSchemaTypeForKey === "array") {
               nestedData[key] = itemData;
             }
@@ -40069,10 +40069,10 @@
       let newSchemaItems = get_default(newSchema, "items");
       if (typeof oldSchemaItems === "object" && typeof newSchemaItems === "object" && !Array.isArray(oldSchemaItems) && !Array.isArray(newSchemaItems)) {
         if (has_default(oldSchemaItems, REF_KEY)) {
-          oldSchemaItems = retrieveSchema(validator, oldSchemaItems, rootSchema, data, experimental_customMergeAllOf);
+          oldSchemaItems = retrieveSchema(validator, oldSchemaItems, rootSchema3, data, experimental_customMergeAllOf);
         }
         if (has_default(newSchemaItems, REF_KEY)) {
-          newSchemaItems = retrieveSchema(validator, newSchemaItems, rootSchema, data, experimental_customMergeAllOf);
+          newSchemaItems = retrieveSchema(validator, newSchemaItems, rootSchema3, data, experimental_customMergeAllOf);
         }
         const oldSchemaType = get_default(oldSchemaItems, "type");
         const newSchemaType = get_default(newSchemaItems, "type");
@@ -40080,7 +40080,7 @@
           const maxItems = get_default(newSchema, "maxItems", -1);
           if (newSchemaType === "object") {
             newFormData = data.reduce((newValue, aValue) => {
-              const itemValue = sanitizeDataForNewSchema(validator, rootSchema, newSchemaItems, oldSchemaItems, aValue, experimental_customMergeAllOf);
+              const itemValue = sanitizeDataForNewSchema(validator, rootSchema3, newSchemaItems, oldSchemaItems, aValue, experimental_customMergeAllOf);
               if (itemValue !== void 0 && (maxItems < 0 || newValue.length < maxItems)) {
                 newValue.push(itemValue);
               }
@@ -40098,16 +40098,16 @@
   }
 
   // node_modules/@rjsf/utils/lib/schema/toIdSchema.js
-  function toIdSchemaInternal(validator, schema, idPrefix, idSeparator, id, rootSchema, formData, _recurseList = [], experimental_customMergeAllOf) {
+  function toIdSchemaInternal(validator, schema, idPrefix, idSeparator, id, rootSchema3, formData, _recurseList = [], experimental_customMergeAllOf) {
     if (REF_KEY in schema || DEPENDENCIES_KEY in schema || ALL_OF_KEY in schema) {
-      const _schema = retrieveSchema(validator, schema, rootSchema, formData, experimental_customMergeAllOf);
+      const _schema = retrieveSchema(validator, schema, rootSchema3, formData, experimental_customMergeAllOf);
       const sameSchemaIndex = _recurseList.findIndex((item) => deepEquals(item, _schema));
       if (sameSchemaIndex === -1) {
-        return toIdSchemaInternal(validator, _schema, idPrefix, idSeparator, id, rootSchema, formData, _recurseList.concat(_schema), experimental_customMergeAllOf);
+        return toIdSchemaInternal(validator, _schema, idPrefix, idSeparator, id, rootSchema3, formData, _recurseList.concat(_schema), experimental_customMergeAllOf);
       }
     }
     if (ITEMS_KEY in schema && !get_default(schema, [ITEMS_KEY, REF_KEY])) {
-      return toIdSchemaInternal(validator, get_default(schema, ITEMS_KEY), idPrefix, idSeparator, id, rootSchema, formData, _recurseList, experimental_customMergeAllOf);
+      return toIdSchemaInternal(validator, get_default(schema, ITEMS_KEY), idPrefix, idSeparator, id, rootSchema3, formData, _recurseList, experimental_customMergeAllOf);
     }
     const $id = id || idPrefix;
     const idSchema = { $id };
@@ -40121,7 +40121,7 @@
           idPrefix,
           idSeparator,
           fieldId,
-          rootSchema,
+          rootSchema3,
           // It's possible that formData is not an object -- this can happen if an
           // array item has just been added, but not populated with data yet
           get_default(formData, [name]),
@@ -40132,17 +40132,17 @@
     }
     return idSchema;
   }
-  function toIdSchema(validator, schema, id, rootSchema, formData, idPrefix = "root", idSeparator = "_", experimental_customMergeAllOf) {
-    return toIdSchemaInternal(validator, schema, idPrefix, idSeparator, id, rootSchema, formData, void 0, experimental_customMergeAllOf);
+  function toIdSchema(validator, schema, id, rootSchema3, formData, idPrefix = "root", idSeparator = "_", experimental_customMergeAllOf) {
+    return toIdSchemaInternal(validator, schema, idPrefix, idSeparator, id, rootSchema3, formData, void 0, experimental_customMergeAllOf);
   }
 
   // node_modules/@rjsf/utils/lib/schema/toPathSchema.js
-  function toPathSchemaInternal(validator, schema, name, rootSchema, formData, _recurseList = [], experimental_customMergeAllOf) {
+  function toPathSchemaInternal(validator, schema, name, rootSchema3, formData, _recurseList = [], experimental_customMergeAllOf) {
     if (REF_KEY in schema || DEPENDENCIES_KEY in schema || ALL_OF_KEY in schema) {
-      const _schema = retrieveSchema(validator, schema, rootSchema, formData, experimental_customMergeAllOf);
+      const _schema = retrieveSchema(validator, schema, rootSchema3, formData, experimental_customMergeAllOf);
       const sameSchemaIndex = _recurseList.findIndex((item) => deepEquals(item, _schema));
       if (sameSchemaIndex === -1) {
-        return toPathSchemaInternal(validator, _schema, name, rootSchema, formData, _recurseList.concat(_schema), experimental_customMergeAllOf);
+        return toPathSchemaInternal(validator, _schema, name, rootSchema3, formData, _recurseList.concat(_schema), experimental_customMergeAllOf);
       }
     }
     let pathSchema = {
@@ -40151,11 +40151,11 @@
     if (ONE_OF_KEY in schema || ANY_OF_KEY in schema) {
       const xxxOf = ONE_OF_KEY in schema ? schema.oneOf : schema.anyOf;
       const discriminator = getDiscriminatorFieldFromSchema(schema);
-      const index = getClosestMatchingOption(validator, rootSchema, formData, xxxOf, 0, discriminator, experimental_customMergeAllOf);
+      const index = getClosestMatchingOption(validator, rootSchema3, formData, xxxOf, 0, discriminator, experimental_customMergeAllOf);
       const _schema = xxxOf[index];
       pathSchema = {
         ...pathSchema,
-        ...toPathSchemaInternal(validator, _schema, name, rootSchema, formData, _recurseList, experimental_customMergeAllOf)
+        ...toPathSchemaInternal(validator, _schema, name, rootSchema3, formData, _recurseList, experimental_customMergeAllOf)
       };
     }
     if (ADDITIONAL_PROPERTIES_KEY in schema && schema[ADDITIONAL_PROPERTIES_KEY] !== false) {
@@ -40166,16 +40166,16 @@
       if (Array.isArray(schemaItems)) {
         formData.forEach((element, i2) => {
           if (schemaItems[i2]) {
-            pathSchema[i2] = toPathSchemaInternal(validator, schemaItems[i2], `${name}.${i2}`, rootSchema, element, _recurseList, experimental_customMergeAllOf);
+            pathSchema[i2] = toPathSchemaInternal(validator, schemaItems[i2], `${name}.${i2}`, rootSchema3, element, _recurseList, experimental_customMergeAllOf);
           } else if (schemaAdditionalItems) {
-            pathSchema[i2] = toPathSchemaInternal(validator, schemaAdditionalItems, `${name}.${i2}`, rootSchema, element, _recurseList, experimental_customMergeAllOf);
+            pathSchema[i2] = toPathSchemaInternal(validator, schemaAdditionalItems, `${name}.${i2}`, rootSchema3, element, _recurseList, experimental_customMergeAllOf);
           } else {
             console.warn(`Unable to generate path schema for "${name}.${i2}". No schema defined for it`);
           }
         });
       } else {
         formData.forEach((element, i2) => {
-          pathSchema[i2] = toPathSchemaInternal(validator, schemaItems, `${name}.${i2}`, rootSchema, element, _recurseList, experimental_customMergeAllOf);
+          pathSchema[i2] = toPathSchemaInternal(validator, schemaItems, `${name}.${i2}`, rootSchema3, element, _recurseList, experimental_customMergeAllOf);
         });
       }
     } else if (PROPERTIES_KEY in schema) {
@@ -40185,7 +40185,7 @@
           validator,
           field,
           `${name}.${property2}`,
-          rootSchema,
+          rootSchema3,
           // It's possible that formData is not an object -- this can happen if an
           // array item has just been added, but not populated with data yet
           get_default(formData, [property2]),
@@ -40196,8 +40196,8 @@
     }
     return pathSchema;
   }
-  function toPathSchema(validator, schema, name = "", rootSchema, formData, experimental_customMergeAllOf) {
-    return toPathSchemaInternal(validator, schema, name, rootSchema, formData, void 0, experimental_customMergeAllOf);
+  function toPathSchema(validator, schema, name = "", rootSchema3, formData, experimental_customMergeAllOf) {
+    return toPathSchemaInternal(validator, schema, name, rootSchema3, formData, void 0, experimental_customMergeAllOf);
   }
 
   // node_modules/@rjsf/utils/lib/createSchemaUtils.js
@@ -40209,8 +40209,8 @@
      * @param experimental_defaultFormStateBehavior - Configuration flags to allow users to override default form state behavior
      * @param [experimental_customMergeAllOf] - Optional function that allows for custom merging of `allOf` schemas
      */
-    constructor(validator, rootSchema, experimental_defaultFormStateBehavior, experimental_customMergeAllOf) {
-      this.rootSchema = rootSchema;
+    constructor(validator, rootSchema3, experimental_defaultFormStateBehavior, experimental_customMergeAllOf) {
+      this.rootSchema = rootSchema3;
       this.validator = validator;
       this.experimental_defaultFormStateBehavior = experimental_defaultFormStateBehavior;
       this.experimental_customMergeAllOf = experimental_customMergeAllOf;
@@ -40232,11 +40232,11 @@
      * @param [experimental_customMergeAllOf] - Optional function that allows for custom merging of `allOf` schemas
      * @returns - True if the `SchemaUtilsType` differs from the given `validator` or `rootSchema`
      */
-    doesSchemaUtilsDiffer(validator, rootSchema, experimental_defaultFormStateBehavior = {}, experimental_customMergeAllOf) {
-      if (!validator || !rootSchema) {
+    doesSchemaUtilsDiffer(validator, rootSchema3, experimental_defaultFormStateBehavior = {}, experimental_customMergeAllOf) {
+      if (!validator || !rootSchema3) {
         return false;
       }
-      return this.validator !== validator || !deepEquals(this.rootSchema, rootSchema) || !deepEquals(this.experimental_defaultFormStateBehavior, experimental_defaultFormStateBehavior) || this.experimental_customMergeAllOf !== experimental_customMergeAllOf;
+      return this.validator !== validator || !deepEquals(this.rootSchema, rootSchema3) || !deepEquals(this.experimental_defaultFormStateBehavior, experimental_defaultFormStateBehavior) || this.experimental_customMergeAllOf !== experimental_customMergeAllOf;
     }
     /** Returns the superset of `formData` that includes the given set updated to include any missing fields that have
      * computed to have defaults provided in the `schema`.
@@ -40390,8 +40390,8 @@
       return toPathSchema(this.validator, schema, name, this.rootSchema, formData, this.experimental_customMergeAllOf);
     }
   };
-  function createSchemaUtils(validator, rootSchema, experimental_defaultFormStateBehavior = {}, experimental_customMergeAllOf) {
-    return new SchemaUtils(validator, rootSchema, experimental_defaultFormStateBehavior, experimental_customMergeAllOf);
+  function createSchemaUtils(validator, rootSchema3, experimental_defaultFormStateBehavior = {}, experimental_customMergeAllOf) {
+    return new SchemaUtils(validator, rootSchema3, experimental_defaultFormStateBehavior, experimental_customMergeAllOf);
   }
 
   // node_modules/@rjsf/utils/lib/dataURItoBlob.js
@@ -43659,12 +43659,12 @@
       const edit = typeof inputFormData !== "undefined";
       const liveValidate = "liveValidate" in props ? props.liveValidate : this.props.liveValidate;
       const mustValidate = edit && !props.noValidate && liveValidate;
-      const rootSchema = schema;
+      const rootSchema3 = schema;
       const experimental_defaultFormStateBehavior = "experimental_defaultFormStateBehavior" in props ? props.experimental_defaultFormStateBehavior : this.props.experimental_defaultFormStateBehavior;
       const experimental_customMergeAllOf = "experimental_customMergeAllOf" in props ? props.experimental_customMergeAllOf : this.props.experimental_customMergeAllOf;
       let schemaUtils = state.schemaUtils;
-      if (!schemaUtils || schemaUtils.doesSchemaUtilsDiffer(props.validator, rootSchema, experimental_defaultFormStateBehavior, experimental_customMergeAllOf)) {
-        schemaUtils = createSchemaUtils(props.validator, rootSchema, experimental_defaultFormStateBehavior, experimental_customMergeAllOf);
+      if (!schemaUtils || schemaUtils.doesSchemaUtilsDiffer(props.validator, rootSchema3, experimental_defaultFormStateBehavior, experimental_customMergeAllOf)) {
+        schemaUtils = createSchemaUtils(props.validator, rootSchema3, experimental_defaultFormStateBehavior, experimental_customMergeAllOf);
       }
       const formData = schemaUtils.getDefaultFormState(schema, inputFormData);
       const _retrievedSchema = this.updateRetrievedSchema(retrievedSchema ?? schemaUtils.retrieveSchema(schema, formData));
@@ -44170,273 +44170,6 @@
 
   // node_modules/@rjsf/core/lib/index.js
   var lib_default = Form;
-
-  // node_modules/@rjsf/validator-ajv8/lib/createAjvInstance.js
-  var import_ajv = __toESM(require_ajv());
-  var import_ajv_formats = __toESM(require_dist());
-  var AJV_CONFIG = {
-    allErrors: true,
-    multipleOfPrecision: 8,
-    strict: false,
-    verbose: true,
-    discriminator: false
-    // TODO enable this in V6
-  };
-  var COLOR_FORMAT_REGEX = /^(#?([0-9A-Fa-f]{3}){1,2}\b|aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|orange|purple|red|silver|teal|white|yellow|(rgb\(\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*,\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*,\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*\))|(rgb\(\s*(\d?\d%|100%)+\s*,\s*(\d?\d%|100%)+\s*,\s*(\d?\d%|100%)+\s*\)))$/;
-  var DATA_URL_FORMAT_REGEX = /^data:([a-z]+\/[a-z0-9-+.]+)?;(?:name=(.*);)?base64,(.*)$/;
-  function createAjvInstance(additionalMetaSchemas, customFormats, ajvOptionsOverrides = {}, ajvFormatOptions, AjvClass = import_ajv.default) {
-    const ajv = new AjvClass({ ...AJV_CONFIG, ...ajvOptionsOverrides });
-    if (ajvFormatOptions) {
-      (0, import_ajv_formats.default)(ajv, ajvFormatOptions);
-    } else if (ajvFormatOptions !== false) {
-      (0, import_ajv_formats.default)(ajv);
-    }
-    ajv.addFormat("data-url", DATA_URL_FORMAT_REGEX);
-    ajv.addFormat("color", COLOR_FORMAT_REGEX);
-    ajv.addKeyword(ADDITIONAL_PROPERTY_FLAG);
-    ajv.addKeyword(RJSF_ADDITIONAL_PROPERTIES_FLAG);
-    if (Array.isArray(additionalMetaSchemas)) {
-      ajv.addMetaSchema(additionalMetaSchemas);
-    }
-    if (isObject_default(customFormats)) {
-      Object.keys(customFormats).forEach((formatName) => {
-        ajv.addFormat(formatName, customFormats[formatName]);
-      });
-    }
-    return ajv;
-  }
-
-  // node_modules/@rjsf/validator-ajv8/lib/processRawValidationErrors.js
-  function transformRJSFValidationErrors(errors = [], uiSchema) {
-    return errors.map((e2) => {
-      var _a;
-      const { instancePath, keyword, params, schemaPath, parentSchema, ...rest } = e2;
-      let { message = "" } = rest;
-      let property2 = instancePath.replace(/\//g, ".");
-      let stack = `${property2} ${message}`.trim();
-      const rawPropertyNames = [
-        ...((_a = params.deps) === null || _a === void 0 ? void 0 : _a.split(", ")) || [],
-        params.missingProperty,
-        params.property
-      ].filter((item) => item);
-      if (rawPropertyNames.length > 0) {
-        rawPropertyNames.forEach((currentProperty) => {
-          const path = property2 ? `${property2}.${currentProperty}` : currentProperty;
-          let uiSchemaTitle = getUiOptions(get_default(uiSchema, `${path.replace(/^\./, "")}`)).title;
-          if (uiSchemaTitle === void 0) {
-            const uiSchemaPath = schemaPath.replace(/\/properties\//g, "/").split("/").slice(1, -1).concat([currentProperty]);
-            uiSchemaTitle = getUiOptions(get_default(uiSchema, uiSchemaPath)).title;
-          }
-          if (uiSchemaTitle) {
-            message = message.replace(`'${currentProperty}'`, `'${uiSchemaTitle}'`);
-          } else {
-            const parentSchemaTitle = get_default(parentSchema, [PROPERTIES_KEY, currentProperty, "title"]);
-            if (parentSchemaTitle) {
-              message = message.replace(`'${currentProperty}'`, `'${parentSchemaTitle}'`);
-            }
-          }
-        });
-        stack = message;
-      } else {
-        const uiSchemaTitle = getUiOptions(get_default(uiSchema, `${property2.replace(/^\./, "")}`)).title;
-        if (uiSchemaTitle) {
-          stack = `'${uiSchemaTitle}' ${message}`.trim();
-        } else {
-          const parentSchemaTitle = parentSchema === null || parentSchema === void 0 ? void 0 : parentSchema.title;
-          if (parentSchemaTitle) {
-            stack = `'${parentSchemaTitle}' ${message}`.trim();
-          }
-        }
-      }
-      if ("missingProperty" in params) {
-        property2 = property2 ? `${property2}.${params.missingProperty}` : params.missingProperty;
-      }
-      return {
-        name: keyword,
-        property: property2,
-        message,
-        params,
-        stack,
-        schemaPath
-      };
-    });
-  }
-  function processRawValidationErrors(validator, rawErrors, formData, schema, customValidate, transformErrors, uiSchema) {
-    const { validationError: invalidSchemaError } = rawErrors;
-    let errors = transformRJSFValidationErrors(rawErrors.errors, uiSchema);
-    if (invalidSchemaError) {
-      errors = [...errors, { stack: invalidSchemaError.message }];
-    }
-    if (typeof transformErrors === "function") {
-      errors = transformErrors(errors, uiSchema);
-    }
-    let errorSchema = toErrorSchema(errors);
-    if (invalidSchemaError) {
-      errorSchema = {
-        ...errorSchema,
-        $schema: {
-          __errors: [invalidSchemaError.message]
-        }
-      };
-    }
-    if (typeof customValidate !== "function") {
-      return { errors, errorSchema };
-    }
-    const newFormData = getDefaultFormState(validator, schema, formData, schema, true);
-    const errorHandler = customValidate(newFormData, createErrorHandler(newFormData), uiSchema);
-    const userErrorSchema = unwrapErrorHandler(errorHandler);
-    return validationDataMerge({ errors, errorSchema }, userErrorSchema);
-  }
-
-  // node_modules/@rjsf/validator-ajv8/lib/validator.js
-  var AJV8Validator = class {
-    /** Constructs an `AJV8Validator` instance using the `options`
-     *
-     * @param options - The `CustomValidatorOptionsType` options that are used to create the AJV instance
-     * @param [localizer] - If provided, is used to localize a list of Ajv `ErrorObject`s
-     */
-    constructor(options, localizer) {
-      const { additionalMetaSchemas, customFormats, ajvOptionsOverrides, ajvFormatOptions, AjvClass } = options;
-      this.ajv = createAjvInstance(additionalMetaSchemas, customFormats, ajvOptionsOverrides, ajvFormatOptions, AjvClass);
-      this.localizer = localizer;
-    }
-    /** Resets the internal AJV validator to clear schemas from it. Can be helpful for resetting the validator for tests.
-     */
-    reset() {
-      this.ajv.removeSchema();
-    }
-    /** Converts an `errorSchema` into a list of `RJSFValidationErrors`
-     *
-     * @param errorSchema - The `ErrorSchema` instance to convert
-     * @param [fieldPath=[]] - The current field path, defaults to [] if not specified
-     * @deprecated - Use the `toErrorList()` function provided by `@rjsf/utils` instead. This function will be removed in
-     *        the next major release.
-     */
-    toErrorList(errorSchema, fieldPath = []) {
-      return toErrorList(errorSchema, fieldPath);
-    }
-    /** Runs the pure validation of the `schema` and `formData` without any of the RJSF functionality. Provided for use
-     * by the playground. Returns the `errors` from the validation
-     *
-     * @param schema - The schema against which to validate the form data   * @param schema
-     * @param formData - The form data to validate
-     */
-    rawValidation(schema, formData) {
-      var _a, _b;
-      let compilationError = void 0;
-      let compiledValidator;
-      if (schema[ID_KEY]) {
-        compiledValidator = this.ajv.getSchema(schema[ID_KEY]);
-      }
-      try {
-        if (compiledValidator === void 0) {
-          compiledValidator = this.ajv.compile(schema);
-        }
-        compiledValidator(formData);
-      } catch (err) {
-        compilationError = err;
-      }
-      let errors;
-      if (compiledValidator) {
-        if (typeof this.localizer === "function") {
-          ((_a = compiledValidator.errors) !== null && _a !== void 0 ? _a : []).forEach((error) => {
-            var _a2;
-            ["missingProperty", "property"].forEach((key) => {
-              var _a3;
-              if ((_a3 = error.params) === null || _a3 === void 0 ? void 0 : _a3[key]) {
-                error.params[key] = `'${error.params[key]}'`;
-              }
-            });
-            if ((_a2 = error.params) === null || _a2 === void 0 ? void 0 : _a2.deps) {
-              error.params.deps = error.params.deps.split(", ").map((v2) => `'${v2}'`).join(", ");
-            }
-          });
-          this.localizer(compiledValidator.errors);
-          ((_b = compiledValidator.errors) !== null && _b !== void 0 ? _b : []).forEach((error) => {
-            var _a2;
-            ["missingProperty", "property"].forEach((key) => {
-              var _a3;
-              if ((_a3 = error.params) === null || _a3 === void 0 ? void 0 : _a3[key]) {
-                error.params[key] = error.params[key].slice(1, -1);
-              }
-            });
-            if ((_a2 = error.params) === null || _a2 === void 0 ? void 0 : _a2.deps) {
-              error.params.deps = error.params.deps.split(", ").map((v2) => v2.slice(1, -1)).join(", ");
-            }
-          });
-        }
-        errors = compiledValidator.errors || void 0;
-        compiledValidator.errors = null;
-      }
-      return {
-        errors,
-        validationError: compilationError
-      };
-    }
-    /** This function processes the `formData` with an optional user contributed `customValidate` function, which receives
-     * the form data and a `errorHandler` function that will be used to add custom validation errors for each field. Also
-     * supports a `transformErrors` function that will take the raw AJV validation errors, prior to custom validation and
-     * transform them in what ever way it chooses.
-     *
-     * @param formData - The form data to validate
-     * @param schema - The schema against which to validate the form data
-     * @param [customValidate] - An optional function that is used to perform custom validation
-     * @param [transformErrors] - An optional function that is used to transform errors after AJV validation
-     * @param [uiSchema] - An optional uiSchema that is passed to `transformErrors` and `customValidate`
-     */
-    validateFormData(formData, schema, customValidate, transformErrors, uiSchema) {
-      const rawErrors = this.rawValidation(schema, formData);
-      return processRawValidationErrors(this, rawErrors, formData, schema, customValidate, transformErrors, uiSchema);
-    }
-    /**
-     * This function checks if a schema needs to be added and if the root schemas don't match it removes the old root schema from the ajv instance and adds the new one.
-     * @param rootSchema - The root schema used to provide $ref resolutions
-     */
-    handleSchemaUpdate(rootSchema) {
-      var _a, _b;
-      const rootSchemaId = (_a = rootSchema[ID_KEY]) !== null && _a !== void 0 ? _a : ROOT_SCHEMA_PREFIX;
-      if (this.ajv.getSchema(rootSchemaId) === void 0) {
-        this.ajv.addSchema(rootSchema, rootSchemaId);
-      } else if (!deepEquals(rootSchema, (_b = this.ajv.getSchema(rootSchemaId)) === null || _b === void 0 ? void 0 : _b.schema)) {
-        this.ajv.removeSchema(rootSchemaId);
-        this.ajv.addSchema(rootSchema, rootSchemaId);
-      }
-    }
-    /** Validates data against a schema, returning true if the data is valid, or
-     * false otherwise. If the schema is invalid, then this function will return
-     * false.
-     *
-     * @param schema - The schema against which to validate the form data
-     * @param formData - The form data to validate
-     * @param rootSchema - The root schema used to provide $ref resolutions
-     */
-    isValid(schema, formData, rootSchema) {
-      var _a;
-      try {
-        this.handleSchemaUpdate(rootSchema);
-        const schemaWithIdRefPrefix = withIdRefPrefix(schema);
-        const schemaId = (_a = schemaWithIdRefPrefix[ID_KEY]) !== null && _a !== void 0 ? _a : hashForSchema(schemaWithIdRefPrefix);
-        let compiledValidator;
-        compiledValidator = this.ajv.getSchema(schemaId);
-        if (compiledValidator === void 0) {
-          compiledValidator = this.ajv.addSchema(schemaWithIdRefPrefix, schemaId).getSchema(schemaId) || this.ajv.compile(schemaWithIdRefPrefix);
-        }
-        const result = compiledValidator(formData);
-        return result;
-      } catch (e2) {
-        console.warn("Error encountered compiling schema:", e2);
-        return false;
-      }
-    }
-  };
-
-  // node_modules/@rjsf/validator-ajv8/lib/customizeValidator.js
-  function customizeValidator(options = {}, localizer) {
-    return new AJV8Validator(options, localizer);
-  }
-
-  // node_modules/@rjsf/validator-ajv8/lib/index.js
-  var lib_default2 = customizeValidator();
 
   // webview-src/vscode.ts
   var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : {
@@ -45381,6 +45114,3880 @@
     );
   };
 
+  // node_modules/@rjsf/validator-ajv8/lib/createAjvInstance.js
+  var import_ajv = __toESM(require_ajv());
+  var import_ajv_formats = __toESM(require_dist());
+  var AJV_CONFIG = {
+    allErrors: true,
+    multipleOfPrecision: 8,
+    strict: false,
+    verbose: true,
+    discriminator: false
+    // TODO enable this in V6
+  };
+  var COLOR_FORMAT_REGEX = /^(#?([0-9A-Fa-f]{3}){1,2}\b|aqua|black|blue|fuchsia|gray|green|lime|maroon|navy|olive|orange|purple|red|silver|teal|white|yellow|(rgb\(\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*,\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*,\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*\))|(rgb\(\s*(\d?\d%|100%)+\s*,\s*(\d?\d%|100%)+\s*,\s*(\d?\d%|100%)+\s*\)))$/;
+  var DATA_URL_FORMAT_REGEX = /^data:([a-z]+\/[a-z0-9-+.]+)?;(?:name=(.*);)?base64,(.*)$/;
+  function createAjvInstance(additionalMetaSchemas, customFormats, ajvOptionsOverrides = {}, ajvFormatOptions, AjvClass = import_ajv.default) {
+    const ajv = new AjvClass({ ...AJV_CONFIG, ...ajvOptionsOverrides });
+    if (ajvFormatOptions) {
+      (0, import_ajv_formats.default)(ajv, ajvFormatOptions);
+    } else if (ajvFormatOptions !== false) {
+      (0, import_ajv_formats.default)(ajv);
+    }
+    ajv.addFormat("data-url", DATA_URL_FORMAT_REGEX);
+    ajv.addFormat("color", COLOR_FORMAT_REGEX);
+    ajv.addKeyword(ADDITIONAL_PROPERTY_FLAG);
+    ajv.addKeyword(RJSF_ADDITIONAL_PROPERTIES_FLAG);
+    if (Array.isArray(additionalMetaSchemas)) {
+      ajv.addMetaSchema(additionalMetaSchemas);
+    }
+    if (isObject_default(customFormats)) {
+      Object.keys(customFormats).forEach((formatName) => {
+        ajv.addFormat(formatName, customFormats[formatName]);
+      });
+    }
+    return ajv;
+  }
+
+  // node_modules/@rjsf/validator-ajv8/lib/processRawValidationErrors.js
+  function transformRJSFValidationErrors(errors = [], uiSchema) {
+    return errors.map((e2) => {
+      var _a;
+      const { instancePath, keyword, params, schemaPath, parentSchema, ...rest } = e2;
+      let { message = "" } = rest;
+      let property2 = instancePath.replace(/\//g, ".");
+      let stack = `${property2} ${message}`.trim();
+      const rawPropertyNames = [
+        ...((_a = params.deps) === null || _a === void 0 ? void 0 : _a.split(", ")) || [],
+        params.missingProperty,
+        params.property
+      ].filter((item) => item);
+      if (rawPropertyNames.length > 0) {
+        rawPropertyNames.forEach((currentProperty) => {
+          const path = property2 ? `${property2}.${currentProperty}` : currentProperty;
+          let uiSchemaTitle = getUiOptions(get_default(uiSchema, `${path.replace(/^\./, "")}`)).title;
+          if (uiSchemaTitle === void 0) {
+            const uiSchemaPath = schemaPath.replace(/\/properties\//g, "/").split("/").slice(1, -1).concat([currentProperty]);
+            uiSchemaTitle = getUiOptions(get_default(uiSchema, uiSchemaPath)).title;
+          }
+          if (uiSchemaTitle) {
+            message = message.replace(`'${currentProperty}'`, `'${uiSchemaTitle}'`);
+          } else {
+            const parentSchemaTitle = get_default(parentSchema, [PROPERTIES_KEY, currentProperty, "title"]);
+            if (parentSchemaTitle) {
+              message = message.replace(`'${currentProperty}'`, `'${parentSchemaTitle}'`);
+            }
+          }
+        });
+        stack = message;
+      } else {
+        const uiSchemaTitle = getUiOptions(get_default(uiSchema, `${property2.replace(/^\./, "")}`)).title;
+        if (uiSchemaTitle) {
+          stack = `'${uiSchemaTitle}' ${message}`.trim();
+        } else {
+          const parentSchemaTitle = parentSchema === null || parentSchema === void 0 ? void 0 : parentSchema.title;
+          if (parentSchemaTitle) {
+            stack = `'${parentSchemaTitle}' ${message}`.trim();
+          }
+        }
+      }
+      if ("missingProperty" in params) {
+        property2 = property2 ? `${property2}.${params.missingProperty}` : params.missingProperty;
+      }
+      return {
+        name: keyword,
+        property: property2,
+        message,
+        params,
+        stack,
+        schemaPath
+      };
+    });
+  }
+  function processRawValidationErrors(validator, rawErrors, formData, schema, customValidate, transformErrors, uiSchema) {
+    const { validationError: invalidSchemaError } = rawErrors;
+    let errors = transformRJSFValidationErrors(rawErrors.errors, uiSchema);
+    if (invalidSchemaError) {
+      errors = [...errors, { stack: invalidSchemaError.message }];
+    }
+    if (typeof transformErrors === "function") {
+      errors = transformErrors(errors, uiSchema);
+    }
+    let errorSchema = toErrorSchema(errors);
+    if (invalidSchemaError) {
+      errorSchema = {
+        ...errorSchema,
+        $schema: {
+          __errors: [invalidSchemaError.message]
+        }
+      };
+    }
+    if (typeof customValidate !== "function") {
+      return { errors, errorSchema };
+    }
+    const newFormData = getDefaultFormState(validator, schema, formData, schema, true);
+    const errorHandler = customValidate(newFormData, createErrorHandler(newFormData), uiSchema);
+    const userErrorSchema = unwrapErrorHandler(errorHandler);
+    return validationDataMerge({ errors, errorSchema }, userErrorSchema);
+  }
+
+  // node_modules/@rjsf/validator-ajv8/lib/validator.js
+  var AJV8Validator = class {
+    /** Constructs an `AJV8Validator` instance using the `options`
+     *
+     * @param options - The `CustomValidatorOptionsType` options that are used to create the AJV instance
+     * @param [localizer] - If provided, is used to localize a list of Ajv `ErrorObject`s
+     */
+    constructor(options, localizer) {
+      const { additionalMetaSchemas, customFormats, ajvOptionsOverrides, ajvFormatOptions, AjvClass } = options;
+      this.ajv = createAjvInstance(additionalMetaSchemas, customFormats, ajvOptionsOverrides, ajvFormatOptions, AjvClass);
+      this.localizer = localizer;
+    }
+    /** Resets the internal AJV validator to clear schemas from it. Can be helpful for resetting the validator for tests.
+     */
+    reset() {
+      this.ajv.removeSchema();
+    }
+    /** Converts an `errorSchema` into a list of `RJSFValidationErrors`
+     *
+     * @param errorSchema - The `ErrorSchema` instance to convert
+     * @param [fieldPath=[]] - The current field path, defaults to [] if not specified
+     * @deprecated - Use the `toErrorList()` function provided by `@rjsf/utils` instead. This function will be removed in
+     *        the next major release.
+     */
+    toErrorList(errorSchema, fieldPath = []) {
+      return toErrorList(errorSchema, fieldPath);
+    }
+    /** Runs the pure validation of the `schema` and `formData` without any of the RJSF functionality. Provided for use
+     * by the playground. Returns the `errors` from the validation
+     *
+     * @param schema - The schema against which to validate the form data   * @param schema
+     * @param formData - The form data to validate
+     */
+    rawValidation(schema, formData) {
+      var _a, _b;
+      let compilationError = void 0;
+      let compiledValidator;
+      if (schema[ID_KEY]) {
+        compiledValidator = this.ajv.getSchema(schema[ID_KEY]);
+      }
+      try {
+        if (compiledValidator === void 0) {
+          compiledValidator = this.ajv.compile(schema);
+        }
+        compiledValidator(formData);
+      } catch (err) {
+        compilationError = err;
+      }
+      let errors;
+      if (compiledValidator) {
+        if (typeof this.localizer === "function") {
+          ((_a = compiledValidator.errors) !== null && _a !== void 0 ? _a : []).forEach((error) => {
+            var _a2;
+            ["missingProperty", "property"].forEach((key) => {
+              var _a3;
+              if ((_a3 = error.params) === null || _a3 === void 0 ? void 0 : _a3[key]) {
+                error.params[key] = `'${error.params[key]}'`;
+              }
+            });
+            if ((_a2 = error.params) === null || _a2 === void 0 ? void 0 : _a2.deps) {
+              error.params.deps = error.params.deps.split(", ").map((v2) => `'${v2}'`).join(", ");
+            }
+          });
+          this.localizer(compiledValidator.errors);
+          ((_b = compiledValidator.errors) !== null && _b !== void 0 ? _b : []).forEach((error) => {
+            var _a2;
+            ["missingProperty", "property"].forEach((key) => {
+              var _a3;
+              if ((_a3 = error.params) === null || _a3 === void 0 ? void 0 : _a3[key]) {
+                error.params[key] = error.params[key].slice(1, -1);
+              }
+            });
+            if ((_a2 = error.params) === null || _a2 === void 0 ? void 0 : _a2.deps) {
+              error.params.deps = error.params.deps.split(", ").map((v2) => v2.slice(1, -1)).join(", ");
+            }
+          });
+        }
+        errors = compiledValidator.errors || void 0;
+        compiledValidator.errors = null;
+      }
+      return {
+        errors,
+        validationError: compilationError
+      };
+    }
+    /** This function processes the `formData` with an optional user contributed `customValidate` function, which receives
+     * the form data and a `errorHandler` function that will be used to add custom validation errors for each field. Also
+     * supports a `transformErrors` function that will take the raw AJV validation errors, prior to custom validation and
+     * transform them in what ever way it chooses.
+     *
+     * @param formData - The form data to validate
+     * @param schema - The schema against which to validate the form data
+     * @param [customValidate] - An optional function that is used to perform custom validation
+     * @param [transformErrors] - An optional function that is used to transform errors after AJV validation
+     * @param [uiSchema] - An optional uiSchema that is passed to `transformErrors` and `customValidate`
+     */
+    validateFormData(formData, schema, customValidate, transformErrors, uiSchema) {
+      const rawErrors = this.rawValidation(schema, formData);
+      return processRawValidationErrors(this, rawErrors, formData, schema, customValidate, transformErrors, uiSchema);
+    }
+    /**
+     * This function checks if a schema needs to be added and if the root schemas don't match it removes the old root schema from the ajv instance and adds the new one.
+     * @param rootSchema - The root schema used to provide $ref resolutions
+     */
+    handleSchemaUpdate(rootSchema3) {
+      var _a, _b;
+      const rootSchemaId = (_a = rootSchema3[ID_KEY]) !== null && _a !== void 0 ? _a : ROOT_SCHEMA_PREFIX;
+      if (this.ajv.getSchema(rootSchemaId) === void 0) {
+        this.ajv.addSchema(rootSchema3, rootSchemaId);
+      } else if (!deepEquals(rootSchema3, (_b = this.ajv.getSchema(rootSchemaId)) === null || _b === void 0 ? void 0 : _b.schema)) {
+        this.ajv.removeSchema(rootSchemaId);
+        this.ajv.addSchema(rootSchema3, rootSchemaId);
+      }
+    }
+    /** Validates data against a schema, returning true if the data is valid, or
+     * false otherwise. If the schema is invalid, then this function will return
+     * false.
+     *
+     * @param schema - The schema against which to validate the form data
+     * @param formData - The form data to validate
+     * @param rootSchema - The root schema used to provide $ref resolutions
+     */
+    isValid(schema, formData, rootSchema3) {
+      var _a;
+      try {
+        this.handleSchemaUpdate(rootSchema3);
+        const schemaWithIdRefPrefix = withIdRefPrefix(schema);
+        const schemaId = (_a = schemaWithIdRefPrefix[ID_KEY]) !== null && _a !== void 0 ? _a : hashForSchema(schemaWithIdRefPrefix);
+        let compiledValidator;
+        compiledValidator = this.ajv.getSchema(schemaId);
+        if (compiledValidator === void 0) {
+          compiledValidator = this.ajv.addSchema(schemaWithIdRefPrefix, schemaId).getSchema(schemaId) || this.ajv.compile(schemaWithIdRefPrefix);
+        }
+        const result = compiledValidator(formData);
+        return result;
+      } catch (e2) {
+        console.warn("Error encountered compiling schema:", e2);
+        return false;
+      }
+    }
+  };
+
+  // node_modules/@rjsf/validator-ajv8/lib/customizeValidator.js
+  function customizeValidator(options = {}, localizer) {
+    return new AJV8Validator(options, localizer);
+  }
+
+  // node_modules/@rjsf/validator-ajv8/lib/precompiledValidator.js
+  var AJV8PrecompiledValidator = class {
+    /** Constructs an `AJV8PrecompiledValidator` instance using the `validateFns` and `rootSchema`
+     *
+     * @param validateFns - The map of the validation functions that are generated by the `schemaCompile()` function
+     * @param rootSchema - The root schema that was used with the `compileSchema()` function
+     * @param [localizer] - If provided, is used to localize a list of Ajv `ErrorObject`s
+     * @throws - Error when the base schema of the precompiled validator does not have a matching validator function
+     */
+    constructor(validateFns3, rootSchema3, localizer) {
+      this.rootSchema = rootSchema3;
+      this.validateFns = validateFns3;
+      this.localizer = localizer;
+      this.mainValidator = this.getValidator(rootSchema3);
+    }
+    /** Returns the precompiled validator associated with the given `schema` from the map of precompiled validator
+     * functions.
+     *
+     * @param schema - The schema for which a precompiled validator function is desired
+     * @returns - The precompiled validator function associated with this schema
+     */
+    getValidator(schema) {
+      const key = get_default(schema, ID_KEY) || hashForSchema(schema);
+      const validator = this.validateFns[key];
+      if (!validator) {
+        throw new Error(`No precompiled validator function was found for the given schema for "${key}"`);
+      }
+      return validator;
+    }
+    /** Ensures that the validator is using the same schema as the root schema used to construct the precompiled
+     * validator. It first compares the given `schema` against the root schema and if they aren't the same, then it
+     * checks against the resolved root schema, on the chance that a resolved version of the root schema was passed in
+     * instead of the raw root schema.
+     *
+     * @param schema - The schema against which to validate the form data
+     * @param [formData] - The form data to validate if any
+     */
+    ensureSameRootSchema(schema, formData) {
+      if (!deepEquals(schema, this.rootSchema)) {
+        const resolvedRootSchema = retrieveSchema(this, this.rootSchema, this.rootSchema, formData);
+        if (!deepEquals(schema, resolvedRootSchema)) {
+          throw new Error("The schema associated with the precompiled validator differs from the rootSchema provided for validation");
+        }
+      }
+      return true;
+    }
+    /** Converts an `errorSchema` into a list of `RJSFValidationErrors`
+     *
+     * @param errorSchema - The `ErrorSchema` instance to convert
+     * @param [fieldPath=[]] - The current field path, defaults to [] if not specified
+     * @deprecated - Use the `toErrorList()` function provided by `@rjsf/utils` instead. This function will be removed in
+     *        the next major release.
+     */
+    toErrorList(errorSchema, fieldPath = []) {
+      return toErrorList(errorSchema, fieldPath);
+    }
+    /** Runs the pure validation of the `schema` and `formData` without any of the RJSF functionality. Provided for use
+     * by the playground. Returns the `errors` from the validation
+     *
+     * @param schema - The schema against which to validate the form data
+     * @param [formData] - The form data to validate, if any
+     * @throws - Error when the schema provided does not match the base schema of the precompiled validator
+     */
+    rawValidation(schema, formData) {
+      this.ensureSameRootSchema(schema, formData);
+      this.mainValidator(formData);
+      if (typeof this.localizer === "function") {
+        this.localizer(this.mainValidator.errors);
+      }
+      const errors = this.mainValidator.errors || void 0;
+      this.mainValidator.errors = null;
+      return { errors };
+    }
+    /** This function processes the `formData` with an optional user contributed `customValidate` function, which receives
+     * the form data and a `errorHandler` function that will be used to add custom validation errors for each field. Also
+     * supports a `transformErrors` function that will take the raw AJV validation errors, prior to custom validation and
+     * transform them in what ever way it chooses.
+     *
+     * @param formData - The form data to validate
+     * @param schema - The schema against which to validate the form data
+     * @param [customValidate] - An optional function that is used to perform custom validation
+     * @param [transformErrors] - An optional function that is used to transform errors after AJV validation
+     * @param [uiSchema] - An optional uiSchema that is passed to `transformErrors` and `customValidate`
+     */
+    validateFormData(formData, schema, customValidate, transformErrors, uiSchema) {
+      const rawErrors = this.rawValidation(schema, formData);
+      return processRawValidationErrors(this, rawErrors, formData, schema, customValidate, transformErrors, uiSchema);
+    }
+    /** Validates data against a schema, returning true if the data is valid, or false otherwise. If the schema is
+     * invalid, then this function will return false.
+     *
+     * @param schema - The schema against which to validate the form data
+     * @param formData - The form data to validate
+     * @param rootSchema - The root schema used to provide $ref resolutions
+     * @returns - true if the formData validates against the schema, false otherwise
+     * @throws - Error when the schema provided does not match the base schema of the precompiled validator OR if there
+     *        isn't a precompiled validator function associated with the schema
+     */
+    isValid(schema, formData, rootSchema3) {
+      this.ensureSameRootSchema(rootSchema3, formData);
+      if (get_default(schema, ID_KEY) === JUNK_OPTION_ID) {
+        return false;
+      }
+      const validator = this.getValidator(schema);
+      return validator(formData);
+    }
+  };
+
+  // node_modules/@rjsf/validator-ajv8/lib/createPrecompiledValidator.js
+  function createPrecompiledValidator(validateFns3, rootSchema3, localizer) {
+    return new AJV8PrecompiledValidator(validateFns3, rootSchema3, localizer);
+  }
+
+  // node_modules/@rjsf/validator-ajv8/lib/index.js
+  var lib_default2 = customizeValidator();
+
+  // webview-src/generated/contractSpecValidator.ts
+  var module_contractSpec = { exports: {} };
+  (function(module2, exports2) {
+    "use strict";
+    exports2.contractSpec = validate10;
+    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Contract)", "$ref": "#/$defs/supplierSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "type": "integer" }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "contractSpec" };
+    const schema12 = { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false };
+    const schema13 = { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" };
+    const schema14 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
+    const pattern0 = new RegExp("^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$", "u");
+    const pattern1 = new RegExp("^[\\w .(),-]+$", "u");
+    function validate11(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      let vErrors = null;
+      let errors = 0;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+        if (data.name === void 0) {
+          const err1 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err1];
+          } else {
+            vErrors.push(err1);
+          }
+          errors++;
+        }
+        if (data.description === void 0) {
+          const err2 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "description" }, message: "must have required property 'description'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err2];
+          } else {
+            vErrors.push(err2);
+          }
+          errors++;
+        }
+        if (data.requirements === void 0) {
+          const err3 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "requirements" }, message: "must have required property 'requirements'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err3];
+          } else {
+            vErrors.push(err3);
+          }
+          errors++;
+        }
+        if (data.obligations === void 0) {
+          const err4 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "obligations" }, message: "must have required property 'obligations'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err4];
+          } else {
+            vErrors.push(err4);
+          }
+          errors++;
+        }
+        if (data.supplier === void 0) {
+          const err5 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "supplier" }, message: "must have required property 'supplier'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err5];
+          } else {
+            vErrors.push(err5);
+          }
+          errors++;
+        }
+        for (const key0 in data) {
+          if (!(key0 === "type" || key0 === "name" || key0 === "description" || key0 === "requirements" || key0 === "obligations" || key0 === "supplier")) {
+            const err6 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties", schema: false, parentSchema: schema12, data };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("supplier" !== data0) {
+            const err7 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "supplier" }, message: "must be equal to constant", schema: "supplier", parentSchema: schema12.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err7];
+            } else {
+              vErrors.push(err7);
+            }
+            errors++;
+          }
+        }
+        if (data.name !== void 0) {
+          let data1 = data.name;
+          if (typeof data1 === "string") {
+            if (!pattern0.test(data1)) {
+              const err8 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification5/pattern", keyword: "pattern", params: { pattern: "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, message: 'must match pattern "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$"', schema: "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$", parentSchema: schema13, data: data1 };
+              if (vErrors === null) {
+                vErrors = [err8];
+              } else {
+                vErrors.push(err8);
+              }
+              errors++;
+            }
+          } else {
+            const err9 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification5/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema13.type, parentSchema: schema13, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err9];
+            } else {
+              vErrors.push(err9);
+            }
+            errors++;
+          }
+        }
+        if (data.description !== void 0) {
+          let data2 = data.description;
+          if (typeof data2 !== "string") {
+            const err10 = { instancePath: instancePath + "/description", schemaPath: "#/properties/description/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.description.type, parentSchema: schema12.properties.description, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err10];
+            } else {
+              vErrors.push(err10);
+            }
+            errors++;
+          }
+        }
+        if (data.requirements !== void 0) {
+          let data3 = data.requirements;
+          if (Array.isArray(data3)) {
+            const len0 = data3.length;
+            for (let i0 = 0; i0 < len0; i0++) {
+              let data4 = data3[i0];
+              const _errs13 = errors;
+              let valid5 = false;
+              let passing0 = null;
+              const _errs14 = errors;
+              if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
+                if (data4.protocol === void 0) {
+                  const err11 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema14.oneOf[0].required, parentSchema: schema14.oneOf[0], data: data4 };
+                  if (vErrors === null) {
+                    vErrors = [err11];
+                  } else {
+                    vErrors.push(err11);
+                  }
+                  errors++;
+                }
+                if (data4.type !== void 0) {
+                  let data5 = data4.type;
+                  if ("abstraction" !== data5) {
+                    const err12 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema14.oneOf[0].properties.type, data: data5 };
+                    if (vErrors === null) {
+                      vErrors = [err12];
+                    } else {
+                      vErrors.push(err12);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.protocol !== void 0) {
+                  let data6 = data4.protocol;
+                  if (typeof data6 !== "string") {
+                    const err13 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[0].properties.protocol.type, parentSchema: schema14.oneOf[0].properties.protocol, data: data6 };
+                    if (vErrors === null) {
+                      vErrors = [err13];
+                    } else {
+                      vErrors.push(err13);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid0 = _errs14 === errors;
+              if (_valid0) {
+                valid5 = true;
+                passing0 = 0;
+              }
+              const _errs18 = errors;
+              if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
+                if (data4.minimum === void 0) {
+                  const err14 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data4 };
+                  if (vErrors === null) {
+                    vErrors = [err14];
+                  } else {
+                    vErrors.push(err14);
+                  }
+                  errors++;
+                }
+                if (data4.maximum === void 0) {
+                  const err15 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data4 };
+                  if (vErrors === null) {
+                    vErrors = [err15];
+                  } else {
+                    vErrors.push(err15);
+                  }
+                  errors++;
+                }
+                if (data4.hint === void 0) {
+                  const err16 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data4 };
+                  if (vErrors === null) {
+                    vErrors = [err16];
+                  } else {
+                    vErrors.push(err16);
+                  }
+                  errors++;
+                }
+                if (data4.type !== void 0) {
+                  let data7 = data4.type;
+                  if ("integer" !== data7) {
+                    const err17 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema14.oneOf[1].properties.type, data: data7 };
+                    if (vErrors === null) {
+                      vErrors = [err17];
+                    } else {
+                      vErrors.push(err17);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.minimum !== void 0) {
+                  let data8 = data4.minimum;
+                  if (!(typeof data8 == "number") && typeof data8 !== "string") {
+                    const err18 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.minimum.type, parentSchema: schema14.oneOf[1].properties.minimum, data: data8 };
+                    if (vErrors === null) {
+                      vErrors = [err18];
+                    } else {
+                      vErrors.push(err18);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.maximum !== void 0) {
+                  let data9 = data4.maximum;
+                  if (!(typeof data9 == "number") && typeof data9 !== "string") {
+                    const err19 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.maximum.type, parentSchema: schema14.oneOf[1].properties.maximum, data: data9 };
+                    if (vErrors === null) {
+                      vErrors = [err19];
+                    } else {
+                      vErrors.push(err19);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.hint !== void 0) {
+                  let data10 = data4.hint;
+                  if (!(typeof data10 == "number") && typeof data10 !== "string") {
+                    const err20 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.hint.type, parentSchema: schema14.oneOf[1].properties.hint, data: data10 };
+                    if (vErrors === null) {
+                      vErrors = [err20];
+                    } else {
+                      vErrors.push(err20);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid0 = _errs18 === errors;
+              if (_valid0 && valid5) {
+                valid5 = false;
+                passing0 = [passing0, 1];
+              } else {
+                if (_valid0) {
+                  valid5 = true;
+                  passing0 = 1;
+                }
+                const _errs26 = errors;
+                if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
+                  if (data4.length === void 0) {
+                    const err21 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data4 };
+                    if (vErrors === null) {
+                      vErrors = [err21];
+                    } else {
+                      vErrors.push(err21);
+                    }
+                    errors++;
+                  }
+                  if (data4.hint === void 0) {
+                    const err22 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data4 };
+                    if (vErrors === null) {
+                      vErrors = [err22];
+                    } else {
+                      vErrors.push(err22);
+                    }
+                    errors++;
+                  }
+                  if (data4.type !== void 0) {
+                    let data11 = data4.type;
+                    if ("string" !== data11) {
+                      const err23 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema14.oneOf[2].properties.type, data: data11 };
+                      if (vErrors === null) {
+                        vErrors = [err23];
+                      } else {
+                        vErrors.push(err23);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data4.length !== void 0) {
+                    let data12 = data4.length;
+                    if (!(typeof data12 == "number") && typeof data12 !== "string") {
+                      const err24 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/oneOf/2/properties/length/type", keyword: "type", params: { type: schema14.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.length.type, parentSchema: schema14.oneOf[2].properties.length, data: data12 };
+                      if (vErrors === null) {
+                        vErrors = [err24];
+                      } else {
+                        vErrors.push(err24);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data4.hint !== void 0) {
+                    let data13 = data4.hint;
+                    if (!(typeof data13 == "number") && typeof data13 !== "string") {
+                      const err25 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.hint.type, parentSchema: schema14.oneOf[2].properties.hint, data: data13 };
+                      if (vErrors === null) {
+                        vErrors = [err25];
+                      } else {
+                        vErrors.push(err25);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                var _valid0 = _errs26 === errors;
+                if (_valid0 && valid5) {
+                  valid5 = false;
+                  passing0 = [passing0, 2];
+                } else {
+                  if (_valid0) {
+                    valid5 = true;
+                    passing0 = 2;
+                  }
+                  const _errs32 = errors;
+                  if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
+                    if (data4.type !== void 0) {
+                      let data14 = data4.type;
+                      if ("boolean" !== data14) {
+                        const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema14.oneOf[3].properties.type, data: data14 };
+                        if (vErrors === null) {
+                          vErrors = [err26];
+                        } else {
+                          vErrors.push(err26);
+                        }
+                        errors++;
+                      }
+                    }
+                  }
+                  var _valid0 = _errs32 === errors;
+                  if (_valid0 && valid5) {
+                    valid5 = false;
+                    passing0 = [passing0, 3];
+                  } else {
+                    if (_valid0) {
+                      valid5 = true;
+                      passing0 = 3;
+                    }
+                    const _errs34 = errors;
+                    if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
+                      if (data4.type !== void 0) {
+                        let data15 = data4.type;
+                        if ("site" !== data15) {
+                          const err27 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema14.oneOf[4].properties.type, data: data15 };
+                          if (vErrors === null) {
+                            vErrors = [err27];
+                          } else {
+                            vErrors.push(err27);
+                          }
+                          errors++;
+                        }
+                      }
+                    }
+                    var _valid0 = _errs34 === errors;
+                    if (_valid0 && valid5) {
+                      valid5 = false;
+                      passing0 = [passing0, 4];
+                    } else {
+                      if (_valid0) {
+                        valid5 = true;
+                        passing0 = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              if (!valid5) {
+                const err28 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf", schema: schema14.oneOf, parentSchema: schema14, data: data4 };
+                if (vErrors === null) {
+                  vErrors = [err28];
+                } else {
+                  vErrors.push(err28);
+                }
+                errors++;
+              } else {
+                errors = _errs13;
+                if (vErrors !== null) {
+                  if (_errs13) {
+                    vErrors.length = _errs13;
+                  } else {
+                    vErrors = null;
+                  }
+                }
+              }
+              if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
+                if (data4.type === void 0) {
+                  const err29 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema14.required, parentSchema: schema14, data: data4 };
+                  if (vErrors === null) {
+                    vErrors = [err29];
+                  } else {
+                    vErrors.push(err29);
+                  }
+                  errors++;
+                }
+                if (data4.name === void 0) {
+                  const err30 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema14.required, parentSchema: schema14, data: data4 };
+                  if (vErrors === null) {
+                    vErrors = [err30];
+                  } else {
+                    vErrors.push(err30);
+                  }
+                  errors++;
+                }
+                for (const key1 in data4) {
+                  if (!(key1 === "type" || key1 === "name" || key1 === "protocol" || key1 === "minimum" || key1 === "maximum" || key1 === "length" || key1 === "hint")) {
+                    const err31 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data: data4 };
+                    if (vErrors === null) {
+                      vErrors = [err31];
+                    } else {
+                      vErrors.push(err31);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.type !== void 0) {
+                  let data16 = data4.type;
+                  if (typeof data16 !== "string") {
+                    const err32 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.type.type, parentSchema: schema14.properties.type, data: data16 };
+                    if (vErrors === null) {
+                      vErrors = [err32];
+                    } else {
+                      vErrors.push(err32);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.name !== void 0) {
+                  let data17 = data4.name;
+                  if (typeof data17 === "string") {
+                    if (!pattern1.test(data17)) {
+                      const err33 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema14.properties.name, data: data17 };
+                      if (vErrors === null) {
+                        vErrors = [err33];
+                      } else {
+                        vErrors.push(err33);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err34 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.name.type, parentSchema: schema14.properties.name, data: data17 };
+                    if (vErrors === null) {
+                      vErrors = [err34];
+                    } else {
+                      vErrors.push(err34);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.protocol !== void 0) {
+                  let data18 = data4.protocol;
+                  if (typeof data18 !== "string") {
+                    const err35 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.protocol.type, parentSchema: schema14.properties.protocol, data: data18 };
+                    if (vErrors === null) {
+                      vErrors = [err35];
+                    } else {
+                      vErrors.push(err35);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.minimum !== void 0) {
+                  let data19 = data4.minimum;
+                  if (!(typeof data19 == "number") && typeof data19 !== "string") {
+                    const err36 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/type", keyword: "type", params: { type: schema14.properties.minimum.type }, message: "must be number,string", schema: schema14.properties.minimum.type, parentSchema: schema14.properties.minimum, data: data19 };
+                    if (vErrors === null) {
+                      vErrors = [err36];
+                    } else {
+                      vErrors.push(err36);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.maximum !== void 0) {
+                  let data20 = data4.maximum;
+                  if (!(typeof data20 == "number") && typeof data20 !== "string") {
+                    const err37 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/type", keyword: "type", params: { type: schema14.properties.maximum.type }, message: "must be number,string", schema: schema14.properties.maximum.type, parentSchema: schema14.properties.maximum, data: data20 };
+                    if (vErrors === null) {
+                      vErrors = [err37];
+                    } else {
+                      vErrors.push(err37);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.length !== void 0) {
+                  let data21 = data4.length;
+                  if (!(typeof data21 == "number") && typeof data21 !== "string") {
+                    const err38 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/properties/length/type", keyword: "type", params: { type: schema14.properties.length.type }, message: "must be number,string", schema: schema14.properties.length.type, parentSchema: schema14.properties.length, data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err38];
+                    } else {
+                      vErrors.push(err38);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.hint !== void 0) {
+                  let data22 = data4.hint;
+                  if (!(typeof data22 == "number") && typeof data22 !== "string") {
+                    const err39 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/properties/hint/type", keyword: "type", params: { type: schema14.properties.hint.type }, message: "must be number,string", schema: schema14.properties.hint.type, parentSchema: schema14.properties.hint, data: data22 };
+                    if (vErrors === null) {
+                      vErrors = [err39];
+                    } else {
+                      vErrors.push(err39);
+                    }
+                    errors++;
+                  }
+                }
+              } else {
+                const err40 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data: data4 };
+                if (vErrors === null) {
+                  vErrors = [err40];
+                } else {
+                  vErrors.push(err40);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err41 = { instancePath: instancePath + "/requirements", schemaPath: "#/properties/requirements/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema12.properties.requirements.type, parentSchema: schema12.properties.requirements, data: data3 };
+            if (vErrors === null) {
+              vErrors = [err41];
+            } else {
+              vErrors.push(err41);
+            }
+            errors++;
+          }
+        }
+        if (data.obligations !== void 0) {
+          let data23 = data.obligations;
+          if (Array.isArray(data23)) {
+            const len1 = data23.length;
+            for (let i1 = 0; i1 < len1; i1++) {
+              let data24 = data23[i1];
+              const _errs56 = errors;
+              let valid15 = false;
+              let passing1 = null;
+              const _errs57 = errors;
+              if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                if (data24.protocol === void 0) {
+                  const err42 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema14.oneOf[0].required, parentSchema: schema14.oneOf[0], data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err42];
+                  } else {
+                    vErrors.push(err42);
+                  }
+                  errors++;
+                }
+                if (data24.type !== void 0) {
+                  let data25 = data24.type;
+                  if ("abstraction" !== data25) {
+                    const err43 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema14.oneOf[0].properties.type, data: data25 };
+                    if (vErrors === null) {
+                      vErrors = [err43];
+                    } else {
+                      vErrors.push(err43);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.protocol !== void 0) {
+                  let data26 = data24.protocol;
+                  if (typeof data26 !== "string") {
+                    const err44 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[0].properties.protocol.type, parentSchema: schema14.oneOf[0].properties.protocol, data: data26 };
+                    if (vErrors === null) {
+                      vErrors = [err44];
+                    } else {
+                      vErrors.push(err44);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid1 = _errs57 === errors;
+              if (_valid1) {
+                valid15 = true;
+                passing1 = 0;
+              }
+              const _errs61 = errors;
+              if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                if (data24.minimum === void 0) {
+                  const err45 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err45];
+                  } else {
+                    vErrors.push(err45);
+                  }
+                  errors++;
+                }
+                if (data24.maximum === void 0) {
+                  const err46 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err46];
+                  } else {
+                    vErrors.push(err46);
+                  }
+                  errors++;
+                }
+                if (data24.hint === void 0) {
+                  const err47 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err47];
+                  } else {
+                    vErrors.push(err47);
+                  }
+                  errors++;
+                }
+                if (data24.type !== void 0) {
+                  let data27 = data24.type;
+                  if ("integer" !== data27) {
+                    const err48 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema14.oneOf[1].properties.type, data: data27 };
+                    if (vErrors === null) {
+                      vErrors = [err48];
+                    } else {
+                      vErrors.push(err48);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.minimum !== void 0) {
+                  let data28 = data24.minimum;
+                  if (!(typeof data28 == "number") && typeof data28 !== "string") {
+                    const err49 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.minimum.type, parentSchema: schema14.oneOf[1].properties.minimum, data: data28 };
+                    if (vErrors === null) {
+                      vErrors = [err49];
+                    } else {
+                      vErrors.push(err49);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.maximum !== void 0) {
+                  let data29 = data24.maximum;
+                  if (!(typeof data29 == "number") && typeof data29 !== "string") {
+                    const err50 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.maximum.type, parentSchema: schema14.oneOf[1].properties.maximum, data: data29 };
+                    if (vErrors === null) {
+                      vErrors = [err50];
+                    } else {
+                      vErrors.push(err50);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.hint !== void 0) {
+                  let data30 = data24.hint;
+                  if (!(typeof data30 == "number") && typeof data30 !== "string") {
+                    const err51 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.hint.type, parentSchema: schema14.oneOf[1].properties.hint, data: data30 };
+                    if (vErrors === null) {
+                      vErrors = [err51];
+                    } else {
+                      vErrors.push(err51);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid1 = _errs61 === errors;
+              if (_valid1 && valid15) {
+                valid15 = false;
+                passing1 = [passing1, 1];
+              } else {
+                if (_valid1) {
+                  valid15 = true;
+                  passing1 = 1;
+                }
+                const _errs69 = errors;
+                if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                  if (data24.length === void 0) {
+                    const err52 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data24 };
+                    if (vErrors === null) {
+                      vErrors = [err52];
+                    } else {
+                      vErrors.push(err52);
+                    }
+                    errors++;
+                  }
+                  if (data24.hint === void 0) {
+                    const err53 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data24 };
+                    if (vErrors === null) {
+                      vErrors = [err53];
+                    } else {
+                      vErrors.push(err53);
+                    }
+                    errors++;
+                  }
+                  if (data24.type !== void 0) {
+                    let data31 = data24.type;
+                    if ("string" !== data31) {
+                      const err54 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema14.oneOf[2].properties.type, data: data31 };
+                      if (vErrors === null) {
+                        vErrors = [err54];
+                      } else {
+                        vErrors.push(err54);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data24.length !== void 0) {
+                    let data32 = data24.length;
+                    if (!(typeof data32 == "number") && typeof data32 !== "string") {
+                      const err55 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/oneOf/2/properties/length/type", keyword: "type", params: { type: schema14.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.length.type, parentSchema: schema14.oneOf[2].properties.length, data: data32 };
+                      if (vErrors === null) {
+                        vErrors = [err55];
+                      } else {
+                        vErrors.push(err55);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data24.hint !== void 0) {
+                    let data33 = data24.hint;
+                    if (!(typeof data33 == "number") && typeof data33 !== "string") {
+                      const err56 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.hint.type, parentSchema: schema14.oneOf[2].properties.hint, data: data33 };
+                      if (vErrors === null) {
+                        vErrors = [err56];
+                      } else {
+                        vErrors.push(err56);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                var _valid1 = _errs69 === errors;
+                if (_valid1 && valid15) {
+                  valid15 = false;
+                  passing1 = [passing1, 2];
+                } else {
+                  if (_valid1) {
+                    valid15 = true;
+                    passing1 = 2;
+                  }
+                  const _errs75 = errors;
+                  if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                    if (data24.type !== void 0) {
+                      let data34 = data24.type;
+                      if ("boolean" !== data34) {
+                        const err57 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema14.oneOf[3].properties.type, data: data34 };
+                        if (vErrors === null) {
+                          vErrors = [err57];
+                        } else {
+                          vErrors.push(err57);
+                        }
+                        errors++;
+                      }
+                    }
+                  }
+                  var _valid1 = _errs75 === errors;
+                  if (_valid1 && valid15) {
+                    valid15 = false;
+                    passing1 = [passing1, 3];
+                  } else {
+                    if (_valid1) {
+                      valid15 = true;
+                      passing1 = 3;
+                    }
+                    const _errs77 = errors;
+                    if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                      if (data24.type !== void 0) {
+                        let data35 = data24.type;
+                        if ("site" !== data35) {
+                          const err58 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema14.oneOf[4].properties.type, data: data35 };
+                          if (vErrors === null) {
+                            vErrors = [err58];
+                          } else {
+                            vErrors.push(err58);
+                          }
+                          errors++;
+                        }
+                      }
+                    }
+                    var _valid1 = _errs77 === errors;
+                    if (_valid1 && valid15) {
+                      valid15 = false;
+                      passing1 = [passing1, 4];
+                    } else {
+                      if (_valid1) {
+                        valid15 = true;
+                        passing1 = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              if (!valid15) {
+                const err59 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf", keyword: "oneOf", params: { passingSchemas: passing1 }, message: "must match exactly one schema in oneOf", schema: schema14.oneOf, parentSchema: schema14, data: data24 };
+                if (vErrors === null) {
+                  vErrors = [err59];
+                } else {
+                  vErrors.push(err59);
+                }
+                errors++;
+              } else {
+                errors = _errs56;
+                if (vErrors !== null) {
+                  if (_errs56) {
+                    vErrors.length = _errs56;
+                  } else {
+                    vErrors = null;
+                  }
+                }
+              }
+              if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                if (data24.type === void 0) {
+                  const err60 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema14.required, parentSchema: schema14, data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err60];
+                  } else {
+                    vErrors.push(err60);
+                  }
+                  errors++;
+                }
+                if (data24.name === void 0) {
+                  const err61 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema14.required, parentSchema: schema14, data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err61];
+                  } else {
+                    vErrors.push(err61);
+                  }
+                  errors++;
+                }
+                for (const key2 in data24) {
+                  if (!(key2 === "type" || key2 === "name" || key2 === "protocol" || key2 === "minimum" || key2 === "maximum" || key2 === "length" || key2 === "hint")) {
+                    const err62 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key2 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data: data24 };
+                    if (vErrors === null) {
+                      vErrors = [err62];
+                    } else {
+                      vErrors.push(err62);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.type !== void 0) {
+                  let data36 = data24.type;
+                  if (typeof data36 !== "string") {
+                    const err63 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.type.type, parentSchema: schema14.properties.type, data: data36 };
+                    if (vErrors === null) {
+                      vErrors = [err63];
+                    } else {
+                      vErrors.push(err63);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.name !== void 0) {
+                  let data37 = data24.name;
+                  if (typeof data37 === "string") {
+                    if (!pattern1.test(data37)) {
+                      const err64 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema14.properties.name, data: data37 };
+                      if (vErrors === null) {
+                        vErrors = [err64];
+                      } else {
+                        vErrors.push(err64);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err65 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.name.type, parentSchema: schema14.properties.name, data: data37 };
+                    if (vErrors === null) {
+                      vErrors = [err65];
+                    } else {
+                      vErrors.push(err65);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.protocol !== void 0) {
+                  let data38 = data24.protocol;
+                  if (typeof data38 !== "string") {
+                    const err66 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.protocol.type, parentSchema: schema14.properties.protocol, data: data38 };
+                    if (vErrors === null) {
+                      vErrors = [err66];
+                    } else {
+                      vErrors.push(err66);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.minimum !== void 0) {
+                  let data39 = data24.minimum;
+                  if (!(typeof data39 == "number") && typeof data39 !== "string") {
+                    const err67 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/type", keyword: "type", params: { type: schema14.properties.minimum.type }, message: "must be number,string", schema: schema14.properties.minimum.type, parentSchema: schema14.properties.minimum, data: data39 };
+                    if (vErrors === null) {
+                      vErrors = [err67];
+                    } else {
+                      vErrors.push(err67);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.maximum !== void 0) {
+                  let data40 = data24.maximum;
+                  if (!(typeof data40 == "number") && typeof data40 !== "string") {
+                    const err68 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/type", keyword: "type", params: { type: schema14.properties.maximum.type }, message: "must be number,string", schema: schema14.properties.maximum.type, parentSchema: schema14.properties.maximum, data: data40 };
+                    if (vErrors === null) {
+                      vErrors = [err68];
+                    } else {
+                      vErrors.push(err68);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.length !== void 0) {
+                  let data41 = data24.length;
+                  if (!(typeof data41 == "number") && typeof data41 !== "string") {
+                    const err69 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/properties/length/type", keyword: "type", params: { type: schema14.properties.length.type }, message: "must be number,string", schema: schema14.properties.length.type, parentSchema: schema14.properties.length, data: data41 };
+                    if (vErrors === null) {
+                      vErrors = [err69];
+                    } else {
+                      vErrors.push(err69);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.hint !== void 0) {
+                  let data42 = data24.hint;
+                  if (!(typeof data42 == "number") && typeof data42 !== "string") {
+                    const err70 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/properties/hint/type", keyword: "type", params: { type: schema14.properties.hint.type }, message: "must be number,string", schema: schema14.properties.hint.type, parentSchema: schema14.properties.hint, data: data42 };
+                    if (vErrors === null) {
+                      vErrors = [err70];
+                    } else {
+                      vErrors.push(err70);
+                    }
+                    errors++;
+                  }
+                }
+              } else {
+                const err71 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data: data24 };
+                if (vErrors === null) {
+                  vErrors = [err71];
+                } else {
+                  vErrors.push(err71);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err72 = { instancePath: instancePath + "/obligations", schemaPath: "#/properties/obligations/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema12.properties.obligations.type, parentSchema: schema12.properties.obligations, data: data23 };
+            if (vErrors === null) {
+              vErrors = [err72];
+            } else {
+              vErrors.push(err72);
+            }
+            errors++;
+          }
+        }
+        if (data.supplier !== void 0) {
+          let data43 = data.supplier;
+          if (typeof data43 !== "string") {
+            const err73 = { instancePath: instancePath + "/supplier", schemaPath: "#/properties/supplier/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.supplier.type, parentSchema: schema12.properties.supplier, data: data43 };
+            if (vErrors === null) {
+              vErrors = [err73];
+            } else {
+              vErrors.push(err73);
+            }
+            errors++;
+          }
+        }
+      } else {
+        const err74 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema12.type, parentSchema: schema12, data };
+        if (vErrors === null) {
+          vErrors = [err74];
+        } else {
+          vErrors.push(err74);
+        }
+        errors++;
+      }
+      validate11.errors = vErrors;
+      return errors === 0;
+    }
+    function validate10(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      if (!validate11(data, { instancePath, parentData, parentDataProperty, rootData })) {
+        vErrors = vErrors === null ? validate11.errors : vErrors.concat(validate11.errors);
+        errors = vErrors.length;
+      }
+      validate10.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["4287aa76"] = validate13;
+    const schema16 = { "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "anyOf": [{ "required": ["type"] }, { "required": ["protocol"] }], "$id": "4287aa76" };
+    function validate13(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema16.anyOf[0].required, parentSchema: schema16.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.protocol === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema16.anyOf[1].required, parentSchema: schema16.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+      }
+      if (!valid0) {
+        const err2 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema16.anyOf, parentSchema: schema16, data };
+        if (vErrors === null) {
+          vErrors = [err2];
+        } else {
+          vErrors.push(err2);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("abstraction" !== data0) {
+            const err3 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema16.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err3];
+            } else {
+              vErrors.push(err3);
+            }
+            errors++;
+          }
+        }
+        if (data.protocol !== void 0) {
+          let data1 = data.protocol;
+          if (typeof data1 !== "string") {
+            const err4 = { instancePath: instancePath + "/protocol", schemaPath: "#/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema16.properties.protocol.type, parentSchema: schema16.properties.protocol, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err4];
+            } else {
+              vErrors.push(err4);
+            }
+            errors++;
+          }
+        }
+      }
+      validate13.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["17a0aba3"] = validate14;
+    const schema17 = { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "17a0aba3" };
+    function validate14(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema17.anyOf[0].required, parentSchema: schema17.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.minimum === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema17.anyOf[1].required, parentSchema: schema17.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+        if (!valid0) {
+          const _errs3 = errors;
+          if (data && typeof data == "object" && !Array.isArray(data)) {
+            if (data.maximum === void 0) {
+              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema17.anyOf[2].required, parentSchema: schema17.anyOf[2], data };
+              if (vErrors === null) {
+                vErrors = [err2];
+              } else {
+                vErrors.push(err2);
+              }
+              errors++;
+            }
+          }
+          var _valid0 = _errs3 === errors;
+          valid0 = valid0 || _valid0;
+          if (!valid0) {
+            const _errs4 = errors;
+            if (data && typeof data == "object" && !Array.isArray(data)) {
+              if (data.hint === void 0) {
+                const err3 = { instancePath, schemaPath: "#/anyOf/3/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema17.anyOf[3].required, parentSchema: schema17.anyOf[3], data };
+                if (vErrors === null) {
+                  vErrors = [err3];
+                } else {
+                  vErrors.push(err3);
+                }
+                errors++;
+              }
+            }
+            var _valid0 = _errs4 === errors;
+            valid0 = valid0 || _valid0;
+          }
+        }
+      }
+      if (!valid0) {
+        const err4 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema17.anyOf, parentSchema: schema17, data };
+        if (vErrors === null) {
+          vErrors = [err4];
+        } else {
+          vErrors.push(err4);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("integer" !== data0) {
+            const err5 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema17.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err5];
+            } else {
+              vErrors.push(err5);
+            }
+            errors++;
+          }
+        }
+        if (data.minimum !== void 0) {
+          let data1 = data.minimum;
+          if (!(typeof data1 == "number") && typeof data1 !== "string") {
+            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/type", keyword: "type", params: { type: schema17.properties.minimum.type }, message: "must be number,string", schema: schema17.properties.minimum.type, parentSchema: schema17.properties.minimum, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+        if (data.maximum !== void 0) {
+          let data2 = data.maximum;
+          if (!(typeof data2 == "number") && typeof data2 !== "string") {
+            const err7 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/type", keyword: "type", params: { type: schema17.properties.maximum.type }, message: "must be number,string", schema: schema17.properties.maximum.type, parentSchema: schema17.properties.maximum, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err7];
+            } else {
+              vErrors.push(err7);
+            }
+            errors++;
+          }
+        }
+        if (data.hint !== void 0) {
+          let data3 = data.hint;
+          if (!(typeof data3 == "number") && typeof data3 !== "string") {
+            const err8 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema17.properties.hint.type }, message: "must be number,string", schema: schema17.properties.hint.type, parentSchema: schema17.properties.hint, data: data3 };
+            if (vErrors === null) {
+              vErrors = [err8];
+            } else {
+              vErrors.push(err8);
+            }
+            errors++;
+          }
+        }
+      }
+      validate14.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["318105ed"] = validate15;
+    const schema18 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "318105ed" };
+    function validate15(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema18.anyOf[0].required, parentSchema: schema18.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.length === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema18.anyOf[1].required, parentSchema: schema18.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+        if (!valid0) {
+          const _errs3 = errors;
+          if (data && typeof data == "object" && !Array.isArray(data)) {
+            if (data.hint === void 0) {
+              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema18.anyOf[2].required, parentSchema: schema18.anyOf[2], data };
+              if (vErrors === null) {
+                vErrors = [err2];
+              } else {
+                vErrors.push(err2);
+              }
+              errors++;
+            }
+          }
+          var _valid0 = _errs3 === errors;
+          valid0 = valid0 || _valid0;
+        }
+      }
+      if (!valid0) {
+        const err3 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema18.anyOf, parentSchema: schema18, data };
+        if (vErrors === null) {
+          vErrors = [err3];
+        } else {
+          vErrors.push(err3);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("string" !== data0) {
+            const err4 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema18.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err4];
+            } else {
+              vErrors.push(err4);
+            }
+            errors++;
+          }
+        }
+        if (data.length !== void 0) {
+          let data1 = data.length;
+          if (!(typeof data1 == "number") && typeof data1 !== "string") {
+            const err5 = { instancePath: instancePath + "/length", schemaPath: "#/properties/length/type", keyword: "type", params: { type: schema18.properties.length.type }, message: "must be number,string", schema: schema18.properties.length.type, parentSchema: schema18.properties.length, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err5];
+            } else {
+              vErrors.push(err5);
+            }
+            errors++;
+          }
+        }
+        if (data.hint !== void 0) {
+          let data2 = data.hint;
+          if (!(typeof data2 == "number") && typeof data2 !== "string") {
+            const err6 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema18.properties.hint.type }, message: "must be number,string", schema: schema18.properties.hint.type, parentSchema: schema18.properties.hint, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+      }
+      validate15.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["2c01de3a"] = validate16;
+    const schema19 = { "properties": { "type": { "const": "boolean" } }, "anyOf": [{ "required": ["type"] }], "$id": "2c01de3a" };
+    function validate16(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema19.anyOf[0].required, parentSchema: schema19.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema19.anyOf, parentSchema: schema19, data };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("boolean" !== data0) {
+            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema19.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err2];
+            } else {
+              vErrors.push(err2);
+            }
+            errors++;
+          }
+        }
+      }
+      validate16.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["1d36f00b"] = validate17;
+    const schema20 = { "properties": { "type": { "const": "site" } }, "anyOf": [{ "required": ["type"] }], "$id": "1d36f00b" };
+    function validate17(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema20.anyOf[0].required, parentSchema: schema20.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema20.anyOf, parentSchema: schema20, data };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("site" !== data0) {
+            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema20.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err2];
+            } else {
+              vErrors.push(err2);
+            }
+            errors++;
+          }
+        }
+      }
+      validate17.errors = vErrors;
+      return errors === 0;
+    }
+  })(module_contractSpec, module_contractSpec.exports);
+  var validateFns = module_contractSpec.exports;
+  var rootSchema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Emergent Specification (Contract)",
+    "$ref": "#/$defs/supplierSpec",
+    "$defs": {
+      "classification4": {
+        "type": "string",
+        "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$"
+      },
+      "classification5": {
+        "type": "string",
+        "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$"
+      },
+      "requirement": {
+        "type": "object",
+        "required": [
+          "type",
+          "name"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "abstraction"
+              },
+              "protocol": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "protocol"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "integer"
+              },
+              "minimum": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "maximum": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "hint": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum",
+              "hint"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "string"
+              },
+              "length": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "hint": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "length",
+              "hint"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "site"
+              }
+            }
+          }
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[\\w .(),-]+$"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "maximum": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "length": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "hint": {
+            "type": [
+              "number",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "obligation": {
+        "$ref": "#/$defs/requirement"
+      },
+      "role": {
+        "type": "object",
+        "required": [
+          "requirements",
+          "obligations",
+          "macro"
+        ],
+        "properties": {
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/requirement"
+            }
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/obligation"
+            }
+          },
+          "macro": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "supplierSpec": {
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "description",
+          "requirements",
+          "obligations",
+          "supplier"
+        ],
+        "properties": {
+          "type": {
+            "const": "supplier"
+          },
+          "name": {
+            "$ref": "#/$defs/classification5"
+          },
+          "description": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/requirement"
+            }
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/obligation"
+            }
+          },
+          "supplier": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "protocolSpec": {
+        "type": "object",
+        "required": [
+          "type",
+          "policy",
+          "name",
+          "description",
+          "host",
+          "join"
+        ],
+        "properties": {
+          "type": {
+            "const": "protocol"
+          },
+          "policy": {
+            "type": "integer"
+          },
+          "name": {
+            "$ref": "#/$defs/classification4"
+          },
+          "description": {
+            "type": "string"
+          },
+          "host": {
+            "$ref": "#/$defs/role"
+          },
+          "join": {
+            "$ref": "#/$defs/role"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "$id": "contractSpec"
+  };
+
+  // webview-src/generated/protocolSpecValidator.ts
+  var module_protocolSpec = { exports: {} };
+  (function(module2, exports2) {
+    "use strict";
+    exports2.protocolSpec = validate10;
+    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Protocol)", "$ref": "#/$defs/protocolSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "type": "integer" }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "protocolSpec" };
+    const schema12 = { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "type": "integer" }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false };
+    const schema13 = { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" };
+    const pattern0 = new RegExp("^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", "u");
+    const schema14 = { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false };
+    const schema15 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
+    const pattern1 = new RegExp("^[\\w .(),-]+$", "u");
+    function validate12(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      let vErrors = null;
+      let errors = 0;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.requirements === void 0) {
+          const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "requirements" }, message: "must have required property 'requirements'", schema: schema14.required, parentSchema: schema14, data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+        if (data.obligations === void 0) {
+          const err1 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "obligations" }, message: "must have required property 'obligations'", schema: schema14.required, parentSchema: schema14, data };
+          if (vErrors === null) {
+            vErrors = [err1];
+          } else {
+            vErrors.push(err1);
+          }
+          errors++;
+        }
+        if (data.macro === void 0) {
+          const err2 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "macro" }, message: "must have required property 'macro'", schema: schema14.required, parentSchema: schema14, data };
+          if (vErrors === null) {
+            vErrors = [err2];
+          } else {
+            vErrors.push(err2);
+          }
+          errors++;
+        }
+        for (const key0 in data) {
+          if (!(key0 === "requirements" || key0 === "obligations" || key0 === "macro")) {
+            const err3 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data };
+            if (vErrors === null) {
+              vErrors = [err3];
+            } else {
+              vErrors.push(err3);
+            }
+            errors++;
+          }
+        }
+        if (data.requirements !== void 0) {
+          let data0 = data.requirements;
+          if (Array.isArray(data0)) {
+            const len0 = data0.length;
+            for (let i0 = 0; i0 < len0; i0++) {
+              let data1 = data0[i0];
+              const _errs7 = errors;
+              let valid4 = false;
+              let passing0 = null;
+              const _errs8 = errors;
+              if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+                if (data1.protocol === void 0) {
+                  const err4 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema15.oneOf[0].required, parentSchema: schema15.oneOf[0], data: data1 };
+                  if (vErrors === null) {
+                    vErrors = [err4];
+                  } else {
+                    vErrors.push(err4);
+                  }
+                  errors++;
+                }
+                if (data1.type !== void 0) {
+                  let data2 = data1.type;
+                  if ("abstraction" !== data2) {
+                    const err5 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema15.oneOf[0].properties.type, data: data2 };
+                    if (vErrors === null) {
+                      vErrors = [err5];
+                    } else {
+                      vErrors.push(err5);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.protocol !== void 0) {
+                  let data3 = data1.protocol;
+                  if (typeof data3 !== "string") {
+                    const err6 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[0].properties.protocol.type, parentSchema: schema15.oneOf[0].properties.protocol, data: data3 };
+                    if (vErrors === null) {
+                      vErrors = [err6];
+                    } else {
+                      vErrors.push(err6);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid0 = _errs8 === errors;
+              if (_valid0) {
+                valid4 = true;
+                passing0 = 0;
+              }
+              const _errs12 = errors;
+              if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+                if (data1.minimum === void 0) {
+                  const err7 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data1 };
+                  if (vErrors === null) {
+                    vErrors = [err7];
+                  } else {
+                    vErrors.push(err7);
+                  }
+                  errors++;
+                }
+                if (data1.maximum === void 0) {
+                  const err8 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data1 };
+                  if (vErrors === null) {
+                    vErrors = [err8];
+                  } else {
+                    vErrors.push(err8);
+                  }
+                  errors++;
+                }
+                if (data1.hint === void 0) {
+                  const err9 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data1 };
+                  if (vErrors === null) {
+                    vErrors = [err9];
+                  } else {
+                    vErrors.push(err9);
+                  }
+                  errors++;
+                }
+                if (data1.type !== void 0) {
+                  let data4 = data1.type;
+                  if ("integer" !== data4) {
+                    const err10 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema15.oneOf[1].properties.type, data: data4 };
+                    if (vErrors === null) {
+                      vErrors = [err10];
+                    } else {
+                      vErrors.push(err10);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.minimum !== void 0) {
+                  let data5 = data1.minimum;
+                  if (!(typeof data5 == "number") && typeof data5 !== "string") {
+                    const err11 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.minimum.type, parentSchema: schema15.oneOf[1].properties.minimum, data: data5 };
+                    if (vErrors === null) {
+                      vErrors = [err11];
+                    } else {
+                      vErrors.push(err11);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.maximum !== void 0) {
+                  let data6 = data1.maximum;
+                  if (!(typeof data6 == "number") && typeof data6 !== "string") {
+                    const err12 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.maximum.type, parentSchema: schema15.oneOf[1].properties.maximum, data: data6 };
+                    if (vErrors === null) {
+                      vErrors = [err12];
+                    } else {
+                      vErrors.push(err12);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.hint !== void 0) {
+                  let data7 = data1.hint;
+                  if (!(typeof data7 == "number") && typeof data7 !== "string") {
+                    const err13 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.hint.type, parentSchema: schema15.oneOf[1].properties.hint, data: data7 };
+                    if (vErrors === null) {
+                      vErrors = [err13];
+                    } else {
+                      vErrors.push(err13);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid0 = _errs12 === errors;
+              if (_valid0 && valid4) {
+                valid4 = false;
+                passing0 = [passing0, 1];
+              } else {
+                if (_valid0) {
+                  valid4 = true;
+                  passing0 = 1;
+                }
+                const _errs20 = errors;
+                if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+                  if (data1.length === void 0) {
+                    const err14 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data1 };
+                    if (vErrors === null) {
+                      vErrors = [err14];
+                    } else {
+                      vErrors.push(err14);
+                    }
+                    errors++;
+                  }
+                  if (data1.hint === void 0) {
+                    const err15 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data1 };
+                    if (vErrors === null) {
+                      vErrors = [err15];
+                    } else {
+                      vErrors.push(err15);
+                    }
+                    errors++;
+                  }
+                  if (data1.type !== void 0) {
+                    let data8 = data1.type;
+                    if ("string" !== data8) {
+                      const err16 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema15.oneOf[2].properties.type, data: data8 };
+                      if (vErrors === null) {
+                        vErrors = [err16];
+                      } else {
+                        vErrors.push(err16);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data1.length !== void 0) {
+                    let data9 = data1.length;
+                    if (!(typeof data9 == "number") && typeof data9 !== "string") {
+                      const err17 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/oneOf/2/properties/length/type", keyword: "type", params: { type: schema15.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.length.type, parentSchema: schema15.oneOf[2].properties.length, data: data9 };
+                      if (vErrors === null) {
+                        vErrors = [err17];
+                      } else {
+                        vErrors.push(err17);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data1.hint !== void 0) {
+                    let data10 = data1.hint;
+                    if (!(typeof data10 == "number") && typeof data10 !== "string") {
+                      const err18 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.hint.type, parentSchema: schema15.oneOf[2].properties.hint, data: data10 };
+                      if (vErrors === null) {
+                        vErrors = [err18];
+                      } else {
+                        vErrors.push(err18);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                var _valid0 = _errs20 === errors;
+                if (_valid0 && valid4) {
+                  valid4 = false;
+                  passing0 = [passing0, 2];
+                } else {
+                  if (_valid0) {
+                    valid4 = true;
+                    passing0 = 2;
+                  }
+                  const _errs26 = errors;
+                  if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+                    if (data1.type !== void 0) {
+                      let data11 = data1.type;
+                      if ("boolean" !== data11) {
+                        const err19 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema15.oneOf[3].properties.type, data: data11 };
+                        if (vErrors === null) {
+                          vErrors = [err19];
+                        } else {
+                          vErrors.push(err19);
+                        }
+                        errors++;
+                      }
+                    }
+                  }
+                  var _valid0 = _errs26 === errors;
+                  if (_valid0 && valid4) {
+                    valid4 = false;
+                    passing0 = [passing0, 3];
+                  } else {
+                    if (_valid0) {
+                      valid4 = true;
+                      passing0 = 3;
+                    }
+                    const _errs28 = errors;
+                    if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+                      if (data1.type !== void 0) {
+                        let data12 = data1.type;
+                        if ("site" !== data12) {
+                          const err20 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema15.oneOf[4].properties.type, data: data12 };
+                          if (vErrors === null) {
+                            vErrors = [err20];
+                          } else {
+                            vErrors.push(err20);
+                          }
+                          errors++;
+                        }
+                      }
+                    }
+                    var _valid0 = _errs28 === errors;
+                    if (_valid0 && valid4) {
+                      valid4 = false;
+                      passing0 = [passing0, 4];
+                    } else {
+                      if (_valid0) {
+                        valid4 = true;
+                        passing0 = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              if (!valid4) {
+                const err21 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf", schema: schema15.oneOf, parentSchema: schema15, data: data1 };
+                if (vErrors === null) {
+                  vErrors = [err21];
+                } else {
+                  vErrors.push(err21);
+                }
+                errors++;
+              } else {
+                errors = _errs7;
+                if (vErrors !== null) {
+                  if (_errs7) {
+                    vErrors.length = _errs7;
+                  } else {
+                    vErrors = null;
+                  }
+                }
+              }
+              if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+                if (data1.type === void 0) {
+                  const err22 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema15.required, parentSchema: schema15, data: data1 };
+                  if (vErrors === null) {
+                    vErrors = [err22];
+                  } else {
+                    vErrors.push(err22);
+                  }
+                  errors++;
+                }
+                if (data1.name === void 0) {
+                  const err23 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema15.required, parentSchema: schema15, data: data1 };
+                  if (vErrors === null) {
+                    vErrors = [err23];
+                  } else {
+                    vErrors.push(err23);
+                  }
+                  errors++;
+                }
+                for (const key1 in data1) {
+                  if (!(key1 === "type" || key1 === "name" || key1 === "protocol" || key1 === "minimum" || key1 === "maximum" || key1 === "length" || key1 === "hint")) {
+                    const err24 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties", schema: false, parentSchema: schema15, data: data1 };
+                    if (vErrors === null) {
+                      vErrors = [err24];
+                    } else {
+                      vErrors.push(err24);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.type !== void 0) {
+                  let data13 = data1.type;
+                  if (typeof data13 !== "string") {
+                    const err25 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.type.type, parentSchema: schema15.properties.type, data: data13 };
+                    if (vErrors === null) {
+                      vErrors = [err25];
+                    } else {
+                      vErrors.push(err25);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.name !== void 0) {
+                  let data14 = data1.name;
+                  if (typeof data14 === "string") {
+                    if (!pattern1.test(data14)) {
+                      const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data14 };
+                      if (vErrors === null) {
+                        vErrors = [err26];
+                      } else {
+                        vErrors.push(err26);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err27 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.name.type, parentSchema: schema15.properties.name, data: data14 };
+                    if (vErrors === null) {
+                      vErrors = [err27];
+                    } else {
+                      vErrors.push(err27);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.protocol !== void 0) {
+                  let data15 = data1.protocol;
+                  if (typeof data15 !== "string") {
+                    const err28 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.protocol.type, parentSchema: schema15.properties.protocol, data: data15 };
+                    if (vErrors === null) {
+                      vErrors = [err28];
+                    } else {
+                      vErrors.push(err28);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.minimum !== void 0) {
+                  let data16 = data1.minimum;
+                  if (!(typeof data16 == "number") && typeof data16 !== "string") {
+                    const err29 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/type", keyword: "type", params: { type: schema15.properties.minimum.type }, message: "must be number,string", schema: schema15.properties.minimum.type, parentSchema: schema15.properties.minimum, data: data16 };
+                    if (vErrors === null) {
+                      vErrors = [err29];
+                    } else {
+                      vErrors.push(err29);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.maximum !== void 0) {
+                  let data17 = data1.maximum;
+                  if (!(typeof data17 == "number") && typeof data17 !== "string") {
+                    const err30 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/type", keyword: "type", params: { type: schema15.properties.maximum.type }, message: "must be number,string", schema: schema15.properties.maximum.type, parentSchema: schema15.properties.maximum, data: data17 };
+                    if (vErrors === null) {
+                      vErrors = [err30];
+                    } else {
+                      vErrors.push(err30);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.length !== void 0) {
+                  let data18 = data1.length;
+                  if (!(typeof data18 == "number") && typeof data18 !== "string") {
+                    const err31 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/properties/length/type", keyword: "type", params: { type: schema15.properties.length.type }, message: "must be number,string", schema: schema15.properties.length.type, parentSchema: schema15.properties.length, data: data18 };
+                    if (vErrors === null) {
+                      vErrors = [err31];
+                    } else {
+                      vErrors.push(err31);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.hint !== void 0) {
+                  let data19 = data1.hint;
+                  if (!(typeof data19 == "number") && typeof data19 !== "string") {
+                    const err32 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/properties/hint/type", keyword: "type", params: { type: schema15.properties.hint.type }, message: "must be number,string", schema: schema15.properties.hint.type, parentSchema: schema15.properties.hint, data: data19 };
+                    if (vErrors === null) {
+                      vErrors = [err32];
+                    } else {
+                      vErrors.push(err32);
+                    }
+                    errors++;
+                  }
+                }
+              } else {
+                const err33 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema15.type, parentSchema: schema15, data: data1 };
+                if (vErrors === null) {
+                  vErrors = [err33];
+                } else {
+                  vErrors.push(err33);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err34 = { instancePath: instancePath + "/requirements", schemaPath: "#/properties/requirements/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema14.properties.requirements.type, parentSchema: schema14.properties.requirements, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err34];
+            } else {
+              vErrors.push(err34);
+            }
+            errors++;
+          }
+        }
+        if (data.obligations !== void 0) {
+          let data20 = data.obligations;
+          if (Array.isArray(data20)) {
+            const len1 = data20.length;
+            for (let i1 = 0; i1 < len1; i1++) {
+              let data21 = data20[i1];
+              const _errs50 = errors;
+              let valid14 = false;
+              let passing1 = null;
+              const _errs51 = errors;
+              if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                if (data21.protocol === void 0) {
+                  const err35 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema15.oneOf[0].required, parentSchema: schema15.oneOf[0], data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err35];
+                  } else {
+                    vErrors.push(err35);
+                  }
+                  errors++;
+                }
+                if (data21.type !== void 0) {
+                  let data22 = data21.type;
+                  if ("abstraction" !== data22) {
+                    const err36 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema15.oneOf[0].properties.type, data: data22 };
+                    if (vErrors === null) {
+                      vErrors = [err36];
+                    } else {
+                      vErrors.push(err36);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.protocol !== void 0) {
+                  let data23 = data21.protocol;
+                  if (typeof data23 !== "string") {
+                    const err37 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[0].properties.protocol.type, parentSchema: schema15.oneOf[0].properties.protocol, data: data23 };
+                    if (vErrors === null) {
+                      vErrors = [err37];
+                    } else {
+                      vErrors.push(err37);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid1 = _errs51 === errors;
+              if (_valid1) {
+                valid14 = true;
+                passing1 = 0;
+              }
+              const _errs55 = errors;
+              if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                if (data21.minimum === void 0) {
+                  const err38 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err38];
+                  } else {
+                    vErrors.push(err38);
+                  }
+                  errors++;
+                }
+                if (data21.maximum === void 0) {
+                  const err39 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err39];
+                  } else {
+                    vErrors.push(err39);
+                  }
+                  errors++;
+                }
+                if (data21.hint === void 0) {
+                  const err40 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err40];
+                  } else {
+                    vErrors.push(err40);
+                  }
+                  errors++;
+                }
+                if (data21.type !== void 0) {
+                  let data24 = data21.type;
+                  if ("integer" !== data24) {
+                    const err41 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema15.oneOf[1].properties.type, data: data24 };
+                    if (vErrors === null) {
+                      vErrors = [err41];
+                    } else {
+                      vErrors.push(err41);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.minimum !== void 0) {
+                  let data25 = data21.minimum;
+                  if (!(typeof data25 == "number") && typeof data25 !== "string") {
+                    const err42 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.minimum.type, parentSchema: schema15.oneOf[1].properties.minimum, data: data25 };
+                    if (vErrors === null) {
+                      vErrors = [err42];
+                    } else {
+                      vErrors.push(err42);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.maximum !== void 0) {
+                  let data26 = data21.maximum;
+                  if (!(typeof data26 == "number") && typeof data26 !== "string") {
+                    const err43 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.maximum.type, parentSchema: schema15.oneOf[1].properties.maximum, data: data26 };
+                    if (vErrors === null) {
+                      vErrors = [err43];
+                    } else {
+                      vErrors.push(err43);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.hint !== void 0) {
+                  let data27 = data21.hint;
+                  if (!(typeof data27 == "number") && typeof data27 !== "string") {
+                    const err44 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.hint.type, parentSchema: schema15.oneOf[1].properties.hint, data: data27 };
+                    if (vErrors === null) {
+                      vErrors = [err44];
+                    } else {
+                      vErrors.push(err44);
+                    }
+                    errors++;
+                  }
+                }
+              }
+              var _valid1 = _errs55 === errors;
+              if (_valid1 && valid14) {
+                valid14 = false;
+                passing1 = [passing1, 1];
+              } else {
+                if (_valid1) {
+                  valid14 = true;
+                  passing1 = 1;
+                }
+                const _errs63 = errors;
+                if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                  if (data21.length === void 0) {
+                    const err45 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err45];
+                    } else {
+                      vErrors.push(err45);
+                    }
+                    errors++;
+                  }
+                  if (data21.hint === void 0) {
+                    const err46 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err46];
+                    } else {
+                      vErrors.push(err46);
+                    }
+                    errors++;
+                  }
+                  if (data21.type !== void 0) {
+                    let data28 = data21.type;
+                    if ("string" !== data28) {
+                      const err47 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema15.oneOf[2].properties.type, data: data28 };
+                      if (vErrors === null) {
+                        vErrors = [err47];
+                      } else {
+                        vErrors.push(err47);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data21.length !== void 0) {
+                    let data29 = data21.length;
+                    if (!(typeof data29 == "number") && typeof data29 !== "string") {
+                      const err48 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/oneOf/2/properties/length/type", keyword: "type", params: { type: schema15.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.length.type, parentSchema: schema15.oneOf[2].properties.length, data: data29 };
+                      if (vErrors === null) {
+                        vErrors = [err48];
+                      } else {
+                        vErrors.push(err48);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data21.hint !== void 0) {
+                    let data30 = data21.hint;
+                    if (!(typeof data30 == "number") && typeof data30 !== "string") {
+                      const err49 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.hint.type, parentSchema: schema15.oneOf[2].properties.hint, data: data30 };
+                      if (vErrors === null) {
+                        vErrors = [err49];
+                      } else {
+                        vErrors.push(err49);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                var _valid1 = _errs63 === errors;
+                if (_valid1 && valid14) {
+                  valid14 = false;
+                  passing1 = [passing1, 2];
+                } else {
+                  if (_valid1) {
+                    valid14 = true;
+                    passing1 = 2;
+                  }
+                  const _errs69 = errors;
+                  if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                    if (data21.type !== void 0) {
+                      let data31 = data21.type;
+                      if ("boolean" !== data31) {
+                        const err50 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema15.oneOf[3].properties.type, data: data31 };
+                        if (vErrors === null) {
+                          vErrors = [err50];
+                        } else {
+                          vErrors.push(err50);
+                        }
+                        errors++;
+                      }
+                    }
+                  }
+                  var _valid1 = _errs69 === errors;
+                  if (_valid1 && valid14) {
+                    valid14 = false;
+                    passing1 = [passing1, 3];
+                  } else {
+                    if (_valid1) {
+                      valid14 = true;
+                      passing1 = 3;
+                    }
+                    const _errs71 = errors;
+                    if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                      if (data21.type !== void 0) {
+                        let data32 = data21.type;
+                        if ("site" !== data32) {
+                          const err51 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema15.oneOf[4].properties.type, data: data32 };
+                          if (vErrors === null) {
+                            vErrors = [err51];
+                          } else {
+                            vErrors.push(err51);
+                          }
+                          errors++;
+                        }
+                      }
+                    }
+                    var _valid1 = _errs71 === errors;
+                    if (_valid1 && valid14) {
+                      valid14 = false;
+                      passing1 = [passing1, 4];
+                    } else {
+                      if (_valid1) {
+                        valid14 = true;
+                        passing1 = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              if (!valid14) {
+                const err52 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf", keyword: "oneOf", params: { passingSchemas: passing1 }, message: "must match exactly one schema in oneOf", schema: schema15.oneOf, parentSchema: schema15, data: data21 };
+                if (vErrors === null) {
+                  vErrors = [err52];
+                } else {
+                  vErrors.push(err52);
+                }
+                errors++;
+              } else {
+                errors = _errs50;
+                if (vErrors !== null) {
+                  if (_errs50) {
+                    vErrors.length = _errs50;
+                  } else {
+                    vErrors = null;
+                  }
+                }
+              }
+              if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                if (data21.type === void 0) {
+                  const err53 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema15.required, parentSchema: schema15, data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err53];
+                  } else {
+                    vErrors.push(err53);
+                  }
+                  errors++;
+                }
+                if (data21.name === void 0) {
+                  const err54 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema15.required, parentSchema: schema15, data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err54];
+                  } else {
+                    vErrors.push(err54);
+                  }
+                  errors++;
+                }
+                for (const key2 in data21) {
+                  if (!(key2 === "type" || key2 === "name" || key2 === "protocol" || key2 === "minimum" || key2 === "maximum" || key2 === "length" || key2 === "hint")) {
+                    const err55 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key2 }, message: "must NOT have additional properties", schema: false, parentSchema: schema15, data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err55];
+                    } else {
+                      vErrors.push(err55);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.type !== void 0) {
+                  let data33 = data21.type;
+                  if (typeof data33 !== "string") {
+                    const err56 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.type.type, parentSchema: schema15.properties.type, data: data33 };
+                    if (vErrors === null) {
+                      vErrors = [err56];
+                    } else {
+                      vErrors.push(err56);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.name !== void 0) {
+                  let data34 = data21.name;
+                  if (typeof data34 === "string") {
+                    if (!pattern1.test(data34)) {
+                      const err57 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data34 };
+                      if (vErrors === null) {
+                        vErrors = [err57];
+                      } else {
+                        vErrors.push(err57);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err58 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.name.type, parentSchema: schema15.properties.name, data: data34 };
+                    if (vErrors === null) {
+                      vErrors = [err58];
+                    } else {
+                      vErrors.push(err58);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.protocol !== void 0) {
+                  let data35 = data21.protocol;
+                  if (typeof data35 !== "string") {
+                    const err59 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.protocol.type, parentSchema: schema15.properties.protocol, data: data35 };
+                    if (vErrors === null) {
+                      vErrors = [err59];
+                    } else {
+                      vErrors.push(err59);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.minimum !== void 0) {
+                  let data36 = data21.minimum;
+                  if (!(typeof data36 == "number") && typeof data36 !== "string") {
+                    const err60 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/type", keyword: "type", params: { type: schema15.properties.minimum.type }, message: "must be number,string", schema: schema15.properties.minimum.type, parentSchema: schema15.properties.minimum, data: data36 };
+                    if (vErrors === null) {
+                      vErrors = [err60];
+                    } else {
+                      vErrors.push(err60);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.maximum !== void 0) {
+                  let data37 = data21.maximum;
+                  if (!(typeof data37 == "number") && typeof data37 !== "string") {
+                    const err61 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/type", keyword: "type", params: { type: schema15.properties.maximum.type }, message: "must be number,string", schema: schema15.properties.maximum.type, parentSchema: schema15.properties.maximum, data: data37 };
+                    if (vErrors === null) {
+                      vErrors = [err61];
+                    } else {
+                      vErrors.push(err61);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.length !== void 0) {
+                  let data38 = data21.length;
+                  if (!(typeof data38 == "number") && typeof data38 !== "string") {
+                    const err62 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/properties/length/type", keyword: "type", params: { type: schema15.properties.length.type }, message: "must be number,string", schema: schema15.properties.length.type, parentSchema: schema15.properties.length, data: data38 };
+                    if (vErrors === null) {
+                      vErrors = [err62];
+                    } else {
+                      vErrors.push(err62);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.hint !== void 0) {
+                  let data39 = data21.hint;
+                  if (!(typeof data39 == "number") && typeof data39 !== "string") {
+                    const err63 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/properties/hint/type", keyword: "type", params: { type: schema15.properties.hint.type }, message: "must be number,string", schema: schema15.properties.hint.type, parentSchema: schema15.properties.hint, data: data39 };
+                    if (vErrors === null) {
+                      vErrors = [err63];
+                    } else {
+                      vErrors.push(err63);
+                    }
+                    errors++;
+                  }
+                }
+              } else {
+                const err64 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema15.type, parentSchema: schema15, data: data21 };
+                if (vErrors === null) {
+                  vErrors = [err64];
+                } else {
+                  vErrors.push(err64);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err65 = { instancePath: instancePath + "/obligations", schemaPath: "#/properties/obligations/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema14.properties.obligations.type, parentSchema: schema14.properties.obligations, data: data20 };
+            if (vErrors === null) {
+              vErrors = [err65];
+            } else {
+              vErrors.push(err65);
+            }
+            errors++;
+          }
+        }
+        if (data.macro !== void 0) {
+          let data40 = data.macro;
+          if (typeof data40 !== "string") {
+            const err66 = { instancePath: instancePath + "/macro", schemaPath: "#/properties/macro/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.macro.type, parentSchema: schema14.properties.macro, data: data40 };
+            if (vErrors === null) {
+              vErrors = [err66];
+            } else {
+              vErrors.push(err66);
+            }
+            errors++;
+          }
+        }
+      } else {
+        const err67 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data };
+        if (vErrors === null) {
+          vErrors = [err67];
+        } else {
+          vErrors.push(err67);
+        }
+        errors++;
+      }
+      validate12.errors = vErrors;
+      return errors === 0;
+    }
+    function validate11(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      let vErrors = null;
+      let errors = 0;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+        if (data.policy === void 0) {
+          const err1 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "policy" }, message: "must have required property 'policy'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err1];
+          } else {
+            vErrors.push(err1);
+          }
+          errors++;
+        }
+        if (data.name === void 0) {
+          const err2 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err2];
+          } else {
+            vErrors.push(err2);
+          }
+          errors++;
+        }
+        if (data.description === void 0) {
+          const err3 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "description" }, message: "must have required property 'description'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err3];
+          } else {
+            vErrors.push(err3);
+          }
+          errors++;
+        }
+        if (data.host === void 0) {
+          const err4 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "host" }, message: "must have required property 'host'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err4];
+          } else {
+            vErrors.push(err4);
+          }
+          errors++;
+        }
+        if (data.join === void 0) {
+          const err5 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "join" }, message: "must have required property 'join'", schema: schema12.required, parentSchema: schema12, data };
+          if (vErrors === null) {
+            vErrors = [err5];
+          } else {
+            vErrors.push(err5);
+          }
+          errors++;
+        }
+        for (const key0 in data) {
+          if (!(key0 === "type" || key0 === "policy" || key0 === "name" || key0 === "description" || key0 === "host" || key0 === "join")) {
+            const err6 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties", schema: false, parentSchema: schema12, data };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("protocol" !== data0) {
+            const err7 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "protocol" }, message: "must be equal to constant", schema: "protocol", parentSchema: schema12.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err7];
+            } else {
+              vErrors.push(err7);
+            }
+            errors++;
+          }
+        }
+        if (data.policy !== void 0) {
+          let data1 = data.policy;
+          if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)))) {
+            const err8 = { instancePath: instancePath + "/policy", schemaPath: "#/properties/policy/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema12.properties.policy.type, parentSchema: schema12.properties.policy, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err8];
+            } else {
+              vErrors.push(err8);
+            }
+            errors++;
+          }
+        }
+        if (data.name !== void 0) {
+          let data2 = data.name;
+          if (typeof data2 === "string") {
+            if (!pattern0.test(data2)) {
+              const err9 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification4/pattern", keyword: "pattern", params: { pattern: "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, message: 'must match pattern "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$"', schema: "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", parentSchema: schema13, data: data2 };
+              if (vErrors === null) {
+                vErrors = [err9];
+              } else {
+                vErrors.push(err9);
+              }
+              errors++;
+            }
+          } else {
+            const err10 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification4/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema13.type, parentSchema: schema13, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err10];
+            } else {
+              vErrors.push(err10);
+            }
+            errors++;
+          }
+        }
+        if (data.description !== void 0) {
+          let data3 = data.description;
+          if (typeof data3 !== "string") {
+            const err11 = { instancePath: instancePath + "/description", schemaPath: "#/properties/description/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.description.type, parentSchema: schema12.properties.description, data: data3 };
+            if (vErrors === null) {
+              vErrors = [err11];
+            } else {
+              vErrors.push(err11);
+            }
+            errors++;
+          }
+        }
+        if (data.host !== void 0) {
+          if (!validate12(data.host, { instancePath: instancePath + "/host", parentData: data, parentDataProperty: "host", rootData })) {
+            vErrors = vErrors === null ? validate12.errors : vErrors.concat(validate12.errors);
+            errors = vErrors.length;
+          }
+        }
+        if (data.join !== void 0) {
+          if (!validate12(data.join, { instancePath: instancePath + "/join", parentData: data, parentDataProperty: "join", rootData })) {
+            vErrors = vErrors === null ? validate12.errors : vErrors.concat(validate12.errors);
+            errors = vErrors.length;
+          }
+        }
+      } else {
+        const err12 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema12.type, parentSchema: schema12, data };
+        if (vErrors === null) {
+          vErrors = [err12];
+        } else {
+          vErrors.push(err12);
+        }
+        errors++;
+      }
+      validate11.errors = vErrors;
+      return errors === 0;
+    }
+    function validate10(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      if (!validate11(data, { instancePath, parentData, parentDataProperty, rootData })) {
+        vErrors = vErrors === null ? validate11.errors : vErrors.concat(validate11.errors);
+        errors = vErrors.length;
+      }
+      validate10.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["4287aa76"] = validate16;
+    const schema17 = { "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "anyOf": [{ "required": ["type"] }, { "required": ["protocol"] }], "$id": "4287aa76" };
+    function validate16(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema17.anyOf[0].required, parentSchema: schema17.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.protocol === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema17.anyOf[1].required, parentSchema: schema17.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+      }
+      if (!valid0) {
+        const err2 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema17.anyOf, parentSchema: schema17, data };
+        if (vErrors === null) {
+          vErrors = [err2];
+        } else {
+          vErrors.push(err2);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("abstraction" !== data0) {
+            const err3 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema17.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err3];
+            } else {
+              vErrors.push(err3);
+            }
+            errors++;
+          }
+        }
+        if (data.protocol !== void 0) {
+          let data1 = data.protocol;
+          if (typeof data1 !== "string") {
+            const err4 = { instancePath: instancePath + "/protocol", schemaPath: "#/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema17.properties.protocol.type, parentSchema: schema17.properties.protocol, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err4];
+            } else {
+              vErrors.push(err4);
+            }
+            errors++;
+          }
+        }
+      }
+      validate16.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["17a0aba3"] = validate17;
+    const schema18 = { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "17a0aba3" };
+    function validate17(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema18.anyOf[0].required, parentSchema: schema18.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.minimum === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema18.anyOf[1].required, parentSchema: schema18.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+        if (!valid0) {
+          const _errs3 = errors;
+          if (data && typeof data == "object" && !Array.isArray(data)) {
+            if (data.maximum === void 0) {
+              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema18.anyOf[2].required, parentSchema: schema18.anyOf[2], data };
+              if (vErrors === null) {
+                vErrors = [err2];
+              } else {
+                vErrors.push(err2);
+              }
+              errors++;
+            }
+          }
+          var _valid0 = _errs3 === errors;
+          valid0 = valid0 || _valid0;
+          if (!valid0) {
+            const _errs4 = errors;
+            if (data && typeof data == "object" && !Array.isArray(data)) {
+              if (data.hint === void 0) {
+                const err3 = { instancePath, schemaPath: "#/anyOf/3/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema18.anyOf[3].required, parentSchema: schema18.anyOf[3], data };
+                if (vErrors === null) {
+                  vErrors = [err3];
+                } else {
+                  vErrors.push(err3);
+                }
+                errors++;
+              }
+            }
+            var _valid0 = _errs4 === errors;
+            valid0 = valid0 || _valid0;
+          }
+        }
+      }
+      if (!valid0) {
+        const err4 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema18.anyOf, parentSchema: schema18, data };
+        if (vErrors === null) {
+          vErrors = [err4];
+        } else {
+          vErrors.push(err4);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("integer" !== data0) {
+            const err5 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema18.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err5];
+            } else {
+              vErrors.push(err5);
+            }
+            errors++;
+          }
+        }
+        if (data.minimum !== void 0) {
+          let data1 = data.minimum;
+          if (!(typeof data1 == "number") && typeof data1 !== "string") {
+            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/type", keyword: "type", params: { type: schema18.properties.minimum.type }, message: "must be number,string", schema: schema18.properties.minimum.type, parentSchema: schema18.properties.minimum, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+        if (data.maximum !== void 0) {
+          let data2 = data.maximum;
+          if (!(typeof data2 == "number") && typeof data2 !== "string") {
+            const err7 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/type", keyword: "type", params: { type: schema18.properties.maximum.type }, message: "must be number,string", schema: schema18.properties.maximum.type, parentSchema: schema18.properties.maximum, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err7];
+            } else {
+              vErrors.push(err7);
+            }
+            errors++;
+          }
+        }
+        if (data.hint !== void 0) {
+          let data3 = data.hint;
+          if (!(typeof data3 == "number") && typeof data3 !== "string") {
+            const err8 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema18.properties.hint.type }, message: "must be number,string", schema: schema18.properties.hint.type, parentSchema: schema18.properties.hint, data: data3 };
+            if (vErrors === null) {
+              vErrors = [err8];
+            } else {
+              vErrors.push(err8);
+            }
+            errors++;
+          }
+        }
+      }
+      validate17.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["318105ed"] = validate18;
+    const schema19 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "318105ed" };
+    function validate18(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema19.anyOf[0].required, parentSchema: schema19.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.length === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema19.anyOf[1].required, parentSchema: schema19.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+        if (!valid0) {
+          const _errs3 = errors;
+          if (data && typeof data == "object" && !Array.isArray(data)) {
+            if (data.hint === void 0) {
+              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema19.anyOf[2].required, parentSchema: schema19.anyOf[2], data };
+              if (vErrors === null) {
+                vErrors = [err2];
+              } else {
+                vErrors.push(err2);
+              }
+              errors++;
+            }
+          }
+          var _valid0 = _errs3 === errors;
+          valid0 = valid0 || _valid0;
+        }
+      }
+      if (!valid0) {
+        const err3 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema19.anyOf, parentSchema: schema19, data };
+        if (vErrors === null) {
+          vErrors = [err3];
+        } else {
+          vErrors.push(err3);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("string" !== data0) {
+            const err4 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema19.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err4];
+            } else {
+              vErrors.push(err4);
+            }
+            errors++;
+          }
+        }
+        if (data.length !== void 0) {
+          let data1 = data.length;
+          if (!(typeof data1 == "number") && typeof data1 !== "string") {
+            const err5 = { instancePath: instancePath + "/length", schemaPath: "#/properties/length/type", keyword: "type", params: { type: schema19.properties.length.type }, message: "must be number,string", schema: schema19.properties.length.type, parentSchema: schema19.properties.length, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err5];
+            } else {
+              vErrors.push(err5);
+            }
+            errors++;
+          }
+        }
+        if (data.hint !== void 0) {
+          let data2 = data.hint;
+          if (!(typeof data2 == "number") && typeof data2 !== "string") {
+            const err6 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema19.properties.hint.type }, message: "must be number,string", schema: schema19.properties.hint.type, parentSchema: schema19.properties.hint, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+      }
+      validate18.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["2c01de3a"] = validate19;
+    const schema20 = { "properties": { "type": { "const": "boolean" } }, "anyOf": [{ "required": ["type"] }], "$id": "2c01de3a" };
+    function validate19(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema20.anyOf[0].required, parentSchema: schema20.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema20.anyOf, parentSchema: schema20, data };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("boolean" !== data0) {
+            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema20.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err2];
+            } else {
+              vErrors.push(err2);
+            }
+            errors++;
+          }
+        }
+      }
+      validate19.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["1d36f00b"] = validate20;
+    const schema21 = { "properties": { "type": { "const": "site" } }, "anyOf": [{ "required": ["type"] }], "$id": "1d36f00b" };
+    function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema21.anyOf[0].required, parentSchema: schema21.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema21.anyOf, parentSchema: schema21, data };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("site" !== data0) {
+            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema21.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err2];
+            } else {
+              vErrors.push(err2);
+            }
+            errors++;
+          }
+        }
+      }
+      validate20.errors = vErrors;
+      return errors === 0;
+    }
+  })(module_protocolSpec, module_protocolSpec.exports);
+  var validateFns2 = module_protocolSpec.exports;
+  var rootSchema2 = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Emergent Specification (Protocol)",
+    "$ref": "#/$defs/protocolSpec",
+    "$defs": {
+      "classification4": {
+        "type": "string",
+        "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$"
+      },
+      "classification5": {
+        "type": "string",
+        "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$"
+      },
+      "requirement": {
+        "type": "object",
+        "required": [
+          "type",
+          "name"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "abstraction"
+              },
+              "protocol": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "protocol"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "integer"
+              },
+              "minimum": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "maximum": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "hint": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum",
+              "hint"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "string"
+              },
+              "length": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "hint": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "length",
+              "hint"
+            ]
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "site"
+              }
+            }
+          }
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[\\w .(),-]+$"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "maximum": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "length": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "hint": {
+            "type": [
+              "number",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "obligation": {
+        "$ref": "#/$defs/requirement"
+      },
+      "role": {
+        "type": "object",
+        "required": [
+          "requirements",
+          "obligations",
+          "macro"
+        ],
+        "properties": {
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/requirement"
+            }
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/obligation"
+            }
+          },
+          "macro": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "supplierSpec": {
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "description",
+          "requirements",
+          "obligations",
+          "supplier"
+        ],
+        "properties": {
+          "type": {
+            "const": "supplier"
+          },
+          "name": {
+            "$ref": "#/$defs/classification5"
+          },
+          "description": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/requirement"
+            }
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/obligation"
+            }
+          },
+          "supplier": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "protocolSpec": {
+        "type": "object",
+        "required": [
+          "type",
+          "policy",
+          "name",
+          "description",
+          "host",
+          "join"
+        ],
+        "properties": {
+          "type": {
+            "const": "protocol"
+          },
+          "policy": {
+            "type": "integer"
+          },
+          "name": {
+            "$ref": "#/$defs/classification4"
+          },
+          "description": {
+            "type": "string"
+          },
+          "host": {
+            "$ref": "#/$defs/role"
+          },
+          "join": {
+            "$ref": "#/$defs/role"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "$id": "protocolSpec"
+  };
+
+  // webview-src/validation/validatorMap.ts
+  var CONTRACT_SCHEMA_ID = "contractSpec";
+  var PROTOCOL_SCHEMA_ID = "protocolSpec";
+  var validatorMap = {
+    [CONTRACT_SCHEMA_ID]: createPrecompiledValidator(
+      validateFns,
+      rootSchema
+    ),
+    [PROTOCOL_SCHEMA_ID]: createPrecompiledValidator(
+      validateFns2,
+      rootSchema2
+    )
+  };
+  function getValidatorForSchema(schemaId) {
+    if (!schemaId) {
+      return void 0;
+    }
+    return validatorMap[schemaId];
+  }
+  function validateWithPrecompiledValidator(formData, schemaForUi, baseSchema, uiSchema) {
+    const schemaId = (schemaForUi ?? baseSchema)?.$id;
+    if (!schemaId || !baseSchema) {
+      return void 0;
+    }
+    const validator = getValidatorForSchema(schemaId);
+    if (!validator) {
+      return void 0;
+    }
+    return validator.validateFormData(formData, baseSchema, void 0, void 0, uiSchema);
+  }
+
   // webview-src/App.tsx
   var import_jsx_runtime50 = __toESM(require_jsx_runtime());
   var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
@@ -45547,6 +49154,25 @@
       }),
       []
     );
+    const formValidator = (0, import_react21.useMemo)(() => {
+      const baseSchema = schema;
+      if (!baseSchema) {
+        return void 0;
+      }
+      const validator = getValidatorForSchema((enhancedSchema ?? baseSchema)?.$id);
+      if (!validator) {
+        return void 0;
+      }
+      if (!enhancedSchema) {
+        return validator;
+      }
+      return {
+        ...validator,
+        validateFormData: (formData2, _schema, customValidate, transformErrors, ui) => validator.validateFormData(formData2, baseSchema, customValidate, transformErrors, ui),
+        rawValidation: (_schema, formData2) => validator.rawValidation(baseSchema, formData2),
+        isValid: (_schema, formData2, _rootSchema) => validator.isValid(baseSchema, formData2, baseSchema)
+      };
+    }, [enhancedSchema, schema]);
     const widgets2 = (0, import_react21.useMemo)(
       () => ({
         ContractProtocolInput: ContractProtocolCompletionWidget,
@@ -45635,16 +49261,14 @@
       }
       validationTimer.current = window.setTimeout(() => {
         const activeSchema = enhancedSchema ?? schema;
-        if (!activeSchema) {
+        if (!activeSchema || !schema) {
           return;
         }
-        const result = lib_default2.validateFormData(
-          liveFormDataRef.current ?? {},
-          activeSchema,
-          void 0,
-          void 0,
-          uiSchema
-        );
+        const result = validateWithPrecompiledValidator(liveFormDataRef.current ?? {}, activeSchema, schema, uiSchema);
+        if (!result) {
+          console.warn("No precompiled validator found for schema", activeSchema?.$id);
+          return;
+        }
         setFormErrors(result.errors ?? []);
         const nextErrorSchema = result.errorSchema;
         setExtraErrors(hasErrorsInSchema(nextErrorSchema) ? nextErrorSchema : void 0);
@@ -45738,14 +49362,18 @@
         /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Schema validation" }),
         /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) })
       ] }) : null,
-      !schema ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Loading schema\u2026" }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+      !schema ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Loading schema\u2026" }) : !formValidator ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerError, children: [
+        "Missing validator for schema ",
+        schema?.$id ?? "(unknown)",
+        "."
+      ] }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
         lib_default,
         {
           schema: enhancedSchema ?? schema,
-          validator: lib_default2,
+          validator: formValidator,
           formData: formData ?? {},
           liveValidate: false,
-          showErrorList: true,
+          showErrorList: false,
           uiSchema,
           templates: templates2,
           widgets: widgets2,
