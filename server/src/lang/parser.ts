@@ -8,6 +8,9 @@ import {
   NodeKind,
   ProgramNode,
   StatementNode,
+  JobNode,
+  DefNode,
+  Statement,
   UnaryNode,
   ExpressionNode,
   ClassificationNode,
@@ -51,7 +54,7 @@ function expect(state: ParserState, kind: TokenKind, message: string) {
 export function parseText(text: string): { program: ProgramNode; diagnostics: SyntaxDiagnostic[] } {
   const { tokens, diagnostics } = lexText(text);
   const state: ParserState = { tokens, index: 0, diagnostics: [...diagnostics] };
-  const statements: StatementNode[] = [];
+  const statements: Statement[] = [];
 
   while (current(state).kind !== TokenKind.EOF) {
     // Skip stray newlines
@@ -74,7 +77,7 @@ export function parseText(text: string): { program: ProgramNode; diagnostics: Sy
   return { program, diagnostics: state.diagnostics };
 }
 
-function parseStatement(state: ParserState): StatementNode {
+function parseStatement(state: ParserState): Statement {
   const startTok = current(state);
   if (startTok.kind === TokenKind.Keyword && startTok.lexeme.toLowerCase() === "defaults") {
     return parseDefaults(state);
@@ -84,11 +87,17 @@ function parseStatement(state: ParserState): StatementNode {
     const stmt: StatementNode = {
       kind: NodeKind.Statement,
       expression: ifNode as any,
-      targets: [],
+      targets: ifNode.targets ?? [],
       block: undefined,
       range: ifNode.range,
     };
     return stmt;
+  }
+  if (startTok.kind === TokenKind.Keyword && startTok.lexeme.toLowerCase() === "job") {
+    return parseJob(state);
+  }
+  if (startTok.kind === TokenKind.Keyword && startTok.lexeme.toLowerCase() === "def") {
+    return parseDef(state);
   }
 
   const expr = parseExpression(state, 0);
@@ -200,8 +209,115 @@ function parseIf(state: ParserState): IfNode {
   };
 }
 
+function parseParameterList(state: ParserState, params: Token[]) {
+  expect(state, TokenKind.LParen, "Expected '('");
+  if (current(state).kind === TokenKind.RParen) {
+    advance(state);
+    return;
+  }
+  while (current(state).kind !== TokenKind.EOF) {
+    if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Keyword || current(state).kind === TokenKind.Boolean) {
+      params.push(advance(state));
+    } else {
+      state.diagnostics.push({ message: "Expected parameter name", range: current(state).range });
+      advance(state);
+    }
+    if (current(state).kind === TokenKind.Comma) {
+      advance(state);
+      continue;
+    }
+    break;
+  }
+  expect(state, TokenKind.RParen, "Expected ')'");
+}
+
+function parseInlineTargets(state: ParserState): Token[] {
+  const targets: Token[] = [];
+  while (current(state).kind !== TokenKind.EOF) {
+    if (current(state).kind === TokenKind.Colon) {
+      advance(state);
+      break;
+    }
+    if (current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.LBrace) {
+      break;
+    }
+    if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Keyword || current(state).kind === TokenKind.Boolean) {
+      targets.push(advance(state));
+      if (current(state).kind === TokenKind.Comma) {
+        advance(state);
+        continue;
+      }
+      continue;
+    }
+    if (current(state).kind === TokenKind.Comma) {
+      advance(state);
+      continue;
+    }
+    break;
+  }
+  return targets;
+}
+
+function parseJob(state: ParserState): JobNode {
+  const jobTok = expect(state, TokenKind.Keyword, "Expected 'job'");
+  let classification: Token | undefined;
+  if (current(state).kind === TokenKind.Classification) {
+    classification = advance(state);
+  }
+  const params: Token[] = [];
+  if (current(state).kind === TokenKind.LParen) {
+    parseParameterList(state, params);
+  }
+  const targets = parseInlineTargets(state);
+  const body = parseDelimitedBlock(state, ["end"]);
+  if (!(current(state).kind === TokenKind.Keyword && current(state).lexeme.toLowerCase() === "end")) {
+    state.diagnostics.push({ message: "Expected 'end' to close job", range: current(state).range });
+  } else {
+    advance(state);
+  }
+  return {
+    kind: NodeKind.Job,
+    classification,
+    params,
+    targets,
+    body,
+    range: { start: jobTok.range.start, end: body.range.end },
+  };
+}
+
+function parseDef(state: ParserState): DefNode {
+  const defTok = expect(state, TokenKind.Keyword, "Expected 'def'");
+  let name = defTok;
+  if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Keyword) {
+    name = advance(state);
+  } else {
+    state.diagnostics.push({ message: "Expected identifier after 'def'", range: current(state).range });
+  }
+  const params: Token[] = [];
+  if (current(state).kind === TokenKind.LParen) {
+    parseParameterList(state, params);
+  } else {
+    state.diagnostics.push({ message: "Expected '(' after def name", range: current(state).range });
+  }
+  const targets = parseInlineTargets(state);
+  const body = parseDelimitedBlock(state, ["end"]);
+  if (!(current(state).kind === TokenKind.Keyword && current(state).lexeme.toLowerCase() === "end")) {
+    state.diagnostics.push({ message: "Expected 'end' to close def", range: current(state).range });
+  } else {
+    advance(state);
+  }
+  return {
+    kind: NodeKind.Def,
+    name,
+    params,
+    targets,
+    body,
+    range: { start: defTok.range.start, end: body.range.end },
+  };
+}
+
 function parseDelimitedBlock(state: ParserState, endKeywords: string[]): BlockNode {
-  const statements: StatementNode[] = [];
+  const statements: Statement[] = [];
 
   while (current(state).kind !== TokenKind.EOF) {
     if (current(state).kind === TokenKind.Keyword && endKeywords.includes(current(state).lexeme.toLowerCase())) {
@@ -229,7 +345,7 @@ function parseDelimitedBlock(state: ParserState, endKeywords: string[]): BlockNo
 
 function parseBraceBlock(state: ParserState): BlockNode {
   const lbrace = expect(state, TokenKind.LBrace, "Expected '{'");
-  const statements: StatementNode[] = [];
+  const statements: Statement[] = [];
   while (current(state).kind !== TokenKind.EOF && current(state).kind !== TokenKind.RBrace) {
     if (current(state).kind === TokenKind.Newline) {
       advance(state);

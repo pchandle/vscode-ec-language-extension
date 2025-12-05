@@ -7,7 +7,7 @@ import * as path from "path";
 
 describe("lexer", () => {
   it("tokenizes canonical example", () => {
-    const sample = fs.readFileSync(path.join(__dirname, "../../docs/canonical-expression-example.dla"), "utf8");
+    const sample = fs.readFileSync(path.join(__dirname, "../../../../docs/canonical-expression-example.dla"), "utf8");
     const { tokens, diagnostics } = lexText(sample);
     assert.equal(diagnostics.length, 0, `Expected no lex diagnostics, got ${diagnostics[0]?.message}`);
     const hasJob = tokens.some((t) => t.kind === TokenKind.Keyword && t.lexeme.toLowerCase() === "job");
@@ -21,7 +21,7 @@ describe("lexer", () => {
 
 describe("parser", () => {
   it("parses canonical example without syntax errors", () => {
-    const sample = fs.readFileSync(path.join(__dirname, "../../docs/canonical-expression-example.dla"), "utf8");
+    const sample = fs.readFileSync(path.join(__dirname, "../../../../docs/canonical-expression-example.dla"), "utf8");
     const { diagnostics, program } = parseText(sample);
     assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
     assert.ok(program.statements.length > 0, "expected statements in program");

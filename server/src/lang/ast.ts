@@ -4,6 +4,8 @@ import { Token, TokenKind } from "./tokens";
 export enum NodeKind {
   Program = "Program",
   Statement = "Statement",
+  Job = "Job",
+  Def = "Def",
   If = "If",
   Block = "Block",
   Binary = "Binary",
@@ -23,7 +25,7 @@ export interface BaseNode {
 
 export interface ProgramNode extends BaseNode {
   kind: NodeKind.Program;
-  statements: StatementNode[];
+  statements: Statement[];
 }
 
 export interface StatementNode extends BaseNode {
@@ -31,6 +33,22 @@ export interface StatementNode extends BaseNode {
   expression: ExpressionNode | null;
   targets: Token[];
   block?: BlockNode;
+}
+
+export interface JobNode extends BaseNode {
+  kind: NodeKind.Job;
+  classification?: Token;
+  params: Token[];
+  targets: Token[];
+  body: BlockNode;
+}
+
+export interface DefNode extends BaseNode {
+  kind: NodeKind.Def;
+  name: Token;
+  params: Token[];
+  targets: Token[];
+  body: BlockNode;
 }
 
 export interface IfNode extends BaseNode {
@@ -43,7 +61,7 @@ export interface IfNode extends BaseNode {
 
 export interface BlockNode extends BaseNode {
   kind: NodeKind.Block;
-  statements: StatementNode[];
+  statements: Statement[];
 }
 
 export type ScopeRefNode = BaseNode & { kind: NodeKind.Scope; token: Token };
@@ -87,7 +105,9 @@ export interface ClassificationNode extends BaseNode {
   token: Token;
 }
 
-export type AnyNode = ProgramNode | StatementNode | IfNode | BlockNode | ExpressionNode | ScopeRefNode;
+export type Statement = StatementNode | JobNode | DefNode;
+
+export type AnyNode = ProgramNode | Statement | IfNode | BlockNode | ExpressionNode | ScopeRefNode;
 
 export function rangeFromTokens(start: Token, end: Token): Range {
   return { start: start.range.start, end: end.range.end };

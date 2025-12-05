@@ -1,7 +1,14 @@
-// Canonical expression sample for lexer/parser tests
+// Canonical expression sample for lexer/parser + resolver tests
+
+// Metadata only; does not introduce bindings.
 defaults: data, default, x64, aptissio
 
-job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS)
+// Top-level sub without a surrounding job; lives in the outer scope.
+sub /data/new/integer/default/x64(1, 10) -> OUTER_INT
+
+job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
+
+  // Parameters are in scope throughout the expression body.
 
   // numeric literals (signed, hex, octal, binary)
   -42 -> NEG_INT
@@ -20,11 +27,30 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS)
   // arithmetic, comparison, logical operators with precedence
   (lhs * 2 + rhs / 3 - 5) % 4 == 1 && !FLAGS -> CHECK_EXPR
 
-  // block + if/else + inline expression weave
+  // def introduces a callable binding in the enclosing scope; params are local to the def.
+  // An explicit target on def binds the obligation/result.
+  def add_and_scale(a, b) result:
+    (a + b) * 2 -> result
+  end
+
+  // calls can use defs; targets after -> declare in the current scope.
+  add_and_scale(NEG_INT, HEX_INT) -> DOUBLE_SUM
+
+  // if/else creates child scopes; shadowing across scopes is allowed.
   if CHECK_EXPR then
-    "ok"
+    "ok" -> STATUS_OUT
+    DOUBLE_SUM + lhs -> lhs  // shadows parameter in this branch only
   else
-    "fail"
-  end -> STATUS_OUT
+    "fail" -> STATUS_OUT
+  end
+
+  // Braced blocks do not create a new scope; `$` is the incoming value.
+  HELLO_STR -> {
+    $ + "!" -> EXCLAMATION
+    sub pack/bytes/constant($, EXCLAMATION) -> EXCLAMATION_BYTES
+  }
+
+  // Inline call targets; `_` is ignored.
+  sub /data/compare/integer($, NEG_INT, BIN_INT) -> _, IS_EQUAL
 
 end

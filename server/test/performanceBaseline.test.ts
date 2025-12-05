@@ -1,3 +1,4 @@
+/// <reference path="./globals.d.ts" />
 import { expect } from "chai";
 import { performance } from "perf_hooks";
 import { TextDocument } from "vscode-languageserver-textdocument";
