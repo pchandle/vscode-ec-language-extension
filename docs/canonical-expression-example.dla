@@ -36,6 +36,19 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
   // calls can use defs; targets after -> declare in the current scope.
   add_and_scale(NEG_INT, HEX_INT) -> DOUBLE_SUM
 
+  // built-in functions on integers and strings
+  max(NEG_INT, HEX_INT, BIN_INT) -> MAX_INT
+  min(NEG_INT, HEX_INT) -> MIN_INT
+  concat("a", "b", "c") -> CONCAT_STR
+  len(HELLO_STR) -> HELLO_LEN
+  trunc(HELLO_STR, 5) -> HELLO_TRUNC
+  replace(HELLO_STR, "Hello", "Hi") -> HELLO_REPLACED
+  int2str(DOUBLE_SUM) -> DOUBLE_STR
+  escape(HELLO_STR) -> HELLO_ESCAPED
+  pack("int32le", DOUBLE_SUM) -> PACKED_BYTES
+  pad("*", HELLO_STR, 4) -> PADDED_STR
+  maxlen(HELLO_STR) -> MAX_ALLOWED_LEN
+
   // if/else creates child scopes; shadowing across scopes is allowed.
   if CHECK_EXPR then
     "ok" -> STATUS_OUT

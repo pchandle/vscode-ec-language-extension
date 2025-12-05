@@ -1,7 +1,7 @@
 import { strict as assert } from "assert";
-import { parseText } from "../src/lang/parser";
-import { lexText } from "../src/lang/lexer";
-import { TokenKind } from "../src/lang/tokens";
+import { parseText } from "../lang/parser";
+import { lexText } from "../lang/lexer";
+import { TokenKind } from "../lang/tokens";
 import * as fs from "fs";
 import * as path from "path";
 

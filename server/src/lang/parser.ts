@@ -392,19 +392,19 @@ function parseTargetList(state: ParserState, targets: Token[]) {
 }
 
 const PRECEDENCE: Partial<Record<TokenKind, number>> = {
-  [TokenKind.Percent]: 2,
-  [TokenKind.Star]: 3,
-  [TokenKind.Slash]: 3,
-  [TokenKind.Minus]: 4,
-  [TokenKind.Plus]: 4,
-  [TokenKind.GreaterThan]: 5,
-  [TokenKind.LessThan]: 5,
-  [TokenKind.GreaterEquals]: 5,
-  [TokenKind.LessEquals]: 5,
-  [TokenKind.EqualsEquals]: 6,
-  [TokenKind.BangEquals]: 6,
-  [TokenKind.AndAnd]: 7,
-  [TokenKind.OrOr]: 8,
+  [TokenKind.OrOr]: 1,
+  [TokenKind.AndAnd]: 2,
+  [TokenKind.EqualsEquals]: 3,
+  [TokenKind.BangEquals]: 3,
+  [TokenKind.GreaterThan]: 4,
+  [TokenKind.LessThan]: 4,
+  [TokenKind.GreaterEquals]: 4,
+  [TokenKind.LessEquals]: 4,
+  [TokenKind.Minus]: 5,
+  [TokenKind.Plus]: 5,
+  [TokenKind.Percent]: 6,
+  [TokenKind.Star]: 6,
+  [TokenKind.Slash]: 6,
 };
 
 function getPrecedence(token: Token): number {

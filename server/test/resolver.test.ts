@@ -1,8 +1,8 @@
 import { strict as assert } from "assert";
 import * as fs from "fs";
 import * as path from "path";
-import { parseText } from "../src/lang/parser";
-import { resolveProgram } from "../src/lang/resolver";
+import { parseText } from "../lang/parser";
+import { resolveProgram } from "../lang/resolver";
 
 describe("resolver", () => {
   it("resolves canonical sample without diagnostics", () => {

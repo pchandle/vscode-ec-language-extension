@@ -6,6 +6,6 @@
 		"declaration": false,
 		"noEmit": false
 	},
-	"include": ["test", "src"],
+	"include": ["test", "src", "lang"],
 	"exclude": ["node_modules", ".vscode-test"]
 }

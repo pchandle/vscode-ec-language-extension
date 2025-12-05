@@ -1,17 +1,5 @@
 import { SyntaxDiagnostic, Token, TokenKind } from "./tokens";
-import {
-  BlockNode,
-  DefNode,
-  ExpressionNode,
-  IdentifierNode,
-  IfNode,
-  JobNode,
-  NodeKind,
-  ProgramNode,
-  QualifiedNode,
-  ScopeRefNode,
-  Statement,
-} from "./ast";
+import { BlockNode, DefNode, ExpressionNode, IdentifierNode, IfNode, JobNode, NodeKind, ProgramNode, QualifiedNode, ScopeRefNode, Statement } from "./ast";
 
 type BindingKind = "param" | "target" | "def" | "builtin";
 type BindingOrigin = "header" | "body" | "builtin";
@@ -32,10 +20,30 @@ const BUILTIN_SCOPE_TOKEN: Token = {
   lexeme: "$",
   range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
 };
+const BUILTIN_FUNCTION_TOKENS: Token[] = [
+  "max",
+  "min",
+  "concat",
+  "len",
+  "maxlen",
+  "trunc",
+  "replace",
+  "escape",
+  "int2str",
+  "pack",
+  "pad",
+].map((lexeme) => ({
+  kind: TokenKind.Keyword,
+  lexeme,
+  range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+}));
 
 function makeScope(parent?: Scope): Scope {
   const scope: Scope = { parent, bindings: new Map<string, Binding>() };
   scope.bindings.set("$", { name: BUILTIN_SCOPE_TOKEN, kind: "builtin", origin: "builtin" });
+  for (const token of BUILTIN_FUNCTION_TOKENS) {
+    scope.bindings.set(token.lexeme, { name: token, kind: "builtin", origin: "builtin" });
+  }
   return scope;
 }
 
@@ -129,6 +137,7 @@ function resolveExpression(expr: ExpressionNode | null, scope: Scope, diagnostic
 }
 
 function resolveBlock(block: BlockNode, scope: Scope, diagnostics: SyntaxDiagnostic[]) {
+  predeclareBlock(block, scope, diagnostics);
   for (const stmt of block.statements) {
     resolveStatement(stmt, scope, diagnostics);
   }
@@ -160,8 +169,6 @@ function resolveStatement(stmt: Statement, scope: Scope, diagnostics: SyntaxDiag
     }
     case NodeKind.Def: {
       const def = stmt as DefNode;
-      // def name is visible in enclosing scope
-      declare(scope, def.name, "def", diagnostics, "header");
       const defScope = makeScope(scope);
       for (const param of def.params) {
         declare(defScope, param, "param", diagnostics, "header");
@@ -174,11 +181,6 @@ function resolveStatement(stmt: Statement, scope: Scope, diagnostics: SyntaxDiag
     }
     case NodeKind.Statement: {
       resolveExpression(stmt.expression, scope, diagnostics);
-
-      for (const target of stmt.targets) {
-        declare(scope, target, "target", diagnostics, "body");
-      }
-
       if (stmt.block) {
         // Braced blocks do not create new scopes; they leak to the current scope.
         resolveBlock(stmt.block, scope, diagnostics);
@@ -193,8 +195,29 @@ function resolveStatement(stmt: Statement, scope: Scope, diagnostics: SyntaxDiag
 export function resolveProgram(program: ProgramNode): { diagnostics: SyntaxDiagnostic[] } {
   const diagnostics: SyntaxDiagnostic[] = [];
   const rootScope = makeScope();
+  predeclareBlock(program as unknown as BlockNode, rootScope, diagnostics);
   for (const stmt of program.statements) {
     resolveStatement(stmt, rootScope, diagnostics);
   }
   return { diagnostics };
+}
+
+function predeclareBlock(block: BlockNode, scope: Scope, diagnostics: SyntaxDiagnostic[]) {
+  for (const stmt of block.statements) {
+    switch (stmt.kind) {
+      case NodeKind.Def: {
+        const def = stmt as DefNode;
+        declare(scope, def.name, "def", diagnostics, "header");
+        continue;
+      }
+      case NodeKind.Statement: {
+        for (const target of stmt.targets) {
+          declare(scope, target, "target", diagnostics, "body");
+        }
+        continue;
+      }
+      default:
+        continue;
+    }
+  }
 }
