@@ -31,6 +31,7 @@ import {
 } from './completionSupport';
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 import { collectDiagnostics } from './diagnostics';
+import { getTypeHoverMarkdown } from './typeHover';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -334,6 +335,43 @@ function renderStyledHover(spec: RemoteContractSpec, classification: string): st
 	return parts.join('\n\n');
 }
 
+function normalizeClassification(raw: string, defaults: { layer: string; variation: string; platform: string }) {
+	const withoutSupplier = raw.split('@')[0] ?? raw;
+	const beforeParen = withoutSupplier.split('(')[0] ?? withoutSupplier;
+	const cleaned = beforeParen.trim().replace(/^\/+/, '');
+	const segments = cleaned.split('/').filter(s => s.length > 0);
+	const applyDefault = (seg: string | undefined, fallback: string) => (!seg || seg === '.' ? fallback : seg);
+
+	let layer = applyDefault(defaults.layer, defaults.layer);
+	let verb = '';
+	let subject = '';
+	let variation = applyDefault(defaults.variation, defaults.variation);
+	let platform = applyDefault(defaults.platform, defaults.platform);
+
+	if (segments.length >= 5) {
+		[layer, verb, subject, variation, platform] = segments;
+	} else if (segments.length === 4) {
+		[verb, subject, variation, platform] = segments;
+	} else if (segments.length === 3) {
+		[verb, subject, variation] = segments;
+	} else if (segments.length === 2) {
+		[verb, subject] = segments;
+	} else if (segments.length === 1) {
+		verb = segments[0];
+	}
+
+	layer = applyDefault(layer, defaults.layer);
+	verb = applyDefault(verb, '');
+	subject = applyDefault(subject, '');
+	variation = applyDefault(variation, defaults.variation);
+	platform = applyDefault(platform, defaults.platform);
+
+	if (layer && verb && subject && variation && platform) {
+		return `/${layer}/${verb}/${subject}/${variation}/${platform}`;
+	}
+	return null;
+}
+
 function getClassificationFromDocument(document: TextDocument, params: TextDocumentPositionParams) {
 	const lineRange = {
 		start: { line: params.position.line, character: 0 },
@@ -342,36 +380,21 @@ function getClassificationFromDocument(document: TextDocument, params: TextDocum
 
 	const lineText = document.getText(lineRange);
 	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
-	const contractMatch =
-		lineText.match(
-			/.*(sub|job)\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
-		)?.groups || {};
 
-	const layer = contractMatch.layer && contractMatch.layer !== '.' ? contractMatch.layer : defaults.layer;
-	const verb = contractMatch.verb;
-	const subject = contractMatch.subject;
-	const variation =
-		contractMatch.variation && contractMatch.variation !== '.' ? contractMatch.variation : defaults.variation;
-	const platform = contractMatch.platform && contractMatch.platform !== '.' ? contractMatch.platform : defaults.platform;
-
-	if (layer && verb && subject && variation && platform) {
-		return { classification: `/${layer}/${verb}/${subject}/${variation}/${platform}`, supplier: contractMatch.supplier ?? '' };
+	const contractMatch = lineText.match(/.*\b(sub|job)\s+([^\s]+)/i);
+	if (contractMatch?.[2]) {
+		const classification = normalizeClassification(contractMatch[2], defaults);
+		if (classification) {
+			return { classification, supplier: '' };
+		}
 	}
 
-	const protocolMatch =
-		lineText.match(
-			/.*(host|join)\s+(?:\/(?<layer>[^/]*)\/?)?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?/
-		)?.groups || {};
-
-	const pLayer = protocolMatch.layer && protocolMatch.layer !== '.' ? protocolMatch.layer : defaults.layer;
-	const pSubject = protocolMatch.subject;
-	const pVariation =
-		protocolMatch.variation && protocolMatch.variation !== '.' ? protocolMatch.variation : defaults.variation;
-	const pPlatform =
-		protocolMatch.platform && protocolMatch.platform !== '.' ? protocolMatch.platform : defaults.platform;
-
-	if (pLayer && pSubject && pVariation && pPlatform) {
-		return { classification: `/${pLayer}/${pSubject}/${pVariation}/${pPlatform}`, supplier: '' };
+	const protocolMatch = lineText.match(/.*\b(host|join)\s+([^\s]+)/i);
+	if (protocolMatch?.[2]) {
+		const classification = normalizeClassification(protocolMatch[2], defaults);
+		if (classification) {
+			return { classification, supplier: '' };
+		}
 	}
 
 	return null;
@@ -431,49 +454,36 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		traceDuration(traceLevel, 'hover', started, { reason: 'missingDocument', uri: params.textDocument.uri });
 		return null;
 	}
+	let specHover: string | null = null;
+	let contractSpecs: Record<string, RemoteContractSpec> | undefined;
+	const parsed = getClassificationFromDocument(document, params);
+	if (parsed?.classification) {
+		debugLog(`Hover: classification ${parsed.classification}, supplier=${parsed.supplier ?? ''}`);
+		const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+		if (!spec) {
+			debugLog(`Hover: no spec returned for ${parsed.classification}`);
+		} else {
+			specHover = renderStyledHover(spec, parsed.classification);
+			contractSpecs = { [parsed.classification]: spec };
+			debugLog(`Hover: rendering hover for ${parsed.classification}`);
+		}
+	} else {
+		debugLog('Hover: no classification found for spec hover');
+	}
 
-	const lineRange = {
-		start: { line: params.position.line, character: 0 },
-		end: { line: params.position.line + 1, character: 0 }
-	};
+	const typeHover = getTypeHoverMarkdown(document, params.position, contractSpecs);
+	if (typeHover) {
+		debugLog(`Hover: type hover resolved at ${params.position.line}:${params.position.character} -> ${typeHover}`);
+	}
 
-	const lineText = document.getText(lineRange);
-	debugLog(`Hover: raw line text "${lineText.trim()}" at ${params.position.line}:${params.position.character}`);
-	const matches =
-		lineText.match(
-			/.*(sub|job)\s+(?:\/(?<layer>[^/]*)\/?)?(?<verb>[^/]*)?\/?(?<subject>[^/@(]*)?\/?(?<variation>[^/@(]*)?\/?(?<platform>[^/@(]*)?@?(?<supplier>[^(]*)?/
-		)?.groups || {};
-
-	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
-	debugLog(
-		`Hover: defaults layer=${defaults.layer}, variation=${defaults.variation}, platform=${defaults.platform}, supplier=${defaults.supplier}`
-	);
-
-	const layer = matches.layer && matches.layer !== '.' ? matches.layer : defaults.layer;
-	const verb = matches.verb;
-	const subject = matches.subject;
-	const variation = matches.variation && matches.variation !== '.' ? matches.variation : defaults.variation;
-	const platform = matches.platform && matches.platform !== '.' ? matches.platform : defaults.platform;
-
-	if (!layer || !verb || !subject || !variation || !platform) {
-		debugLog(
-			`Hover: incomplete classification (layer=${layer}, verb=${verb}, subject=${subject}, variation=${variation}, platform=${platform})`
-		);
-		traceDuration(traceLevel, 'hover', started, { reason: 'incomplete', uri: params.textDocument.uri });
+	const parts = [typeHover, specHover].filter(Boolean) as string[];
+	if (!parts.length) {
+		traceDuration(traceLevel, 'hover', started, { reason: 'noContent', uri: params.textDocument.uri });
 		return null;
 	}
 
-	const classification = `/${layer}/${verb}/${subject}/${variation}/${platform}`;
-	debugLog(`Hover: classification ${classification}, supplier=${matches.supplier ?? ''}`);
-	const spec = await gatewayClient.fetchContractSpec(classification);
-	if (!spec) {
-		debugLog(`Hover: no spec returned for ${classification}`);
-		traceDuration(traceLevel, 'hover', started, { reason: 'noSpec', uri: params.textDocument.uri });
-		return null;
-	}
-	debugLog(`Hover: rendering hover for ${classification}`);
-	const hoverResult = { contents: { kind: MarkupKind.Markdown, value: renderStyledHover(spec, classification) } };
-	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri });
+	const hoverResult = { contents: { kind: MarkupKind.Markdown, value: parts.join('\n\n---\n\n') } };
+	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri, type: !!typeHover, spec: !!specHover });
 	return hoverResult;
 });
 

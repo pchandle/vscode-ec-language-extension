@@ -52,15 +52,20 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
   // if/else creates child scopes; shadowing across scopes is allowed.
   if CHECK_EXPR then
     "ok" -> STATUS_OUT
-    DOUBLE_SUM + lhs -> lhs  // shadows parameter in this branch only
+    DOUBLE_SUM + lhs -> lhs // shadows parameter in this branch only
   else
     "fail" -> STATUS_OUT
   end
 
+  sub new/program/./linux-x64(site) -> {
+    $ -> check
+    sub check/condition(check) -> cond, yes, no
+  }
   // Braced blocks do not create a new scope; `$` is the incoming value.
   HELLO_STR -> {
     $ + "!" -> EXCLAMATION
     sub pack/bytes/constant($, EXCLAMATION) -> EXCLAMATION_BYTES
+
   }
 
   // Inline call targets; `_` is ignored.

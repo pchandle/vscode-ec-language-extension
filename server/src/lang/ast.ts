@@ -33,6 +33,7 @@ export interface StatementNode extends BaseNode {
   expression: ExpressionNode | null;
   targets: Token[];
   block?: BlockNode;
+  classification?: Token;
 }
 
 export interface JobNode extends BaseNode {

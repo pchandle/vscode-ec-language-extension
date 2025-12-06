@@ -1,4 +1,5 @@
 import { Range } from "vscode-languageserver";
+import { RemoteContractSpec } from "../gatewayClient";
 import { BlockNode, DefNode, ExpressionNode, IfNode, JobNode, NodeKind, ProgramNode, QualifiedNode, ScopeRefNode, Statement } from "./ast";
 import { SyntaxDiagnostic, Token, TokenKind } from "./tokens";
 
@@ -38,7 +39,12 @@ interface TypeScope {
   bindings: Map<string, TypeBinding>;
 }
 
-type TypeResult = Type[];
+export type TypeResult = Type[];
+
+export interface TypeAtPosition {
+  range: Range;
+  types: TypeResult;
+}
 
 const UNKNOWN: Type = { kind: TypeKind.Unknown };
 const INTEGER: Type = { kind: TypeKind.Integer };
@@ -62,13 +68,17 @@ const BUILTIN_FUNCTIONS: Record<string, BuiltinSignature> = {
   maxlen: { params: [STRING], returns: [INTEGER] },
 };
 
-export function typeCheckProgram(program: ProgramNode): { diagnostics: SyntaxDiagnostic[] } {
+export function typeCheckProgram(
+  program: ProgramNode,
+  options?: { collectTypes?: boolean; contractSpecs?: Record<string, RemoteContractSpec> }
+): { diagnostics: SyntaxDiagnostic[]; types?: TypeAtPosition[] } {
   const diagnostics: SyntaxDiagnostic[] = [];
+  const types: TypeAtPosition[] | undefined = options?.collectTypes ? [] : undefined;
   const scope = makeScope();
   for (const stmt of program.statements) {
-    typeCheckStatement(stmt, scope, diagnostics);
+    typeCheckStatement(stmt, scope, diagnostics, types, options?.contractSpecs);
   }
-  return { diagnostics };
+  return { diagnostics, types };
 }
 
 function makeScope(parent?: TypeScope, scopeType?: Type): TypeScope {
@@ -128,7 +138,7 @@ function isUnknown(type: Type): boolean {
   return type.kind === TypeKind.Unknown;
 }
 
-function typeToString(type: Type): string {
+export function typeToString(type: Type): string {
   switch (type.kind) {
     case TypeKind.Integer:
       return "INTEGER";
@@ -146,6 +156,22 @@ function typeToString(type: Type): string {
     default:
       return "UNKNOWN";
   }
+}
+
+export function formatFunctionType(type: FunctionType): string {
+  const params: string[] = type.params.map(typeToDisplayString);
+  if (type.variadic) {
+    params.push("..." + typeToDisplayString(type.variadic));
+  }
+  const returns = type.returns.map(typeToDisplayString);
+  return `(${params.join(", ")}) -> (${returns.join(", ") || "UNKNOWN"})`;
+}
+
+export function typeToDisplayString(type: Type): string {
+  if (type.kind === TypeKind.Function) {
+    return formatFunctionType(type);
+  }
+  return typeToString(type);
 }
 
 function addTypeError(diagnostics: SyntaxDiagnostic[], range: Range, message: string) {
@@ -186,7 +212,49 @@ function ensureAssignable(expected: Type, actual: Type, range: Range, diagnostic
   }
 }
 
-function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: SyntaxDiagnostic[]) {
+function recordTypes(range: Range, result: TypeResult, collector?: TypeAtPosition[]) {
+  if (!collector) return;
+  collector.push({ range, types: result });
+}
+
+type SpecTerm = { type?: string; protocol?: string } | undefined;
+
+function specTermToType(term: SpecTerm): Type {
+  if (!term) return UNKNOWN;
+  const t = (term.type || "").toLowerCase();
+  switch (t) {
+    case "integer":
+      return INTEGER;
+    case "string":
+      return STRING;
+    case "boolean":
+      return BOOLEAN;
+    case "abstraction":
+      return term.protocol ? { kind: TypeKind.Classification, classification: term.protocol } : UNKNOWN;
+    case "classification":
+      return term.protocol ? { kind: TypeKind.Classification, classification: term.protocol } : UNKNOWN;
+    default:
+      if (term.type && term.type.startsWith("/")) {
+        return { kind: TypeKind.Classification, classification: term.type };
+      }
+      return UNKNOWN;
+  }
+}
+
+function recordTokenType(token: Token, scope: TypeScope, collector?: TypeAtPosition[]) {
+  const binding = scope.bindings.get(token.lexeme);
+  if (binding) {
+    recordTypes(token.range, [binding.type], collector);
+  }
+}
+
+function typeCheckStatement(
+  stmt: Statement,
+  scope: TypeScope,
+  diagnostics: SyntaxDiagnostic[],
+  collector?: TypeAtPosition[],
+  contractSpecs?: Record<string, RemoteContractSpec>
+) {
   switch (stmt.kind) {
     case NodeKind.Job: {
       const job = stmt as JobNode;
@@ -197,7 +265,13 @@ function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: Synt
       for (const target of job.targets) {
         declare(jobScope, target, UNKNOWN);
       }
-      typeCheckBlock(job.body, jobScope, diagnostics);
+      typeCheckBlock(job.body, jobScope, diagnostics, collector, contractSpecs);
+      for (const param of job.params) {
+        recordTokenType(param, jobScope, collector);
+      }
+      for (const target of job.targets) {
+        recordTokenType(target, jobScope, collector);
+      }
       return;
     }
     case NodeKind.Def: {
@@ -216,14 +290,50 @@ function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: Synt
       for (const target of def.targets) {
         declare(defScope, target, UNKNOWN);
       }
-      typeCheckBlock(def.body, defScope, diagnostics);
+      typeCheckBlock(def.body, defScope, diagnostics, collector, contractSpecs);
 
       placeholder.params = def.params.map((p) => lookup(defScope, p.lexeme)?.type ?? UNKNOWN);
       placeholder.returns = def.targets.map((t) => lookup(defScope, t.lexeme)?.type ?? UNKNOWN);
+      recordTypes(def.name.range, [placeholder], collector);
+      for (const param of def.params) {
+        recordTokenType(param, defScope, collector);
+      }
+      for (const target of def.targets) {
+        recordTokenType(target, defScope, collector);
+      }
       return;
     }
     case NodeKind.Statement: {
-      const exprTypes = typeCheckExpression(stmt.expression as ExpressionNode | null, scope, diagnostics);
+      const classification = (stmt as any).classification?.lexeme;
+      let spec = classification ? contractSpecs?.[classification] : undefined;
+      if (!spec && classification && contractSpecs) {
+        const key = Object.keys(contractSpecs).find((k) => k.startsWith(classification));
+        if (key) {
+          spec = contractSpecs[key];
+        }
+      }
+      if (!spec && contractSpecs) {
+        const keys = Object.keys(contractSpecs);
+        if (keys.length === 1) {
+          spec = contractSpecs[keys[0]];
+        }
+      }
+      const obligations = spec?.obligations ?? [];
+      let specResultTypes: Type[] = [];
+      if (obligations.length && stmt.targets.length) {
+        let obligationIndex = 0;
+        specResultTypes = stmt.targets.map((t) => {
+          if (t.lexeme === "_") return UNKNOWN;
+          const term = obligations[obligationIndex] as SpecTerm;
+          obligationIndex = Math.min(obligationIndex + 1, obligations.length);
+          return specTermToType(term);
+        });
+      }
+
+      const exprTypes =
+        specResultTypes.length > 0
+          ? specResultTypes
+          : typeCheckExpression(stmt.expression as ExpressionNode | null, scope, diagnostics, collector, contractSpecs);
       const targetCount = stmt.targets.length;
       const resultCount = exprTypes.length;
 
@@ -233,7 +343,7 @@ function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: Synt
           assignmentTypes = exprTypes;
         } else if (resultCount === 1 && targetCount > 1) {
           assignmentTypes = new Array(targetCount).fill(exprTypes[0]);
-        } else if (resultCount === 0) {
+        } else if (resultCount === 0 && specResultTypes.length === 0) {
           assignmentTypes = new Array(targetCount).fill(UNKNOWN);
         } else {
           addTypeError(
@@ -249,6 +359,7 @@ function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: Synt
         const target = stmt.targets[i];
         const incomingType = assignmentTypes[i] ?? UNKNOWN;
         declare(scope, target, incomingType);
+        recordTokenType(target, scope, collector);
       }
 
       if (stmt.block) {
@@ -258,7 +369,7 @@ function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: Synt
         if (scopeBinding) {
           scopeBinding.type = incoming;
         }
-        typeCheckBlock(stmt.block, scope, diagnostics);
+        typeCheckBlock(stmt.block, scope, diagnostics, collector, contractSpecs);
         if (scopeBinding) {
           scopeBinding.type = originalScopeType;
         }
@@ -270,9 +381,15 @@ function typeCheckStatement(stmt: Statement, scope: TypeScope, diagnostics: Synt
   }
 }
 
-function typeCheckBlock(block: BlockNode, scope: TypeScope, diagnostics: SyntaxDiagnostic[]): Map<string, Type> {
+function typeCheckBlock(
+  block: BlockNode,
+  scope: TypeScope,
+  diagnostics: SyntaxDiagnostic[],
+  collector?: TypeAtPosition[],
+  contractSpecs?: Record<string, RemoteContractSpec>
+): Map<string, Type> {
   for (const stmt of block.statements) {
-    typeCheckStatement(stmt, scope, diagnostics);
+    typeCheckStatement(stmt, scope, diagnostics, collector, contractSpecs);
   }
   const declared = new Map<string, Type>();
   for (const [name, binding] of scope.bindings.entries()) {
@@ -282,79 +399,110 @@ function typeCheckBlock(block: BlockNode, scope: TypeScope, diagnostics: SyntaxD
   return declared;
 }
 
-function typeCheckExpression(expr: ExpressionNode | IfNode | null, scope: TypeScope, diagnostics: SyntaxDiagnostic[]): TypeResult {
+function typeCheckExpression(
+  expr: ExpressionNode | IfNode | null,
+  scope: TypeScope,
+  diagnostics: SyntaxDiagnostic[],
+  collector?: TypeAtPosition[],
+  contractSpecs?: Record<string, RemoteContractSpec>
+): TypeResult {
   if (!expr) return [];
   switch (expr.kind) {
     case NodeKind.Identifier: {
       const binding = lookup(scope, (expr as any).token.lexeme);
-      return [binding?.type ?? UNKNOWN];
+      const type = binding?.type ?? UNKNOWN;
+      recordTypes((expr as any).token.range, [type], collector);
+      return [type];
     }
     case NodeKind.Scope: {
       const scopeRef = expr as ScopeRefNode;
       const binding = lookup(scope, scopeRef.token.lexeme);
-      return [binding?.type ?? SCOPE_TYPE];
+      const type = binding?.type ?? SCOPE_TYPE;
+      recordTypes(scopeRef.token.range, [type], collector);
+      return [type];
     }
     case NodeKind.Classification:
+      recordTypes((expr as any).token.range, [{ kind: TypeKind.Classification, classification: (expr as any).token.lexeme }], collector);
       return [{ kind: TypeKind.Classification, classification: (expr as any).token.lexeme }];
     case NodeKind.Literal:
-      return [typeFromLiteral((expr as any).token)];
+      const literalType = typeFromLiteral((expr as any).token);
+      recordTypes((expr as any).token.range, [literalType], collector);
+      return [literalType];
     case NodeKind.Unary: {
-      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics);
+      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, contractSpecs);
       const operandType = operandTypes[0] ?? UNKNOWN;
       const op = (expr as any).operator;
       if (op.kind === TokenKind.Bang) {
         ensureBoolean(operandType, op.range, diagnostics);
+        recordTypes(expr.range, [BOOLEAN], collector);
         return [BOOLEAN];
       }
       if (op.kind === TokenKind.Plus || op.kind === TokenKind.Minus) {
         ensureInteger(operandType, op.range, diagnostics);
+        recordTypes(expr.range, [INTEGER], collector);
         return [INTEGER];
       }
+      recordTypes(expr.range, [UNKNOWN], collector);
       return [UNKNOWN];
     }
     case NodeKind.Binary: {
       const binary = expr as any;
-      const left = typeCheckExpression(binary.left, scope, diagnostics)[0] ?? UNKNOWN;
-      const right = typeCheckExpression(binary.right, scope, diagnostics)[0] ?? UNKNOWN;
+      const left = typeCheckExpression(binary.left, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN;
+      const right = typeCheckExpression(binary.right, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN;
       const op = binary.operator.kind;
+      let result: TypeResult = [UNKNOWN];
       switch (op) {
         case TokenKind.Plus: {
           if (!isUnknown(left) && !isUnknown(right)) {
-            if (left.kind === TypeKind.Integer && right.kind === TypeKind.Integer) return [INTEGER];
-            if (left.kind === TypeKind.String && right.kind === TypeKind.String) return [STRING];
+            if (left.kind === TypeKind.Integer && right.kind === TypeKind.Integer) {
+              result = [INTEGER];
+              break;
+            }
+            if (left.kind === TypeKind.String && right.kind === TypeKind.String) {
+              result = [STRING];
+              break;
+            }
             addTypeError(
               diagnostics,
               binary.operator.range,
               `Operator '+' requires INTEGER+INTEGER or STRING+STRING, got ${typeToString(left)} and ${typeToString(right)}`
             );
           }
-          return [UNKNOWN];
+          break;
         }
         case TokenKind.Minus:
           ensureInteger(left, binary.operator.range, diagnostics);
           ensureInteger(right, binary.operator.range, diagnostics);
-          return [INTEGER];
+          result = [INTEGER];
+          break;
         case TokenKind.Star: {
           if (!isUnknown(left) && !isUnknown(right)) {
             const leftIsInt = left.kind === TypeKind.Integer;
             const rightIsInt = right.kind === TypeKind.Integer;
             const leftIsString = left.kind === TypeKind.String;
             const rightIsString = right.kind === TypeKind.String;
-            if (leftIsInt && rightIsInt) return [INTEGER];
-            if ((leftIsInt && rightIsString) || (leftIsString && rightIsInt)) return [STRING];
+            if (leftIsInt && rightIsInt) {
+              result = [INTEGER];
+              break;
+            }
+            if ((leftIsInt && rightIsString) || (leftIsString && rightIsInt)) {
+              result = [STRING];
+              break;
+            }
             addTypeError(
               diagnostics,
               binary.operator.range,
               `Operator '*' requires INTEGER*INTEGER or STRING*INTEGER, got ${typeToString(left)} and ${typeToString(right)}`
             );
           }
-          return [UNKNOWN];
+          break;
         }
         case TokenKind.Slash:
         case TokenKind.Percent:
           ensureInteger(left, binary.operator.range, diagnostics);
           ensureInteger(right, binary.operator.range, diagnostics);
-          return [INTEGER];
+          result = [INTEGER];
+          break;
         case TokenKind.EqualsEquals:
         case TokenKind.BangEquals: {
           if (!isUnknown(left) && !isUnknown(right) && left.kind !== right.kind) {
@@ -364,7 +512,8 @@ function typeCheckExpression(expr: ExpressionNode | IfNode | null, scope: TypeSc
               `Comparison requires matching types, got ${typeToString(left)} and ${typeToString(right)}`
             );
           }
-          return [BOOLEAN];
+          result = [BOOLEAN];
+          break;
         }
         case TokenKind.GreaterThan:
         case TokenKind.GreaterEquals:
@@ -378,40 +527,54 @@ function typeCheckExpression(expr: ExpressionNode | IfNode | null, scope: TypeSc
               `Relational operators require INTEGER operands, got ${typeToString(left)} and ${typeToString(right)}`
             );
           }
-          return [BOOLEAN];
+          result = [BOOLEAN];
+          break;
         }
         case TokenKind.AndAnd:
         case TokenKind.OrOr:
           ensureBoolean(left, binary.operator.range, diagnostics);
           ensureBoolean(right, binary.operator.range, diagnostics);
-          return [BOOLEAN];
+          result = [BOOLEAN];
+          break;
         default:
-          return [UNKNOWN];
+          result = [UNKNOWN];
       }
+      recordTypes(expr.range, result, collector);
+      return result;
     }
     case NodeKind.Qualified: {
       const qualified = expr as QualifiedNode;
-      return typeCheckExpression(qualified.base, scope, diagnostics);
+      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, contractSpecs);
+      recordTypes(expr.range, types, collector);
+      return types;
     }
     case NodeKind.Call: {
       const call = expr as any;
       const calleeId = extractIdentifier(call.callee);
       const builtin = calleeId ? BUILTIN_FUNCTIONS[calleeId.toLowerCase()] : undefined;
-      const calleeType = builtin ? builtinToFunctionType(builtin) : typeCheckExpression(call.callee, scope, diagnostics)[0] ?? UNKNOWN;
+      const calleeType =
+        builtin
+          ? builtinToFunctionType(builtin)
+          : typeCheckExpression(call.callee, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN;
 
-      const argTypes = call.args.map((arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics)[0] ?? UNKNOWN);
+      const argTypes = call.args.map(
+        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN
+      );
       const returns = applyFunctionType(calleeType, argTypes, call.range, diagnostics, builtin?.enforceArity ?? true);
+      recordTypes(expr.range, returns, collector);
       return returns;
     }
     case NodeKind.If: {
       const ifNode = expr as IfNode;
-      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics);
+      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, contractSpecs);
       ensureBoolean(conditionTypes[0] ?? UNKNOWN, ifNode.range, diagnostics);
 
       const thenScope = makeScope(scope, lookup(scope, "$")?.type);
       const elseScope = makeScope(scope, lookup(scope, "$")?.type);
-      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics);
-      const elseBindings = ifNode.elseBlock ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics) : new Map<string, Type>();
+      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, contractSpecs);
+      const elseBindings = ifNode.elseBlock
+        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, contractSpecs)
+        : new Map<string, Type>();
       for (const [name, thenType] of thenBindings.entries()) {
         if (elseBindings.has(name)) {
           const elseType = elseBindings.get(name)!;
@@ -426,9 +589,12 @@ function typeCheckExpression(expr: ExpressionNode | IfNode | null, scope: TypeSc
       }
 
       const outputCount = ifNode.targets.length;
-      return new Array(outputCount).fill(UNKNOWN);
+      const results = new Array(outputCount).fill(UNKNOWN) as TypeResult;
+      recordTypes(ifNode.range, results, collector);
+      return results;
     }
     default:
+      recordTypes((expr as any).range ?? { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }, [UNKNOWN], collector);
       return [UNKNOWN];
   }
 }

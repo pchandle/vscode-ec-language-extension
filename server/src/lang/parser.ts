@@ -106,6 +106,15 @@ function parseStatement(state: ParserState): Statement {
     parseTargetList(state, targets);
   }
 
+  let classification: Token | undefined;
+  if (
+    startTok.kind === TokenKind.Keyword &&
+    ["sub", "host", "join"].includes(startTok.lexeme.toLowerCase()) &&
+    current(state).kind === TokenKind.Classification
+  ) {
+    classification = advance(state);
+  }
+
   // Optional block following -> { ... }
   let block: BlockNode | undefined;
 
@@ -146,6 +155,7 @@ function parseStatement(state: ParserState): Statement {
     expression: expr,
     targets,
     block,
+    classification,
     range: {
       start: startTok.range.start,
       end: block ? block.range.end : endTok.end ?? endTok.start ?? startTok.range.end,
