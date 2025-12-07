@@ -5,6 +5,9 @@ defaults: data, default, x64, aptissio
 
 // Top-level sub without a surrounding job; lives in the outer scope.
 sub /data/new/integer/default/x64(1, 10) -> OUTER_INT
+sub /data/new/integer/default/x64(flow, 1, 10) -> OUTER_INT2, _
+sub /data/new/integer/default/x64(flow, 1, 10)
+sub /data/new/integer/default/x64(flow, 1, 10, 255)
 
 job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
 
@@ -57,18 +60,41 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
     "fail" -> STATUS_OUT
   end
 
+  sub new/program/./linux-x64(site) -> prog
   sub new/program/./linux-x64(site) -> {
     $ -> check
-    sub check/condition(check) -> cond, yes, no
   }
+
+    sub check/condition(check) -> cond, yes, no
+
+    sub check/condition(check) -> {
+      $ -> cond2
+    }, yes2, no2
+
+    sub check/condition(check) -> {
+      $ -> cond3
+    }, {
+      $ -> yes3
+    }, {
+      $ -> no3
+    }
+
+    sub check/condition(check) -> cond4, yes4, {
+      $ -> no4
+    }
+
+    host /data/integer/default/x64(_integer, minimum_value, maximum_value) -> _self_
+
+    join /data/integer/default/x64(_self_) -> minimum_value, maximum_value, _integer
+
   // Braced blocks do not create a new scope; `$` is the incoming value.
   HELLO_STR -> {
     $ + "!" -> EXCLAMATION
-    sub pack/bytes/constant($, EXCLAMATION) -> EXCLAMATION_BYTES
+    sub pack/bytes/constant(pack, EXCLAMATION)
 
   }
 
   // Inline call targets; `_` is ignored.
-  sub /data/compare/integer($, NEG_INT, BIN_INT) -> _, IS_EQUAL
+  sub /data/compare/integer(compare, int1, int2)
 
 end

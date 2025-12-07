@@ -32,6 +32,9 @@ export interface StatementNode extends BaseNode {
   kind: NodeKind.Statement;
   expression: ExpressionNode | null;
   targets: Token[];
+  keyword?: Token;
+  callArgs?: ExpressionNode[];
+  obligationOrder?: Array<Token | BlockNode>;
   block?: BlockNode;
   classification?: Token;
 }

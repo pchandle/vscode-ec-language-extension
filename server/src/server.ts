@@ -32,6 +32,8 @@ import {
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 import { collectDiagnostics } from './diagnostics';
 import { getTypeHoverMarkdown } from './typeHover';
+import { parseText } from './lang/parser';
+import { ProgramNode, Statement } from './lang/ast';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -200,23 +202,58 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	const settings = await getDocumentSettings(textDocument.uri);
 	const traceLevel = settings.traceServer ?? 'off';
 	const started = performance.now();
-	const diagnostics = collectDiagnostics(textDocument, {
-		maxNumberOfProblems: settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
-	});
+	const defaults = getDefaultsFromText(textDocument.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
 
-	if (hasDiagnosticRelatedInformationCapability) {
-		for (const diagnostic of diagnostics) {
-			diagnostic.relatedInformation = [
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Uppercase tokens are treated as potential issues.'
+	// Collect contract specifications referenced in the document so that diagnostics can validate
+	// requirements/obligations.
+	const { program } = parseText(textDocument.getText());
+	const classifications = new Set<string>();
+	const rawToNormalized = new Map<string, string>();
+	const collect = (stmts: Statement[]) => {
+		for (const stmt of stmts) {
+			const cls = (stmt as any).classification?.lexeme;
+			if (cls) {
+				const normalized = normalizeClassification(cls, defaults);
+				if (normalized) {
+					classifications.add(normalized);
+					rawToNormalized.set(cls, normalized);
 				}
-			];
+			}
+			if ((stmt as any).body?.statements) {
+				collect((stmt as any).body.statements);
+			}
+			if ((stmt as any).block?.statements) {
+				collect((stmt as any).block.statements);
+			}
+		}
+	};
+	collect((program as ProgramNode).statements);
+
+	const contractSpecs: Record<string, RemoteContractSpec> = {};
+	for (const cls of classifications) {
+		try {
+			const spec = await gatewayClient.fetchContractSpec(cls);
+			if (spec) {
+				contractSpecs[cls] = spec;
+				for (const [raw, norm] of rawToNormalized.entries()) {
+					if (norm === cls && raw !== cls) {
+						contractSpecs[raw] = spec;
+					}
+				}
+			}
+		} catch (err: any) {
+			connection.console.warn(`Diagnostics: failed to fetch spec ${cls}: ${err?.message ?? err}`);
 		}
 	}
+
+	const diagnostics = collectDiagnostics(
+		textDocument,
+		{
+			maxNumberOfProblems: settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
+		},
+		contractSpecs,
+		defaults
+	);
 
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 	traceDuration(traceLevel, 'diagnostics', started, { uri: textDocument.uri });
@@ -372,6 +409,57 @@ function normalizeClassification(raw: string, defaults: { layer: string; variati
 	return null;
 }
 
+function rangeContainsPosition(range: { start: { line: number; character: number }; end: { line: number; character: number } }, position: { line: number; character: number }) {
+	if (position.line < range.start.line || position.line > range.end.line) return false;
+	if (position.line === range.start.line && position.character < range.start.character) return false;
+	if (position.line === range.end.line && position.character > range.end.character) return false;
+	return true;
+}
+
+function getAstClassification(document: TextDocument, params: TextDocumentPositionParams): { classification: string; supplier: string } | null {
+	try {
+		const { program } = parseText(document.getText());
+		const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+
+		const findStmt = (
+			statements: Statement[],
+			inheritedClassification?: { lexeme: string }
+		): { stmt: Statement; classification?: { lexeme: string } } | null => {
+			for (const stmt of statements) {
+				if (!rangeContainsPosition(stmt.range, params.position)) continue;
+
+				const currentClassification = (stmt as any)?.classification ?? inheritedClassification;
+
+				// Recurse into inner statements first for most specific match.
+				const jobBody = (stmt as any).body;
+				if (jobBody?.statements) {
+					const inner = findStmt(jobBody.statements, currentClassification);
+					if (inner) return inner;
+				}
+				const block = (stmt as any).block;
+				if (block?.statements) {
+					const inner = findStmt(block.statements, currentClassification);
+					if (inner) return inner;
+				}
+				return { stmt, classification: currentClassification };
+			}
+			return null;
+		};
+
+		const result = findStmt((program as unknown as ProgramNode).statements);
+		const classificationToken = result?.classification;
+		if (classificationToken?.lexeme) {
+			const classification = normalizeClassification(classificationToken.lexeme, defaults);
+			if (classification) {
+				return { classification, supplier: '' };
+			}
+		}
+		return null;
+	} catch {
+		return null;
+	}
+}
+
 function getClassificationFromDocument(document: TextDocument, params: TextDocumentPositionParams) {
 	const lineRange = {
 		start: { line: params.position.line, character: 0 },
@@ -397,7 +485,7 @@ function getClassificationFromDocument(document: TextDocument, params: TextDocum
 		}
 	}
 
-	return null;
+	return getAstClassification(document, params);
 }
 
 connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpecificationResult> => {
@@ -454,8 +542,8 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		traceDuration(traceLevel, 'hover', started, { reason: 'missingDocument', uri: params.textDocument.uri });
 		return null;
 	}
-	let specHover: string | null = null;
 	let contractSpecs: Record<string, RemoteContractSpec> | undefined;
+	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
 	const parsed = getClassificationFromDocument(document, params);
 	if (parsed?.classification) {
 		debugLog(`Hover: classification ${parsed.classification}, supplier=${parsed.supplier ?? ''}`);
@@ -463,27 +551,26 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		if (!spec) {
 			debugLog(`Hover: no spec returned for ${parsed.classification}`);
 		} else {
-			specHover = renderStyledHover(spec, parsed.classification);
 			contractSpecs = { [parsed.classification]: spec };
-			debugLog(`Hover: rendering hover for ${parsed.classification}`);
+			debugLog(`Hover: fetched spec for ${parsed.classification} (not rendering spec hover)`);
 		}
 	} else {
-		debugLog('Hover: no classification found for spec hover');
+		debugLog('Hover: no classification found for spec fetch');
 	}
 
-	const typeHover = getTypeHoverMarkdown(document, params.position, contractSpecs);
+	const typeHover = getTypeHoverMarkdown(document, params.position, contractSpecs, defaults);
 	if (typeHover) {
 		debugLog(`Hover: type hover resolved at ${params.position.line}:${params.position.character} -> ${typeHover}`);
 	}
 
-	const parts = [typeHover, specHover].filter(Boolean) as string[];
+	const parts = [typeHover].filter(Boolean) as string[];
 	if (!parts.length) {
 		traceDuration(traceLevel, 'hover', started, { reason: 'noContent', uri: params.textDocument.uri });
 		return null;
 	}
 
 	const hoverResult = { contents: { kind: MarkupKind.Markdown, value: parts.join('\n\n---\n\n') } };
-	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri, type: !!typeHover, spec: !!specHover });
+	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri, type: !!typeHover, spec: false });
 	return hoverResult;
 });
 

@@ -102,8 +102,10 @@ function parseStatement(state: ParserState): Statement {
 
   const expr = parseExpression(state, 0);
   const targets: Token[] = [];
+  const obligationOrder: Array<Token | BlockNode> = [];
+  const callArgs: ExpressionNode[] = [];
   if (match(state, TokenKind.Arrow)) {
-    parseTargetList(state, targets);
+    parseTargetList(state, targets, obligationOrder);
   }
 
   let classification: Token | undefined;
@@ -113,10 +115,14 @@ function parseStatement(state: ParserState): Statement {
     current(state).kind === TokenKind.Classification
   ) {
     classification = advance(state);
+    if (current(state).kind === TokenKind.LParen) {
+      parseArgumentList(state, callArgs);
+    }
   }
 
   // Optional block following -> { ... }
   let block: BlockNode | undefined;
+  let seenBlock = false;
 
   const shouldStop = () =>
     current(state).kind === TokenKind.Newline ||
@@ -127,11 +133,23 @@ function parseStatement(state: ParserState): Statement {
   while (!shouldStop()) {
     if (current(state).kind === TokenKind.LBrace) {
       block = parseBraceBlock(state);
+      obligationOrder.push(block);
+      seenBlock = true;
+      continue;
+    }
+    if (
+      seenBlock &&
+      (current(state).kind === TokenKind.Identifier ||
+        current(state).kind === TokenKind.Keyword ||
+        current(state).kind === TokenKind.Boolean ||
+        current(state).kind === TokenKind.Comma)
+    ) {
+      parseTargetList(state, targets, obligationOrder);
       continue;
     }
     if (current(state).kind === TokenKind.Arrow) {
       advance(state);
-      parseTargetList(state, targets);
+      parseTargetList(state, targets, obligationOrder);
       continue;
     }
     if (current(state).kind === TokenKind.LParen) {
@@ -149,16 +167,24 @@ function parseStatement(state: ParserState): Statement {
   // consume trailing newlines
   while (current(state).kind === TokenKind.Newline) advance(state);
 
-  const endTok = block ? block.range : (targets[targets.length - 1]?.range ?? expr?.range ?? startTok.range);
+  const lastObligation = obligationOrder.length ? obligationOrder[obligationOrder.length - 1] : undefined;
+  const endRange =
+    (lastObligation as any)?.range ??
+    (targets[targets.length - 1]?.range ??
+      (block ? block.range : undefined) ??
+      (expr?.range ?? startTok.range));
   return {
     kind: NodeKind.Statement,
     expression: expr,
     targets,
+    keyword: startTok,
+    callArgs: callArgs.length ? callArgs : undefined,
+    obligationOrder: obligationOrder.length ? obligationOrder : undefined,
     block,
     classification,
     range: {
       start: startTok.range.start,
-      end: block ? block.range.end : endTok.end ?? endTok.start ?? startTok.range.end,
+      end: endRange.end ?? endRange.start ?? startTok.range.end,
     },
   };
 }
@@ -232,6 +258,24 @@ function parseParameterList(state: ParserState, params: Token[]) {
       state.diagnostics.push({ message: "Expected parameter name", range: current(state).range });
       advance(state);
     }
+    if (current(state).kind === TokenKind.Comma) {
+      advance(state);
+      continue;
+    }
+    break;
+  }
+  expect(state, TokenKind.RParen, "Expected ')'");
+}
+
+function parseArgumentList(state: ParserState, args: ExpressionNode[]) {
+  expect(state, TokenKind.LParen, "Expected '('");
+  if (current(state).kind === TokenKind.RParen) {
+    advance(state);
+    return;
+  }
+  while (current(state).kind !== TokenKind.EOF) {
+    const expr = parseExpression(state, 0);
+    if (expr) args.push(expr);
     if (current(state).kind === TokenKind.Comma) {
       advance(state);
       continue;
@@ -377,7 +421,7 @@ function parseBraceBlock(state: ParserState): BlockNode {
   };
 }
 
-function parseTargetList(state: ParserState, targets: Token[]) {
+function parseTargetList(state: ParserState, targets: Token[], order?: Array<Token | BlockNode>) {
   // allow empty targets (e.g., -> { ... })
   if (
     current(state).kind === TokenKind.LBrace ||
@@ -386,9 +430,18 @@ function parseTargetList(state: ParserState, targets: Token[]) {
   ) {
     return;
   }
+  while (current(state).kind === TokenKind.Comma) {
+    advance(state);
+  }
   while (true) {
+    // Stop if the next obligation is a braced block; caller will parse it.
+    if (current(state).kind === TokenKind.LBrace || current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.EOF) {
+      return;
+    }
     if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Boolean || current(state).kind === TokenKind.Keyword) {
-      targets.push(advance(state));
+      const tok = advance(state);
+      targets.push(tok);
+      if (order) order.push(tok);
     } else {
       state.diagnostics.push({ message: "Expected identifier after '->'", range: current(state).range });
       break;

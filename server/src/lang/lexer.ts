@@ -206,6 +206,41 @@ export function lexText(text: string): { tokens: Token[]; diagnostics: SyntaxDia
     const startCol = state.column;
     const ch = currentChar(state)!;
 
+    // If we just read a job/sub/host/join keyword, consume the following classification (and optional supplier)
+    // as a single token before treating any subsequent characters individually.
+    if (state.pendingClassification) {
+      skipWhitespace(state);
+      const clsStartOffset = state.offset;
+      const clsStartLine = state.line;
+      const clsStartCol = state.column;
+      scanClassification(state, clsStartOffset, clsStartLine, clsStartCol);
+      state.pendingClassification = false;
+      if (currentChar(state) === "@") {
+        const atOffset = state.offset;
+        const atLine = state.line;
+        const atCol = state.column;
+        advance(state);
+        addToken(state, TokenKind.At, "@", atOffset, atLine, atCol);
+        const supplierOffset = state.offset;
+        const supplierLine = state.line;
+        const supplierCol = state.column;
+        let supplier = "";
+        while (isIdentifierPart(currentChar(state) ?? "")) {
+          supplier += currentChar(state)!;
+          advance(state);
+        }
+        if (supplier.length > 0) {
+          addToken(state, TokenKind.Supplier, supplier, supplierOffset, supplierLine, supplierCol);
+        } else {
+          state.diagnostics.push({
+            message: "Expected supplier identifier after @",
+            range: makeRange(state, atOffset, atLine, atCol),
+          });
+        }
+      }
+      continue;
+    }
+
     // Line continuation outside strings: backslash followed by optional spaces then newline
     if (ch === "\\") {
       let i = state.offset + 1;
@@ -271,36 +306,7 @@ export function lexText(text: string): { tokens: Token[]; diagnostics: SyntaxDia
       continue;
     }
 
-    // Classification immediately after job/sub/host/join
-    if (state.pendingClassification && ch === "/") {
-      scanClassification(state, startOffset, startLine, startCol);
-      state.pendingClassification = false;
-      // supplier suffix
-      if (currentChar(state) === "@") {
-        const atOffset = state.offset;
-        const atLine = state.line;
-        const atCol = state.column;
-        advance(state);
-        addToken(state, TokenKind.At, "@", atOffset, atLine, atCol);
-        const supplierOffset = state.offset;
-        const supplierLine = state.line;
-        const supplierCol = state.column;
-        let supplier = "";
-        while (isIdentifierPart(currentChar(state) ?? "")) {
-          supplier += currentChar(state)!;
-          advance(state);
-        }
-        if (supplier.length > 0) {
-          addToken(state, TokenKind.Supplier, supplier, supplierOffset, supplierLine, supplierCol);
-        } else {
-          state.diagnostics.push({
-            message: "Expected supplier identifier after @",
-            range: makeRange(state, atOffset, atLine, atCol),
-          });
-        }
-      }
-      continue;
-    }
+    // Classification scanning is handled immediately after job/sub/host/join keywords.
 
     // Strings
     if (ch === '"') {
@@ -322,13 +328,15 @@ export function lexText(text: string): { tokens: Token[]; diagnostics: SyntaxDia
 
     // Identifiers / keywords
     if (isIdentifierStart(ch)) {
-      scanIdentifier(state, startOffset, startLine, startCol);
-      const last = state.tokens[state.tokens.length - 1];
-      if (last && last.kind === TokenKind.Keyword && ["job", "sub", "host", "join"].includes(last.lexeme)) {
-        state.pendingClassification = true;
-      } else {
-        state.pendingClassification = false;
+      if (["s", "j", "h"].includes(ch.toLowerCase())) {
+        const lookahead = state.text.substr(state.offset, 4).toLowerCase();
+        if (lookahead.startsWith("sub") || lookahead.startsWith("job") || lookahead.startsWith("host") || lookahead.startsWith("join")) {
+          scanIdentifier(state, startOffset, startLine, startCol);
+          state.pendingClassification = true;
+          continue;
+        }
       }
+      scanIdentifier(state, startOffset, startLine, startCol);
       continue;
     }
 

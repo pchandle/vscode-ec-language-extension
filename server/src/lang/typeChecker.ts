@@ -70,15 +70,54 @@ const BUILTIN_FUNCTIONS: Record<string, BuiltinSignature> = {
 
 export function typeCheckProgram(
   program: ProgramNode,
-  options?: { collectTypes?: boolean; contractSpecs?: Record<string, RemoteContractSpec> }
+  options?: { collectTypes?: boolean; contractSpecs?: Record<string, RemoteContractSpec>; defaults?: { layer: string; variation: string; platform: string } }
 ): { diagnostics: SyntaxDiagnostic[]; types?: TypeAtPosition[] } {
   const diagnostics: SyntaxDiagnostic[] = [];
   const types: TypeAtPosition[] | undefined = options?.collectTypes ? [] : undefined;
   const scope = makeScope();
   for (const stmt of program.statements) {
-    typeCheckStatement(stmt, scope, diagnostics, types, options?.contractSpecs);
+    typeCheckStatement(stmt, scope, diagnostics, types, options?.contractSpecs, options?.defaults);
   }
   return { diagnostics, types };
+}
+
+function normalizeWithDefaults(raw: string, defaults?: { layer: string; variation: string; platform: string }): string | null {
+  if (!raw) return null;
+  const defaultsSafe = defaults ?? { layer: "", variation: "", platform: "" };
+  const withoutSupplier = raw.split("@")[0] ?? raw;
+  const beforeParen = withoutSupplier.split("(")[0] ?? withoutSupplier;
+  const cleaned = beforeParen.trim().replace(/^\/+/, "");
+  const segments = cleaned.split("/").filter((s) => s.length > 0);
+  const applyDefault = (seg: string | undefined, fallback: string) => (!seg || seg === "." ? fallback : seg);
+
+  let layer = applyDefault(defaultsSafe.layer, defaultsSafe.layer);
+  let verb = "";
+  let subject = "";
+  let variation = applyDefault(defaultsSafe.variation, defaultsSafe.variation);
+  let platform = applyDefault(defaultsSafe.platform, defaultsSafe.platform);
+
+  if (segments.length >= 5) {
+    [layer, verb, subject, variation, platform] = segments;
+  } else if (segments.length === 4) {
+    [verb, subject, variation, platform] = segments;
+  } else if (segments.length === 3) {
+    [verb, subject, variation] = segments;
+  } else if (segments.length === 2) {
+    [verb, subject] = segments;
+  } else if (segments.length === 1) {
+    verb = segments[0];
+  }
+
+  layer = applyDefault(layer, defaultsSafe.layer);
+  verb = applyDefault(verb, "");
+  subject = applyDefault(subject, "");
+  variation = applyDefault(variation, defaultsSafe.variation);
+  platform = applyDefault(platform, defaultsSafe.platform);
+
+  if (layer && verb && subject && variation && platform) {
+    return `/${layer}/${verb}/${subject}/${variation}/${platform}`;
+  }
+  return null;
 }
 
 function makeScope(parent?: TypeScope, scopeType?: Type): TypeScope {
@@ -253,11 +292,21 @@ function typeCheckStatement(
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
-  contractSpecs?: Record<string, RemoteContractSpec>
+  contractSpecs?: Record<string, RemoteContractSpec>,
+  defaults?: { layer: string; variation: string; platform: string }
 ) {
   switch (stmt.kind) {
     case NodeKind.Job: {
       const job = stmt as JobNode;
+      const classification = job.classification?.lexeme;
+      const jobSpec = classification ? contractSpecs?.[classification] : undefined;
+      if (classification && !jobSpec) {
+        addTypeError(
+          diagnostics,
+          job.classification!.range,
+          `Unknown contract specification for '${classification}'`
+        );
+      }
       const jobScope = makeScope(scope);
       for (const param of job.params) {
         declare(jobScope, param, UNKNOWN);
@@ -265,12 +314,21 @@ function typeCheckStatement(
       for (const target of job.targets) {
         declare(jobScope, target, UNKNOWN);
       }
-      typeCheckBlock(job.body, jobScope, diagnostics, collector, contractSpecs);
+      typeCheckBlock(job.body, jobScope, diagnostics, collector, contractSpecs, defaults);
       for (const param of job.params) {
         recordTokenType(param, jobScope, collector);
       }
       for (const target of job.targets) {
-        recordTokenType(target, jobScope, collector);
+        const binding = jobScope.bindings.get(target.lexeme);
+        if (binding && jobSpec) {
+          recordTokenType(target, jobScope, collector);
+        } else {
+          // If the contract spec is missing, keep obligations unknown.
+          recordTypes(target.range, [UNKNOWN], collector);
+          if (binding) {
+            binding.type = UNKNOWN;
+          }
+        }
       }
       return;
     }
@@ -290,7 +348,7 @@ function typeCheckStatement(
       for (const target of def.targets) {
         declare(defScope, target, UNKNOWN);
       }
-      typeCheckBlock(def.body, defScope, diagnostics, collector, contractSpecs);
+      typeCheckBlock(def.body, defScope, diagnostics, collector, contractSpecs, defaults);
 
       placeholder.params = def.params.map((p) => lookup(defScope, p.lexeme)?.type ?? UNKNOWN);
       placeholder.returns = def.targets.map((t) => lookup(defScope, t.lexeme)?.type ?? UNKNOWN);
@@ -305,73 +363,122 @@ function typeCheckStatement(
     }
     case NodeKind.Statement: {
       const classification = (stmt as any).classification?.lexeme;
+      const normalizedClassification = classification ? normalizeWithDefaults(classification, defaults) : null;
+      const stmtKeyword = ((stmt as any).keyword as Token | undefined)?.lexeme?.toLowerCase();
+      const isContract = stmtKeyword === "sub" || stmtKeyword === "job";
+      const isProtocol = stmtKeyword === "host" || stmtKeyword === "join";
+      const obligationOrder: Array<any> =
+        (stmt as any).obligationOrder && (stmt as any).obligationOrder.length
+          ? (stmt as any).obligationOrder
+          : [];
       let spec = classification ? contractSpecs?.[classification] : undefined;
+      if (!spec && normalizedClassification) {
+        spec = contractSpecs?.[normalizedClassification];
+      }
       if (!spec && classification && contractSpecs) {
         const key = Object.keys(contractSpecs).find((k) => k.startsWith(classification));
         if (key) {
           spec = contractSpecs[key];
         }
       }
-      if (!spec && contractSpecs) {
-        const keys = Object.keys(contractSpecs);
-        if (keys.length === 1) {
-          spec = contractSpecs[keys[0]];
+      if (!spec && normalizedClassification && contractSpecs) {
+        const key = Object.keys(contractSpecs).find((k) => k.startsWith(normalizedClassification));
+        if (key) {
+          spec = contractSpecs[key];
         }
+      }
+      if (classification && contractSpecs && !spec) {
+        addTypeError(
+          diagnostics,
+          (stmt as any).classification.range,
+          isProtocol
+            ? `Unknown protocol specification for '${classification}'`
+            : isContract
+            ? `Unknown contract specification for '${classification}'`
+            : `Unknown classification '${classification}'`
+        );
       }
       const obligations = spec?.obligations ?? [];
-      let specResultTypes: Type[] = [];
-      if (obligations.length && stmt.targets.length) {
-        let obligationIndex = 0;
-        specResultTypes = stmt.targets.map((t) => {
-          if (t.lexeme === "_") return UNKNOWN;
-          const term = obligations[obligationIndex] as SpecTerm;
-          obligationIndex = Math.min(obligationIndex + 1, obligations.length);
-          return specTermToType(term);
-        });
-      }
+      const requirements = (spec as any)?.requirements ?? [];
+      const exprTypes = typeCheckExpression(
+        stmt.expression as ExpressionNode | null,
+        scope,
+        diagnostics,
+        collector,
+        contractSpecs,
+        defaults
+      );
+      const scopeBinding = scope.bindings.get("$");
+      const originalScopeType = scopeBinding?.type ?? UNKNOWN;
 
-      const exprTypes =
-        specResultTypes.length > 0
-          ? specResultTypes
-          : typeCheckExpression(stmt.expression as ExpressionNode | null, scope, diagnostics, collector, contractSpecs);
-      const targetCount = stmt.targets.length;
-      const resultCount = exprTypes.length;
+      // Build an ordered list of obligation items (blocks and targets) as they appear.
+      const orderedItems: Array<{ type: "block"; block: any } | { type: "target"; token: any }> =
+        obligationOrder.length > 0
+          ? obligationOrder.map((item: any) =>
+              (item as any).kind === NodeKind.Block ? { type: "block", block: item } : { type: "target", token: item }
+            )
+          : [
+              ...(stmt.block ? [{ type: "block", block: stmt.block } as const] : []),
+              ...stmt.targets.map((t) => ({ type: "target", token: t } as const)),
+            ];
 
-      let assignmentTypes: Type[] = [];
-      if (targetCount > 0) {
-        if (resultCount === targetCount) {
-          assignmentTypes = exprTypes;
-        } else if (resultCount === 1 && targetCount > 1) {
-          assignmentTypes = new Array(targetCount).fill(exprTypes[0]);
-        } else if (resultCount === 0 && specResultTypes.length === 0) {
-          assignmentTypes = new Array(targetCount).fill(UNKNOWN);
-        } else {
+      const obligationTypes = obligations.map((o) => specTermToType(o as SpecTerm));
+      if (spec) {
+        const callCount = ((stmt as any).callArgs as ExpressionNode[] | undefined)?.length ?? 0;
+        if (requirements.length && callCount !== requirements.length) {
           addTypeError(
             diagnostics,
-            stmt.range,
-            `Target count (${targetCount}) does not match expression results (${resultCount})`
+            (stmt as any).classification?.range ?? stmt.range,
+            `Requirement count mismatch: expected ${requirements.length}, got ${callCount}`
           );
-          assignmentTypes = new Array(targetCount).fill(UNKNOWN);
+        }
+        const actualObligations = orderedItems.length;
+        if (obligations.length && actualObligations !== obligations.length) {
+          addTypeError(
+            diagnostics,
+            (stmt as any).classification?.range ?? stmt.range,
+            `Obligation count mismatch: expected ${obligations.length}, got ${actualObligations}`
+          );
         }
       }
 
-      for (let i = 0; i < stmt.targets.length; i++) {
-        const target = stmt.targets[i];
-        const incomingType = assignmentTypes[i] ?? UNKNOWN;
-        declare(scope, target, incomingType);
-        recordTokenType(target, scope, collector);
-      }
+      const getExprTypeForIndex = (idx: number): Type => {
+        if (exprTypes.length === 0) return UNKNOWN;
+        if (exprTypes.length === 1) return exprTypes[0];
+        return exprTypes[idx] ?? UNKNOWN;
+      };
 
-      if (stmt.block) {
-        const scopeBinding = scope.bindings.get("$");
-        const originalScopeType = scopeBinding?.type ?? UNKNOWN;
-        const incoming = exprTypes[0] ?? originalScopeType;
-        if (scopeBinding) {
-          scopeBinding.type = incoming;
+      for (let i = 0; i < orderedItems.length; i++) {
+        const item = orderedItems[i];
+        const specType = obligationTypes[i] ?? UNKNOWN;
+        const exprType = getExprTypeForIndex(i);
+        const incomingType = !isUnknown(specType)
+          ? specType
+          : !isUnknown(exprType) && (!classification || spec)
+            ? exprType
+          : classification && !spec
+            ? UNKNOWN
+            : originalScopeType;
+        if (process.env.EMERGENT_DEBUG_OBLIG === "1") {
+          // Useful for diagnosing obligation typing in tests/hovers.
+          // eslint-disable-next-line no-console
+          console.error(
+            `[obligation] idx=${i} kind=${item.type} spec=${typeToString(specType)} expr=${typeToString(exprType)} incoming=${typeToString(incomingType)}`
+          );
         }
-        typeCheckBlock(stmt.block, scope, diagnostics, collector, contractSpecs);
-        if (scopeBinding) {
-          scopeBinding.type = originalScopeType;
+
+        if (item.type === "target") {
+          const target = item.token;
+          declare(scope, target, incomingType);
+          recordTokenType(target, scope, collector);
+        } else {
+          if (scopeBinding) {
+            scopeBinding.type = incomingType;
+          }
+          typeCheckBlock(item.block, scope, diagnostics, collector, contractSpecs, defaults);
+          if (scopeBinding) {
+            scopeBinding.type = originalScopeType;
+          }
         }
       }
       return;
@@ -386,10 +493,11 @@ function typeCheckBlock(
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
-  contractSpecs?: Record<string, RemoteContractSpec>
+  contractSpecs?: Record<string, RemoteContractSpec>,
+  defaults?: { layer: string; variation: string; platform: string }
 ): Map<string, Type> {
   for (const stmt of block.statements) {
-    typeCheckStatement(stmt, scope, diagnostics, collector, contractSpecs);
+    typeCheckStatement(stmt, scope, diagnostics, collector, contractSpecs, defaults);
   }
   const declared = new Map<string, Type>();
   for (const [name, binding] of scope.bindings.entries()) {
@@ -404,7 +512,8 @@ function typeCheckExpression(
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
-  contractSpecs?: Record<string, RemoteContractSpec>
+  contractSpecs?: Record<string, RemoteContractSpec>,
+  defaults?: { layer: string; variation: string; platform: string }
 ): TypeResult {
   if (!expr) return [];
   switch (expr.kind) {
@@ -429,7 +538,7 @@ function typeCheckExpression(
       recordTypes((expr as any).token.range, [literalType], collector);
       return [literalType];
     case NodeKind.Unary: {
-      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, contractSpecs);
+      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, contractSpecs, defaults);
       const operandType = operandTypes[0] ?? UNKNOWN;
       const op = (expr as any).operator;
       if (op.kind === TokenKind.Bang) {
@@ -447,8 +556,8 @@ function typeCheckExpression(
     }
     case NodeKind.Binary: {
       const binary = expr as any;
-      const left = typeCheckExpression(binary.left, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN;
-      const right = typeCheckExpression(binary.right, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN;
+      const left = typeCheckExpression(binary.left, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN;
+      const right = typeCheckExpression(binary.right, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN;
       const op = binary.operator.kind;
       let result: TypeResult = [UNKNOWN];
       switch (op) {
@@ -544,7 +653,7 @@ function typeCheckExpression(
     }
     case NodeKind.Qualified: {
       const qualified = expr as QualifiedNode;
-      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, contractSpecs);
+      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, contractSpecs, defaults);
       recordTypes(expr.range, types, collector);
       return types;
     }
@@ -555,10 +664,10 @@ function typeCheckExpression(
       const calleeType =
         builtin
           ? builtinToFunctionType(builtin)
-          : typeCheckExpression(call.callee, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN;
+          : typeCheckExpression(call.callee, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN;
 
       const argTypes = call.args.map(
-        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, contractSpecs)[0] ?? UNKNOWN
+        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN
       );
       const returns = applyFunctionType(calleeType, argTypes, call.range, diagnostics, builtin?.enforceArity ?? true);
       recordTypes(expr.range, returns, collector);
@@ -566,14 +675,14 @@ function typeCheckExpression(
     }
     case NodeKind.If: {
       const ifNode = expr as IfNode;
-      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, contractSpecs);
+      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, contractSpecs, defaults);
       ensureBoolean(conditionTypes[0] ?? UNKNOWN, ifNode.range, diagnostics);
 
       const thenScope = makeScope(scope, lookup(scope, "$")?.type);
       const elseScope = makeScope(scope, lookup(scope, "$")?.type);
-      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, contractSpecs);
+      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, contractSpecs, defaults);
       const elseBindings = ifNode.elseBlock
-        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, contractSpecs)
+        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, contractSpecs, defaults)
         : new Map<string, Type>();
       for (const [name, thenType] of thenBindings.entries()) {
         if (elseBindings.has(name)) {
