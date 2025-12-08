@@ -70,18 +70,26 @@ const BUILTIN_FUNCTIONS: Record<string, BuiltinSignature> = {
 
 export function typeCheckProgram(
   program: ProgramNode,
-  options?: { collectTypes?: boolean; contractSpecs?: Record<string, RemoteContractSpec>; defaults?: { layer: string; variation: string; platform: string } }
+  options?: {
+    collectTypes?: boolean;
+    specs?: Record<string, RemoteContractSpec>;
+    defaults?: { layer: string; variation: string; platform: string };
+  }
 ): { diagnostics: SyntaxDiagnostic[]; types?: TypeAtPosition[] } {
   const diagnostics: SyntaxDiagnostic[] = [];
   const types: TypeAtPosition[] | undefined = options?.collectTypes ? [] : undefined;
   const scope = makeScope();
   for (const stmt of program.statements) {
-    typeCheckStatement(stmt, scope, diagnostics, types, options?.contractSpecs, options?.defaults);
+    typeCheckStatement(stmt, scope, diagnostics, types, options?.specs, options?.defaults);
   }
   return { diagnostics, types };
 }
 
-function normalizeWithDefaults(raw: string, defaults?: { layer: string; variation: string; platform: string }): string | null {
+function normalizeWithDefaults(
+  raw: string,
+  defaults?: { layer: string; variation: string; platform: string },
+  isProtocol = false
+): string | null {
   if (!raw) return null;
   const defaultsSafe = defaults ?? { layer: "", variation: "", platform: "" };
   const withoutSupplier = raw.split("@")[0] ?? raw;
@@ -91,33 +99,67 @@ function normalizeWithDefaults(raw: string, defaults?: { layer: string; variatio
   const applyDefault = (seg: string | undefined, fallback: string) => (!seg || seg === "." ? fallback : seg);
 
   let layer = applyDefault(defaultsSafe.layer, defaultsSafe.layer);
-  let verb = "";
-  let subject = "";
   let variation = applyDefault(defaultsSafe.variation, defaultsSafe.variation);
   let platform = applyDefault(defaultsSafe.platform, defaultsSafe.platform);
-
-  if (segments.length >= 5) {
-    [layer, verb, subject, variation, platform] = segments;
-  } else if (segments.length === 4) {
-    [verb, subject, variation, platform] = segments;
-  } else if (segments.length === 3) {
-    [verb, subject, variation] = segments;
-  } else if (segments.length === 2) {
-    [verb, subject] = segments;
-  } else if (segments.length === 1) {
-    verb = segments[0];
+  if (isProtocol) {
+    let subject = "";
+    if (segments.length >= 4) {
+      [layer, subject, variation, platform] = segments;
+    } else if (segments.length === 3) {
+      const [a, b, c] = segments;
+      if (applyDefault(a, layer) === layer) {
+        layer = a;
+        subject = b;
+        variation = c;
+      } else {
+        subject = a;
+        variation = b;
+        platform = c;
+      }
+    } else if (segments.length === 2) {
+      const [a, b] = segments;
+      if (applyDefault(a, layer) === layer) {
+        layer = a;
+        subject = b;
+      } else {
+        subject = a;
+        variation = b;
+      }
+    } else if (segments.length === 1) {
+      subject = segments[0];
+    }
+    layer = applyDefault(layer, defaultsSafe.layer);
+    subject = applyDefault(subject, "");
+    variation = applyDefault(variation, defaultsSafe.variation);
+    platform = applyDefault(platform, defaultsSafe.platform);
+    if (layer && subject && variation && platform) {
+      return `/${layer}/${subject}/${variation}/${platform}`;
+    }
+    return null;
+  } else {
+    let verb = "";
+    let subject = "";
+    if (segments.length >= 5) {
+      [layer, verb, subject, variation, platform] = segments;
+    } else if (segments.length === 4) {
+      [verb, subject, variation, platform] = segments;
+    } else if (segments.length === 3) {
+      [verb, subject, variation] = segments;
+    } else if (segments.length === 2) {
+      [verb, subject] = segments;
+    } else if (segments.length === 1) {
+      verb = segments[0];
+    }
+    layer = applyDefault(layer, defaultsSafe.layer);
+    verb = applyDefault(verb, "");
+    subject = applyDefault(subject, "");
+    variation = applyDefault(variation, defaultsSafe.variation);
+    platform = applyDefault(platform, defaultsSafe.platform);
+    if (layer && verb && subject && variation && platform) {
+      return `/${layer}/${verb}/${subject}/${variation}/${platform}`;
+    }
+    return null;
   }
-
-  layer = applyDefault(layer, defaultsSafe.layer);
-  verb = applyDefault(verb, "");
-  subject = applyDefault(subject, "");
-  variation = applyDefault(variation, defaultsSafe.variation);
-  platform = applyDefault(platform, defaultsSafe.platform);
-
-  if (layer && verb && subject && variation && platform) {
-    return `/${layer}/${verb}/${subject}/${variation}/${platform}`;
-  }
-  return null;
 }
 
 function makeScope(parent?: TypeScope, scopeType?: Type): TypeScope {
@@ -292,14 +334,14 @@ function typeCheckStatement(
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
-  contractSpecs?: Record<string, RemoteContractSpec>,
+  specs?: Record<string, RemoteContractSpec>,
   defaults?: { layer: string; variation: string; platform: string }
 ) {
   switch (stmt.kind) {
     case NodeKind.Job: {
       const job = stmt as JobNode;
       const classification = job.classification?.lexeme;
-      const jobSpec = classification ? contractSpecs?.[classification] : undefined;
+      const jobSpec = classification ? specs?.[classification] : undefined;
       if (classification && !jobSpec) {
         addTypeError(
           diagnostics,
@@ -314,7 +356,7 @@ function typeCheckStatement(
       for (const target of job.targets) {
         declare(jobScope, target, UNKNOWN);
       }
-      typeCheckBlock(job.body, jobScope, diagnostics, collector, contractSpecs, defaults);
+      typeCheckBlock(job.body, jobScope, diagnostics, collector, specs, defaults);
       for (const param of job.params) {
         recordTokenType(param, jobScope, collector);
       }
@@ -348,7 +390,7 @@ function typeCheckStatement(
       for (const target of def.targets) {
         declare(defScope, target, UNKNOWN);
       }
-      typeCheckBlock(def.body, defScope, diagnostics, collector, contractSpecs, defaults);
+      typeCheckBlock(def.body, defScope, diagnostics, collector, specs, defaults);
 
       placeholder.params = def.params.map((p) => lookup(defScope, p.lexeme)?.type ?? UNKNOWN);
       placeholder.returns = def.targets.map((t) => lookup(defScope, t.lexeme)?.type ?? UNKNOWN);
@@ -363,31 +405,31 @@ function typeCheckStatement(
     }
     case NodeKind.Statement: {
       const classification = (stmt as any).classification?.lexeme;
-      const normalizedClassification = classification ? normalizeWithDefaults(classification, defaults) : null;
       const stmtKeyword = ((stmt as any).keyword as Token | undefined)?.lexeme?.toLowerCase();
       const isContract = stmtKeyword === "sub" || stmtKeyword === "job";
       const isProtocol = stmtKeyword === "host" || stmtKeyword === "join";
+      const normalizedClassification = classification ? normalizeWithDefaults(classification, defaults, isProtocol) : null;
       const obligationOrder: Array<any> =
         (stmt as any).obligationOrder && (stmt as any).obligationOrder.length
           ? (stmt as any).obligationOrder
           : [];
-      let spec = classification ? contractSpecs?.[classification] : undefined;
+      let spec = classification ? specs?.[classification] : undefined;
       if (!spec && normalizedClassification) {
-        spec = contractSpecs?.[normalizedClassification];
+        spec = specs?.[normalizedClassification];
       }
-      if (!spec && classification && contractSpecs) {
-        const key = Object.keys(contractSpecs).find((k) => k.startsWith(classification));
+      if (!spec && classification && specs) {
+        const key = Object.keys(specs).find((k) => k.startsWith(classification));
         if (key) {
-          spec = contractSpecs[key];
+          spec = specs[key];
         }
       }
-      if (!spec && normalizedClassification && contractSpecs) {
-        const key = Object.keys(contractSpecs).find((k) => k.startsWith(normalizedClassification));
+      if (!spec && normalizedClassification && specs) {
+        const key = Object.keys(specs).find((k) => k.startsWith(normalizedClassification));
         if (key) {
-          spec = contractSpecs[key];
+          spec = specs[key];
         }
       }
-      if (classification && contractSpecs && !spec) {
+      if (classification && specs && !spec) {
         addTypeError(
           diagnostics,
           (stmt as any).classification.range,
@@ -405,7 +447,7 @@ function typeCheckStatement(
         scope,
         diagnostics,
         collector,
-        contractSpecs,
+        specs,
         defaults
       );
       const scopeBinding = scope.bindings.get("$");
@@ -475,7 +517,7 @@ function typeCheckStatement(
           if (scopeBinding) {
             scopeBinding.type = incomingType;
           }
-          typeCheckBlock(item.block, scope, diagnostics, collector, contractSpecs, defaults);
+          typeCheckBlock(item.block, scope, diagnostics, collector, specs, defaults);
           if (scopeBinding) {
             scopeBinding.type = originalScopeType;
           }
@@ -493,11 +535,11 @@ function typeCheckBlock(
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
-  contractSpecs?: Record<string, RemoteContractSpec>,
+  specs?: Record<string, RemoteContractSpec>,
   defaults?: { layer: string; variation: string; platform: string }
 ): Map<string, Type> {
   for (const stmt of block.statements) {
-    typeCheckStatement(stmt, scope, diagnostics, collector, contractSpecs, defaults);
+    typeCheckStatement(stmt, scope, diagnostics, collector, specs, defaults);
   }
   const declared = new Map<string, Type>();
   for (const [name, binding] of scope.bindings.entries()) {
@@ -512,7 +554,7 @@ function typeCheckExpression(
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
-  contractSpecs?: Record<string, RemoteContractSpec>,
+  specs?: Record<string, RemoteContractSpec>,
   defaults?: { layer: string; variation: string; platform: string }
 ): TypeResult {
   if (!expr) return [];
@@ -538,7 +580,7 @@ function typeCheckExpression(
       recordTypes((expr as any).token.range, [literalType], collector);
       return [literalType];
     case NodeKind.Unary: {
-      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, contractSpecs, defaults);
+      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, specs, defaults);
       const operandType = operandTypes[0] ?? UNKNOWN;
       const op = (expr as any).operator;
       if (op.kind === TokenKind.Bang) {
@@ -556,21 +598,25 @@ function typeCheckExpression(
     }
     case NodeKind.Binary: {
       const binary = expr as any;
-      const left = typeCheckExpression(binary.left, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN;
-      const right = typeCheckExpression(binary.right, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN;
+      const left = typeCheckExpression(binary.left, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+      const right = typeCheckExpression(binary.right, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
       const op = binary.operator.kind;
       let result: TypeResult = [UNKNOWN];
       switch (op) {
         case TokenKind.Plus: {
+          const leftInt = left.kind === TypeKind.Integer;
+          const rightInt = right.kind === TypeKind.Integer;
+          const leftStr = left.kind === TypeKind.String;
+          const rightStr = right.kind === TypeKind.String;
+          if ((leftInt && (rightInt || isUnknown(right))) || (rightInt && isUnknown(left))) {
+            result = [INTEGER];
+            break;
+          }
+          if ((leftStr && (rightStr || isUnknown(right))) || (rightStr && isUnknown(left))) {
+            result = [STRING];
+            break;
+          }
           if (!isUnknown(left) && !isUnknown(right)) {
-            if (left.kind === TypeKind.Integer && right.kind === TypeKind.Integer) {
-              result = [INTEGER];
-              break;
-            }
-            if (left.kind === TypeKind.String && right.kind === TypeKind.String) {
-              result = [STRING];
-              break;
-            }
             addTypeError(
               diagnostics,
               binary.operator.range,
@@ -582,22 +628,26 @@ function typeCheckExpression(
         case TokenKind.Minus:
           ensureInteger(left, binary.operator.range, diagnostics);
           ensureInteger(right, binary.operator.range, diagnostics);
+          if (left.kind === TypeKind.Integer || right.kind === TypeKind.Integer || isUnknown(left) || isUnknown(right)) {
+            result = [INTEGER];
+            break;
+          }
           result = [INTEGER];
           break;
         case TokenKind.Star: {
+          const leftIsInt = left.kind === TypeKind.Integer;
+          const rightIsInt = right.kind === TypeKind.Integer;
+          const leftIsString = left.kind === TypeKind.String;
+          const rightIsString = right.kind === TypeKind.String;
+          if ((leftIsInt && (rightIsInt || isUnknown(right))) || (rightIsInt && isUnknown(left))) {
+            result = [INTEGER];
+            break;
+          }
+          if ((leftIsInt && rightIsString) || (leftIsString && rightIsInt)) {
+            result = [STRING];
+            break;
+          }
           if (!isUnknown(left) && !isUnknown(right)) {
-            const leftIsInt = left.kind === TypeKind.Integer;
-            const rightIsInt = right.kind === TypeKind.Integer;
-            const leftIsString = left.kind === TypeKind.String;
-            const rightIsString = right.kind === TypeKind.String;
-            if (leftIsInt && rightIsInt) {
-              result = [INTEGER];
-              break;
-            }
-            if ((leftIsInt && rightIsString) || (leftIsString && rightIsInt)) {
-              result = [STRING];
-              break;
-            }
             addTypeError(
               diagnostics,
               binary.operator.range,
@@ -610,6 +660,10 @@ function typeCheckExpression(
         case TokenKind.Percent:
           ensureInteger(left, binary.operator.range, diagnostics);
           ensureInteger(right, binary.operator.range, diagnostics);
+          if (left.kind === TypeKind.Integer || right.kind === TypeKind.Integer || isUnknown(left) || isUnknown(right)) {
+            result = [INTEGER];
+            break;
+          }
           result = [INTEGER];
           break;
         case TokenKind.EqualsEquals:
@@ -629,12 +683,16 @@ function typeCheckExpression(
         case TokenKind.LessThan:
         case TokenKind.LessEquals: {
           const bothInts = left.kind === TypeKind.Integer && right.kind === TypeKind.Integer;
-          if (!isUnknown(left) && !isUnknown(right) && !bothInts) {
-            addTypeError(
-              diagnostics,
-              binary.operator.range,
-              `Relational operators require INTEGER operands, got ${typeToString(left)} and ${typeToString(right)}`
-            );
+          if (!bothInts) {
+            if ((left.kind === TypeKind.Integer && isUnknown(right)) || (right.kind === TypeKind.Integer && isUnknown(left))) {
+              // assume integer comparison when one side is INTEGER
+            } else if (!isUnknown(left) && !isUnknown(right)) {
+              addTypeError(
+                diagnostics,
+                binary.operator.range,
+                `Relational operators require INTEGER operands, got ${typeToString(left)} and ${typeToString(right)}`
+              );
+            }
           }
           result = [BOOLEAN];
           break;
@@ -648,12 +706,35 @@ function typeCheckExpression(
         default:
           result = [UNKNOWN];
       }
+      // If result is still unknown, but one side gives us a strong hint, set it.
+      if (result[0].kind === TypeKind.Unknown) {
+        if (
+          (op === TokenKind.Plus || op === TokenKind.Minus || op === TokenKind.Star || op === TokenKind.Slash || op === TokenKind.Percent) &&
+          (left.kind === TypeKind.Integer || right.kind === TypeKind.Integer)
+        ) {
+          result = [INTEGER];
+        } else if (op === TokenKind.Plus && (left.kind === TypeKind.String || right.kind === TypeKind.String)) {
+          result = [STRING];
+        } else if (
+          (op === TokenKind.EqualsEquals ||
+            op === TokenKind.BangEquals ||
+            op === TokenKind.GreaterThan ||
+            op === TokenKind.GreaterEquals ||
+            op === TokenKind.LessThan ||
+            op === TokenKind.LessEquals ||
+            op === TokenKind.AndAnd ||
+            op === TokenKind.OrOr) &&
+          (left.kind === TypeKind.Boolean || right.kind === TypeKind.Boolean)
+        ) {
+          result = [BOOLEAN];
+        }
+      }
       recordTypes(expr.range, result, collector);
       return result;
     }
     case NodeKind.Qualified: {
       const qualified = expr as QualifiedNode;
-      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, contractSpecs, defaults);
+      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, specs, defaults);
       recordTypes(expr.range, types, collector);
       return types;
     }
@@ -664,10 +745,10 @@ function typeCheckExpression(
       const calleeType =
         builtin
           ? builtinToFunctionType(builtin)
-          : typeCheckExpression(call.callee, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN;
+          : typeCheckExpression(call.callee, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
 
       const argTypes = call.args.map(
-        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, contractSpecs, defaults)[0] ?? UNKNOWN
+        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN
       );
       const returns = applyFunctionType(calleeType, argTypes, call.range, diagnostics, builtin?.enforceArity ?? true);
       recordTypes(expr.range, returns, collector);
@@ -675,14 +756,14 @@ function typeCheckExpression(
     }
     case NodeKind.If: {
       const ifNode = expr as IfNode;
-      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, contractSpecs, defaults);
+      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, specs, defaults);
       ensureBoolean(conditionTypes[0] ?? UNKNOWN, ifNode.range, diagnostics);
 
       const thenScope = makeScope(scope, lookup(scope, "$")?.type);
       const elseScope = makeScope(scope, lookup(scope, "$")?.type);
-      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, contractSpecs, defaults);
+      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, specs, defaults);
       const elseBindings = ifNode.elseBlock
-        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, contractSpecs, defaults)
+        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, specs, defaults)
         : new Map<string, Type>();
       for (const [name, thenType] of thenBindings.entries()) {
         if (elseBindings.has(name)) {

@@ -33,7 +33,7 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
   // def introduces a callable binding in the enclosing scope; params are local to the def.
   // An explicit target on def binds the obligation/result.
   def add_and_scale(a, b) result:
-    (a + b) * 2 -> result
+    2 * (a + b) -> result
   end
 
   // calls can use defs; targets after -> declare in the current scope.
@@ -83,9 +83,22 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
       $ -> no4
     }
 
-    host /data/integer/default/x64(_integer, minimum_value, maximum_value) -> _self_
+    host /data/integer(_integer, minimum_value, maximum_value) -> int1
+    host /data/integer/./x64(_integer, minimum_value, maximum_value) -> int2
+    host /data/integer/default(_integer, minimum_value, maximum_value) -> int3
+    host /data/integer/.(_integer, minimum_value, maximum_value) -> int4
+    host /data/integer/./.(_integer, minimum_value, maximum_value) -> int5
+    host /data/integer/default/x64(_integer, minimum_value, maximum_value) -> int6
+    host integer(_integer, minimum_value, maximum_value) -> int7
 
-    join /data/integer/default/x64(_self_) -> minimum_value, maximum_value, _integer
+
+
+    join /data/integer(_self_) -> min1, max1, _integer1
+    join /data/integer/./x64(_self_) -> min2, max2, _integer2
+    join /data/integer/default(_self_) -> min3, max3, _integer3
+    join /data/integer/default/x64(_self_) -> min4, max4, _integer4
+    join integer(_self_) -> min5, max5, _integer5
+
 
   // Braced blocks do not create a new scope; `$` is the incoming value.
   HELLO_STR -> {

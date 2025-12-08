@@ -213,7 +213,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		for (const stmt of stmts) {
 			const cls = (stmt as any).classification?.lexeme;
 			if (cls) {
-				const normalized = normalizeClassification(cls, defaults);
+				const keyword = (stmt as any).keyword?.lexeme?.toLowerCase?.();
+				const isProtocol = keyword === 'host' || keyword === 'join';
+				const normalized = isProtocol
+					? normalizeProtocolClassification(cls, defaults)
+					: normalizeClassification(cls, defaults);
 				if (normalized) {
 					classifications.add(normalized);
 					rawToNormalized.set(cls, normalized);
@@ -229,15 +233,15 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	};
 	collect((program as ProgramNode).statements);
 
-	const contractSpecs: Record<string, RemoteContractSpec> = {};
+	const specs: Record<string, RemoteContractSpec> = {};
 	for (const cls of classifications) {
 		try {
 			const spec = await gatewayClient.fetchContractSpec(cls);
 			if (spec) {
-				contractSpecs[cls] = spec;
+				specs[cls] = spec;
 				for (const [raw, norm] of rawToNormalized.entries()) {
 					if (norm === cls && raw !== cls) {
-						contractSpecs[raw] = spec;
+						specs[raw] = spec;
 					}
 				}
 			}
@@ -251,7 +255,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		{
 			maxNumberOfProblems: settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
 		},
-		contractSpecs,
+		specs,
 		defaults
 	);
 
@@ -409,6 +413,55 @@ function normalizeClassification(raw: string, defaults: { layer: string; variati
 	return null;
 }
 
+function normalizeProtocolClassification(raw: string, defaults: { layer: string; variation: string; platform: string }) {
+	const withoutSupplier = raw.split('@')[0] ?? raw;
+	const beforeParen = withoutSupplier.split('(')[0] ?? withoutSupplier;
+	const cleaned = beforeParen.trim().replace(/^\/+/, '');
+	const segments = cleaned.split('/').filter(s => s.length > 0);
+	const applyDefault = (seg: string | undefined, fallback: string) => (!seg || seg === '.' ? fallback : seg);
+
+	let layer = applyDefault(defaults.layer, defaults.layer);
+	let subject = '';
+	let variation = applyDefault(defaults.variation, defaults.variation);
+	let platform = applyDefault(defaults.platform, defaults.platform);
+
+	if (segments.length >= 4) {
+		[layer, subject, variation, platform] = segments;
+	} else if (segments.length === 3) {
+		const [a, b, c] = segments;
+		if (applyDefault(a, layer) === layer) {
+			layer = a;
+			subject = b;
+			variation = c;
+		} else {
+			subject = a;
+			variation = b;
+			platform = c;
+		}
+	} else if (segments.length === 2) {
+		const [a, b] = segments;
+		if (applyDefault(a, layer) === layer) {
+			layer = a;
+			subject = b;
+		} else {
+			subject = a;
+			variation = b;
+		}
+	} else if (segments.length === 1) {
+		subject = segments[0];
+	}
+
+	layer = applyDefault(layer, defaults.layer);
+	subject = applyDefault(subject, '');
+	variation = applyDefault(variation, defaults.variation);
+	platform = applyDefault(platform, defaults.platform);
+
+	if (layer && subject && variation && platform) {
+		return `/${layer}/${subject}/${variation}/${platform}`;
+	}
+	return null;
+}
+
 function rangeContainsPosition(range: { start: { line: number; character: number }; end: { line: number; character: number } }, position: { line: number; character: number }) {
 	if (position.line < range.start.line || position.line > range.end.line) return false;
 	if (position.line === range.start.line && position.character < range.start.character) return false;
@@ -416,32 +469,44 @@ function rangeContainsPosition(range: { start: { line: number; character: number
 	return true;
 }
 
-function getAstClassification(document: TextDocument, params: TextDocumentPositionParams): { classification: string; supplier: string } | null {
+function getAstClassification(
+	document: TextDocument,
+	params: TextDocumentPositionParams
+): { classification: string; supplier: string; kind?: 'contract' | 'protocol' } | null {
 	try {
 		const { program } = parseText(document.getText());
 		const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
 
 		const findStmt = (
 			statements: Statement[],
-			inheritedClassification?: { lexeme: string }
-		): { stmt: Statement; classification?: { lexeme: string } } | null => {
+			inheritedClassification?: { lexeme: string },
+			inheritedKind?: 'contract' | 'protocol'
+		): { stmt: Statement; classification?: { lexeme: string }; kind?: 'contract' | 'protocol' } | null => {
 			for (const stmt of statements) {
 				if (!rangeContainsPosition(stmt.range, params.position)) continue;
 
 				const currentClassification = (stmt as any)?.classification ?? inheritedClassification;
+				const currentKind =
+					((stmt as any).keyword?.lexeme?.toLowerCase?.() === 'host' ||
+						(stmt as any).keyword?.lexeme?.toLowerCase?.() === 'join')
+						? 'protocol'
+						: ((stmt as any).keyword?.lexeme?.toLowerCase?.() === 'sub' ||
+								(stmt as any).keyword?.lexeme?.toLowerCase?.() === 'job')
+						? 'contract'
+						: inheritedKind;
 
 				// Recurse into inner statements first for most specific match.
 				const jobBody = (stmt as any).body;
 				if (jobBody?.statements) {
-					const inner = findStmt(jobBody.statements, currentClassification);
+					const inner = findStmt(jobBody.statements, currentClassification, currentKind);
 					if (inner) return inner;
 				}
 				const block = (stmt as any).block;
 				if (block?.statements) {
-					const inner = findStmt(block.statements, currentClassification);
+					const inner = findStmt(block.statements, currentClassification, currentKind);
 					if (inner) return inner;
 				}
-				return { stmt, classification: currentClassification };
+				return { stmt, classification: currentClassification, kind: currentKind };
 			}
 			return null;
 		};
@@ -449,9 +514,12 @@ function getAstClassification(document: TextDocument, params: TextDocumentPositi
 		const result = findStmt((program as unknown as ProgramNode).statements);
 		const classificationToken = result?.classification;
 		if (classificationToken?.lexeme) {
-			const classification = normalizeClassification(classificationToken.lexeme, defaults);
+			const classification =
+				result?.kind === 'protocol'
+					? normalizeProtocolClassification(classificationToken.lexeme, defaults)
+					: normalizeClassification(classificationToken.lexeme, defaults);
 			if (classification) {
-				return { classification, supplier: '' };
+				return { classification, supplier: '', kind: result?.kind ?? 'contract' } as any;
 			}
 		}
 		return null;
@@ -473,15 +541,15 @@ function getClassificationFromDocument(document: TextDocument, params: TextDocum
 	if (contractMatch?.[2]) {
 		const classification = normalizeClassification(contractMatch[2], defaults);
 		if (classification) {
-			return { classification, supplier: '' };
+			return { classification, supplier: '', kind: 'contract' as const };
 		}
 	}
 
 	const protocolMatch = lineText.match(/.*\b(host|join)\s+([^\s]+)/i);
 	if (protocolMatch?.[2]) {
-		const classification = normalizeClassification(protocolMatch[2], defaults);
+		const classification = normalizeProtocolClassification(protocolMatch[2], defaults);
 		if (classification) {
-			return { classification, supplier: '' };
+			return { classification, supplier: '', kind: 'protocol' as const };
 		}
 	}
 
@@ -544,15 +612,23 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	}
 	let contractSpecs: Record<string, RemoteContractSpec> | undefined;
 	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
-	const parsed = getClassificationFromDocument(document, params);
+	const parsed = getClassificationFromDocument(document, params) as any;
 	if (parsed?.classification) {
 		debugLog(`Hover: classification ${parsed.classification}, supplier=${parsed.supplier ?? ''}`);
-		const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+		const normalized =
+			parsed.kind === 'protocol'
+				? normalizeProtocolClassification(parsed.classification, defaults)
+				: normalizeClassification(parsed.classification, defaults);
+		const clsToFetch = normalized ?? parsed.classification;
+		const spec = await gatewayClient.fetchContractSpec(clsToFetch);
 		if (!spec) {
-			debugLog(`Hover: no spec returned for ${parsed.classification}`);
+			debugLog(`Hover: no spec returned for ${clsToFetch}`);
 		} else {
-			contractSpecs = { [parsed.classification]: spec };
-			debugLog(`Hover: fetched spec for ${parsed.classification} (not rendering spec hover)`);
+			contractSpecs = { [clsToFetch]: spec };
+			if (clsToFetch !== parsed.classification) {
+				contractSpecs[parsed.classification] = spec;
+			}
+			debugLog(`Hover: fetched spec for ${clsToFetch} (not rendering spec hover)`);
 		}
 	} else {
 		debugLog('Hover: no classification found for spec fetch');

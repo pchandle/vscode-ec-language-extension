@@ -118,11 +118,67 @@ sub /data/new/integer/default/x64(flow, 1, 10, 255)
 `;
     const { program } = parseText(text);
     const { diagnostics } = typeCheckProgram(program, {
-      contractSpecs: { "/data/new/integer/default/x64": spec as any }
+      specs: { "/data/new/integer/default/x64": spec as any }
     });
     const reqErrors = diagnostics.filter((d) => d.message.includes("Requirement count mismatch"));
     const oblErrors = diagnostics.filter((d) => d.message.includes("Obligation count mismatch"));
     assert.equal(reqErrors.length, 2, `expected 2 requirement count errors, got ${reqErrors.length}`);
     assert.equal(oblErrors.length, 3, `expected 3 obligation count errors, got ${oblErrors.length}`);
+  });
+
+  it("infers scalar types for assignment targets from arithmetic/concat/logical expressions", () => {
+    const text = `
+2 * (a + b) -> resultInt
+"dog" + cat_label -> ANIMALS_STR
+true && logic_label -> ANSWER_BOOL
+`;
+    const { program } = parseText(text);
+    const { types } = typeCheckProgram(program, { collectTypes: true });
+
+    function typeOf(name: string) {
+      for (const stmt of (program as any).statements) {
+        const tok = stmt.targets?.find((t: any) => t.lexeme === name);
+        if (!tok) continue;
+        const match = types?.find(
+          (t) =>
+            t.range.start.line === tok.range.start.line &&
+            t.range.start.character === tok.range.start.character &&
+            t.range.end.line === tok.range.end.line &&
+            t.range.end.character === tok.range.end.character
+        );
+        if (match) return match.types[0];
+      }
+      return null;
+    }
+
+    assert.equal((typeOf("resultInt") as any)?.kind, TypeKind.Integer, "expected integer target type");
+    assert.equal((typeOf("ANIMALS_STR") as any)?.kind, TypeKind.String, "expected string target type");
+    assert.equal((typeOf("ANSWER_BOOL") as any)?.kind, TypeKind.Boolean, "expected boolean target type");
+  });
+
+  it("normalizes protocol classifications with defaults/placeholders", () => {
+    const text = `
+host /data/integer(_integer, minimum_value, maximum_value) -> int1
+host /data/integer/default(_integer, minimum_value, maximum_value) -> int3
+host /data/integer/.(_integer, minimum_value, maximum_value) -> int4
+join /data/integer(_self_) -> min1, max1, _integer1
+join /data/integer/default(_self_) -> min3, max3, _integer3
+`;
+    const spec = {
+      requirements: [
+        { name: "_integer", type: "/data/flow/default/x64" },
+        { name: "minimum_value", type: "integer" },
+        { name: "maximum_value", type: "integer" }
+      ],
+      obligations: [{ type: "/data/integer/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/data/integer/default/x64": spec as any },
+      defaults
+    });
+    const unknowns = diagnostics.filter((d) => d.message.includes("Unknown protocol specification"));
+    assert.equal(unknowns.length, 0, `expected protocol specs to resolve after normalization, got ${unknowns.map((d) => d.message).join(", ")}`);
   });
 });

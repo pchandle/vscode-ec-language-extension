@@ -30,7 +30,7 @@ describe("type hover with contract specs", () => {
     const targetToken = (program.statements[0] as any).targets[0];
     const { types } = typeCheckProgram(program, {
       collectTypes: true,
-      contractSpecs: { "/data/check/condition/default/x64": spec as any }
+      specs: { "/data/check/condition/default/x64": spec as any }
     });
 
     const match = types?.find((t) => rangesEqual(t.range, targetToken.range));
@@ -67,7 +67,7 @@ sub /data/check/condition(check) -> condD, yesD, { $ -> noD }
     const { program } = parseText(text);
     const { types } = typeCheckProgram(program, {
       collectTypes: true,
-      contractSpecs: { "/data/check/condition/default/x64": spec as any }
+      specs: { "/data/check/condition/default/x64": spec as any }
     });
 
     function findTargetToken(name: string): any {
@@ -142,7 +142,7 @@ sub /data/check/condition(check) -> {
     const { program } = parseText(text);
     const { types } = typeCheckProgram(program, {
       collectTypes: true,
-      contractSpecs: { "/data/check/condition/default/x64": spec as any }
+      specs: { "/data/check/condition/default/x64": spec as any }
     });
 
     function rangesEqual(a: any, b: any): boolean {

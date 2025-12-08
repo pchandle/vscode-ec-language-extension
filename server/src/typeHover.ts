@@ -55,7 +55,7 @@ export function getTypeHoverMarkdown(
 ): string | null {
   const effectiveDefaults = defaults || getDefaultsFromText(document.getText()) || { layer: "", variation: "", platform: "" };
   const { program } = parseText(document.getText());
-  const { types } = typeCheckProgram(program, { collectTypes: true, contractSpecs, defaults: effectiveDefaults });
+  const { types } = typeCheckProgram(program, { collectTypes: true, specs: contractSpecs, defaults: effectiveDefaults });
   if (!types?.length) return null;
   const best = pickBestType(types, position);
   if (!best) return null;
