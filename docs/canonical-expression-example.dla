@@ -8,6 +8,7 @@ sub /data/new/integer/default/x64(1, 10) -> OUTER_INT
 sub /data/new/integer/default/x64(flow, 1, 10) -> OUTER_INT2, _
 sub /data/new/integer/default/x64(flow, 1, 10)
 sub /data/new/integer/default/x64(flow, 1, 10, 255)
+sub /data/new/integer/default/x64(flow, 1, 10, 255) -> int1
 
 job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
 

@@ -181,4 +181,28 @@ join /data/integer/default(_self_) -> min3, max3, _integer3
     const unknowns = diagnostics.filter((d) => d.message.includes("Unknown protocol specification"));
     assert.equal(unknowns.length, 0, `expected protocol specs to resolve after normalization, got ${unknowns.map((d) => d.message).join(", ")}`);
   });
+
+  it("normalizes contract classifications with defaults/placeholders", () => {
+    const text = `
+sub /data/compare/integer(compare, int1, int2) -> out1
+sub compare/integer(compare, int1, int2) -> out2
+sub /data/compare/integer/.(compare, int1, int2) -> out3
+`;
+    const spec = {
+      requirements: [
+        { name: "compare", type: "/data/flow/default/x64" },
+        { name: "int1", type: "integer" },
+        { name: "int2", type: "integer" }
+      ],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/data/compare/integer/default/x64": spec as any },
+      defaults
+    });
+    const unknowns = diagnostics.filter((d) => d.message.includes("Unknown contract specification"));
+    assert.equal(unknowns.length, 0, `expected contract specs to resolve after normalization, got ${unknowns.map((d) => d.message).join(", ")}`);
+  });
 });

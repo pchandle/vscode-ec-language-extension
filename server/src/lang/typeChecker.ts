@@ -1,6 +1,7 @@
 import { Range } from "vscode-languageserver";
 import { RemoteContractSpec } from "../gatewayClient";
 import { BlockNode, DefNode, ExpressionNode, IfNode, JobNode, NodeKind, ProgramNode, QualifiedNode, ScopeRefNode, Statement } from "./ast";
+import { normalizeContractClassification, normalizeProtocolClassification, Defaults } from "./normalization";
 import { SyntaxDiagnostic, Token, TokenKind } from "./tokens";
 
 export enum TypeKind {
@@ -73,7 +74,7 @@ export function typeCheckProgram(
   options?: {
     collectTypes?: boolean;
     specs?: Record<string, RemoteContractSpec>;
-    defaults?: { layer: string; variation: string; platform: string };
+    defaults?: Defaults;
   }
 ): { diagnostics: SyntaxDiagnostic[]; types?: TypeAtPosition[] } {
   const diagnostics: SyntaxDiagnostic[] = [];
@@ -83,83 +84,6 @@ export function typeCheckProgram(
     typeCheckStatement(stmt, scope, diagnostics, types, options?.specs, options?.defaults);
   }
   return { diagnostics, types };
-}
-
-function normalizeWithDefaults(
-  raw: string,
-  defaults?: { layer: string; variation: string; platform: string },
-  isProtocol = false
-): string | null {
-  if (!raw) return null;
-  const defaultsSafe = defaults ?? { layer: "", variation: "", platform: "" };
-  const withoutSupplier = raw.split("@")[0] ?? raw;
-  const beforeParen = withoutSupplier.split("(")[0] ?? withoutSupplier;
-  const cleaned = beforeParen.trim().replace(/^\/+/, "");
-  const segments = cleaned.split("/").filter((s) => s.length > 0);
-  const applyDefault = (seg: string | undefined, fallback: string) => (!seg || seg === "." ? fallback : seg);
-
-  let layer = applyDefault(defaultsSafe.layer, defaultsSafe.layer);
-  let variation = applyDefault(defaultsSafe.variation, defaultsSafe.variation);
-  let platform = applyDefault(defaultsSafe.platform, defaultsSafe.platform);
-  if (isProtocol) {
-    let subject = "";
-    if (segments.length >= 4) {
-      [layer, subject, variation, platform] = segments;
-    } else if (segments.length === 3) {
-      const [a, b, c] = segments;
-      if (applyDefault(a, layer) === layer) {
-        layer = a;
-        subject = b;
-        variation = c;
-      } else {
-        subject = a;
-        variation = b;
-        platform = c;
-      }
-    } else if (segments.length === 2) {
-      const [a, b] = segments;
-      if (applyDefault(a, layer) === layer) {
-        layer = a;
-        subject = b;
-      } else {
-        subject = a;
-        variation = b;
-      }
-    } else if (segments.length === 1) {
-      subject = segments[0];
-    }
-    layer = applyDefault(layer, defaultsSafe.layer);
-    subject = applyDefault(subject, "");
-    variation = applyDefault(variation, defaultsSafe.variation);
-    platform = applyDefault(platform, defaultsSafe.platform);
-    if (layer && subject && variation && platform) {
-      return `/${layer}/${subject}/${variation}/${platform}`;
-    }
-    return null;
-  } else {
-    let verb = "";
-    let subject = "";
-    if (segments.length >= 5) {
-      [layer, verb, subject, variation, platform] = segments;
-    } else if (segments.length === 4) {
-      [verb, subject, variation, platform] = segments;
-    } else if (segments.length === 3) {
-      [verb, subject, variation] = segments;
-    } else if (segments.length === 2) {
-      [verb, subject] = segments;
-    } else if (segments.length === 1) {
-      verb = segments[0];
-    }
-    layer = applyDefault(layer, defaultsSafe.layer);
-    verb = applyDefault(verb, "");
-    subject = applyDefault(subject, "");
-    variation = applyDefault(variation, defaultsSafe.variation);
-    platform = applyDefault(platform, defaultsSafe.platform);
-    if (layer && verb && subject && variation && platform) {
-      return `/${layer}/${verb}/${subject}/${variation}/${platform}`;
-    }
-    return null;
-  }
 }
 
 function makeScope(parent?: TypeScope, scopeType?: Type): TypeScope {
@@ -335,7 +259,7 @@ function typeCheckStatement(
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
-  defaults?: { layer: string; variation: string; platform: string }
+  defaults?: Defaults
 ) {
   switch (stmt.kind) {
     case NodeKind.Job: {
@@ -408,7 +332,11 @@ function typeCheckStatement(
       const stmtKeyword = ((stmt as any).keyword as Token | undefined)?.lexeme?.toLowerCase();
       const isContract = stmtKeyword === "sub" || stmtKeyword === "job";
       const isProtocol = stmtKeyword === "host" || stmtKeyword === "join";
-      const normalizedClassification = classification ? normalizeWithDefaults(classification, defaults, isProtocol) : null;
+      const normalizedClassification = classification
+        ? isProtocol
+          ? normalizeProtocolClassification(classification, defaults)
+          : normalizeContractClassification(classification, defaults)
+        : null;
       const obligationOrder: Array<any> =
         (stmt as any).obligationOrder && (stmt as any).obligationOrder.length
           ? (stmt as any).obligationOrder
@@ -440,8 +368,11 @@ function typeCheckStatement(
             : `Unknown classification '${classification}'`
         );
       }
-      const obligations = spec?.obligations ?? [];
-      const requirements = (spec as any)?.requirements ?? [];
+      const roleSpec = isProtocol
+        ? (stmtKeyword === "host" ? (spec as any)?.host : (spec as any)?.join) ?? spec
+        : spec;
+      const obligations = roleSpec?.obligations ?? [];
+      const requirements = (roleSpec as any)?.requirements ?? [];
       const exprTypes = typeCheckExpression(
         stmt.expression as ExpressionNode | null,
         scope,
@@ -464,7 +395,7 @@ function typeCheckStatement(
               ...stmt.targets.map((t) => ({ type: "target", token: t } as const)),
             ];
 
-      const obligationTypes = obligations.map((o) => specTermToType(o as SpecTerm));
+      const obligationTypes = obligations.map((o: any) => specTermToType(o as SpecTerm));
       if (spec) {
         const callCount = ((stmt as any).callArgs as ExpressionNode[] | undefined)?.length ?? 0;
         if (requirements.length && callCount !== requirements.length) {
@@ -536,7 +467,7 @@ function typeCheckBlock(
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
-  defaults?: { layer: string; variation: string; platform: string }
+  defaults?: Defaults
 ): Map<string, Type> {
   for (const stmt of block.statements) {
     typeCheckStatement(stmt, scope, diagnostics, collector, specs, defaults);
@@ -555,7 +486,7 @@ function typeCheckExpression(
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
-  defaults?: { layer: string; variation: string; platform: string }
+  defaults?: Defaults
 ): TypeResult {
   if (!expr) return [];
   switch (expr.kind) {
