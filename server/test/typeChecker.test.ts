@@ -156,6 +156,146 @@ true && logic_label -> ANSWER_BOOL
     assert.equal((typeOf("ANSWER_BOOL") as any)?.kind, TypeKind.Boolean, "expected boolean target type");
   });
 
+  it("infers operand identifier types from integer arithmetic", () => {
+    const text = `
+2 * (a + b) -> result
+`;
+    const { program } = parseText(text);
+    const { types, diagnostics } = typeCheckProgram(program, { collectTypes: true });
+    const unknownDiag = diagnostics.find((d) => d.message.includes("Type of 'a' is unknown") || d.message.includes("Type of 'b' is unknown"));
+    assert.ok(!unknownDiag, `expected operand inference, got ${unknownDiag?.message ?? "unknown diagnostic"}`);
+
+    function typeOf(name: string) {
+      for (const stmt of (program as any).statements) {
+        const tok = stmt.targets?.find((t: any) => t.lexeme === name);
+        if (!tok) continue;
+        const match = types?.find(
+          (t) =>
+            t.range.start.line === tok.range.start.line &&
+            t.range.start.character === tok.range.start.character &&
+            t.range.end.line === tok.range.end.line &&
+            t.range.end.character === tok.range.end.character
+        );
+        if (match) return match.types[0];
+      }
+      return null;
+    }
+
+    assert.equal((typeOf("result") as any)?.kind, TypeKind.Integer, "expected INTEGER result");
+    const idTypes = (types ?? []).filter((t) => t.types[0]?.kind === TypeKind.Integer);
+    assert.ok(
+      idTypes.length >= 3,
+      "expected identifiers inside expression to be typed as INTEGER (a, b, result)"
+    );
+  });
+
+  it("emits requirement type mismatch when argument remains UNKNOWN", () => {
+    const text = `
+sub /data/compare/integer(compare, int1, int2) -> out1
+`;
+    const spec = {
+      requirements: [
+        { name: "compare", type: "/data/flow/default/x64" },
+        { name: "int1", type: "integer" },
+        { name: "int2", type: "integer" }
+      ],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/data/compare/integer/default/x64": spec as any },
+      defaults
+    });
+    const mismatches = diagnostics.filter((d) => d.message.includes("Type mismatch: expected"));
+    assert.ok(mismatches.length >= 1, `expected requirement type mismatch diagnostics, got ${mismatches.length}`);
+  });
+
+  it("types builtin asset function returning SITE", () => {
+    const text = `
+"test.elf" -> fn
+asset(fn) -> MY_SITE
+`;
+    const { program } = parseText(text);
+    const { types, diagnostics } = typeCheckProgram(program, { collectTypes: true });
+    assert.equal(diagnostics.length, 0, `expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+
+    function typeOf(name: string) {
+      for (const stmt of (program as any).statements) {
+        const tok = stmt.targets?.find((t: any) => t.lexeme === name);
+        if (!tok) continue;
+        const match = types?.find(
+          (t) =>
+            t.range.start.line === tok.range.start.line &&
+            t.range.start.character === tok.range.start.character &&
+            t.range.end.line === tok.range.end.line &&
+            t.range.end.character === tok.range.end.character
+        );
+        if (match) return match.types[0];
+      }
+      return null;
+    }
+
+    assert.equal((typeOf("MY_SITE") as any)?.kind, TypeKind.Site, "expected SITE target type");
+  });
+
+  it("infers identifier type from builtin argument expectation", () => {
+    const text = `
+int2str(b) -> cat
+`;
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { collectTypes: true });
+    const unknownDiag = diagnostics.find((d) => d.message.includes("Type of 'b' is unknown"));
+    assert.ok(!unknownDiag, "expected builtin arg to infer identifier type");
+  });
+
+  it("propagates requirement types into call arguments", () => {
+    const text = `
+"seed" -> check
+sub /data/check/condition(check) -> cond, yes, no
+`;
+    const spec = {
+      requirements: [{ name: "check", type: "string" }],
+      obligations: [{ type: "/data/flow/default/x64" }, { type: "/data/flow/default/x64" }, { type: "/data/flow/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { types, diagnostics } = typeCheckProgram(program, { collectTypes: true, specs: { "/data/check/condition/default/x64": spec as any }, defaults });
+    assert.equal(diagnostics.length, 0, `expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+
+    function typeOf(name: string) {
+      for (const stmt of (program as any).statements) {
+        const tok = stmt.expression?.args?.[0]?.token ?? stmt.targets?.find((t: any) => t.lexeme === name);
+        if (!tok) continue;
+        const match = types?.find(
+          (t) =>
+            t.range.start.line === tok.range.start.line &&
+            t.range.start.character === tok.range.start.character &&
+            t.range.end.line === tok.range.end.line &&
+            t.range.end.character === tok.range.end.character
+        );
+        if (match) return match.types[0];
+      }
+      return null;
+    }
+
+    assert.equal((typeOf("check") as any)?.kind, TypeKind.String, "expected STRING requirement type to flow to argument");
+  });
+
+  it("emits diagnostics for identifiers whose type remains unknown", () => {
+    const text = `
+def foo(a, b) -> sum
+  a + b -> sum
+end
+`;
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program);
+    const unknownTypeDiags = diagnostics.filter(
+      (d) => d.message.includes("Type of 'a' is unknown") || d.message.includes("Type of 'b' is unknown")
+    );
+    assert.ok(unknownTypeDiags.length >= 2, `expected unknown type diagnostics, got ${unknownTypeDiags.length}`);
+  });
+
   it("normalizes protocol classifications with defaults/placeholders", () => {
     const text = `
 host /data/integer(_integer, minimum_value, maximum_value) -> int1

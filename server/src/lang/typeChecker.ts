@@ -9,6 +9,7 @@ export enum TypeKind {
   Integer = "Integer",
   String = "String",
   Boolean = "Boolean",
+  Site = "Site",
   Classification = "Classification",
   Scope = "Scope",
   Function = "Function",
@@ -19,6 +20,7 @@ export type Type =
   | { kind: TypeKind.Integer }
   | { kind: TypeKind.String }
   | { kind: TypeKind.Boolean }
+  | { kind: TypeKind.Site }
   | { kind: TypeKind.Classification; classification?: string }
   | { kind: TypeKind.Scope }
   | FunctionType;
@@ -51,6 +53,7 @@ const UNKNOWN: Type = { kind: TypeKind.Unknown };
 const INTEGER: Type = { kind: TypeKind.Integer };
 const STRING: Type = { kind: TypeKind.String };
 const BOOLEAN: Type = { kind: TypeKind.Boolean };
+const SITE: Type = { kind: TypeKind.Site };
 const SCOPE_TYPE: Type = { kind: TypeKind.Scope };
 
 type BuiltinSignature = { params: Type[]; returns: Type[]; variadic?: Type; enforceArity?: boolean };
@@ -67,6 +70,7 @@ const BUILTIN_FUNCTIONS: Record<string, BuiltinSignature> = {
   pad: { params: [STRING, STRING, INTEGER], returns: [STRING] },
   escape: { params: [STRING], returns: [STRING] },
   maxlen: { params: [STRING], returns: [INTEGER] },
+  asset: { params: [STRING], returns: [SITE] },
 };
 
 export function typeCheckProgram(
@@ -151,6 +155,8 @@ export function typeToString(type: Type): string {
       return "STRING";
     case TypeKind.Boolean:
       return "BOOLEAN";
+    case TypeKind.Site:
+      return "SITE";
     case TypeKind.Classification:
       return type.classification ? `CLASSIFICATION(${type.classification})` : "CLASSIFICATION";
     case TypeKind.Scope:
@@ -183,6 +189,57 @@ function addTypeError(diagnostics: SyntaxDiagnostic[], range: Range, message: st
   diagnostics.push({ message, range });
 }
 
+function clearUnknownDiagnostic(diagnostics: SyntaxDiagnostic[], token: Token) {
+  const msg = `Type of '${token.lexeme}' is unknown`;
+  const sameRange = (d: SyntaxDiagnostic) =>
+    d.range.start.line === token.range.start.line &&
+    d.range.start.character === token.range.start.character &&
+    d.range.end.line === token.range.end.line &&
+    d.range.end.character === token.range.end.character;
+  for (let i = diagnostics.length - 1; i >= 0; i--) {
+    const d = diagnostics[i];
+    if (d.message === msg && sameRange(d)) {
+      diagnostics.splice(i, 1);
+    }
+  }
+}
+
+function assignToIdentifier(
+  expr: ExpressionNode,
+  scope: TypeScope,
+  incoming: Type,
+  diagnostics: SyntaxDiagnostic[],
+  collector?: TypeAtPosition[]
+) {
+  if (expr.kind !== NodeKind.Identifier) return;
+  const token = (expr as any).token;
+  const binding = lookup(scope, token.lexeme);
+  if (!binding) return;
+  const merged = mergeTypes(binding.type, incoming);
+  binding.type = merged;
+  clearUnknownDiagnostic(diagnostics, token);
+  recordTokenType(token, scope, collector);
+}
+
+function propagateExpectedType(
+  expr: ExpressionNode,
+  expected: Type,
+  scope: TypeScope,
+  diagnostics: SyntaxDiagnostic[],
+  collector?: TypeAtPosition[]
+) {
+  if (isUnknown(expected)) return;
+  if (expr.kind === NodeKind.Identifier) {
+    assignToIdentifier(expr, scope, expected, diagnostics, collector);
+    return;
+  }
+  if (expr.kind === NodeKind.Binary) {
+    const bin = expr as any;
+    propagateExpectedType(bin.left, expected, scope, diagnostics, collector);
+    propagateExpectedType(bin.right, expected, scope, diagnostics, collector);
+  }
+}
+
 function ensureBoolean(type: Type, range: Range, diagnostics: SyntaxDiagnostic[]) {
   if (isUnknown(type)) return;
   if (type.kind !== TypeKind.Boolean) {
@@ -204,7 +261,11 @@ function ensureString(type: Type, range: Range, diagnostics: SyntaxDiagnostic[])
   }
 }
 
-function ensureAssignable(expected: Type, actual: Type, range: Range, diagnostics: SyntaxDiagnostic[]) {
+function ensureAssignable(expected: Type, actual: Type, range: Range, diagnostics: SyntaxDiagnostic[], treatUnknownAsMismatch = false) {
+  if (treatUnknownAsMismatch && !isUnknown(expected) && isUnknown(actual)) {
+    addTypeError(diagnostics, range, `Type mismatch: expected ${typeToString(expected)}, got UNKNOWN`);
+    return;
+  }
   if (isUnknown(expected) || isUnknown(actual)) return;
   if (expected.kind === TypeKind.Classification && actual.kind === TypeKind.Classification) {
     if (expected.classification && actual.classification && expected.classification !== actual.classification) {
@@ -234,6 +295,8 @@ function specTermToType(term: SpecTerm): Type {
       return STRING;
     case "boolean":
       return BOOLEAN;
+    case "site":
+      return SITE;
     case "abstraction":
       return term.protocol ? { kind: TypeKind.Classification, classification: term.protocol } : UNKNOWN;
     case "classification":
@@ -341,6 +404,7 @@ function typeCheckStatement(
         (stmt as any).obligationOrder && (stmt as any).obligationOrder.length
           ? (stmt as any).obligationOrder
           : [];
+      const callArgs: ExpressionNode[] = ((stmt as any).callArgs as ExpressionNode[] | undefined) ?? [];
       let spec = classification ? specs?.[classification] : undefined;
       if (!spec && normalizedClassification) {
         spec = specs?.[normalizedClassification];
@@ -397,7 +461,7 @@ function typeCheckStatement(
 
       const obligationTypes = obligations.map((o: any) => specTermToType(o as SpecTerm));
       if (spec) {
-        const callCount = ((stmt as any).callArgs as ExpressionNode[] | undefined)?.length ?? 0;
+        const callCount = callArgs.length;
         if (requirements.length && callCount !== requirements.length) {
           addTypeError(
             diagnostics,
@@ -412,6 +476,24 @@ function typeCheckStatement(
             (stmt as any).classification?.range ?? stmt.range,
             `Obligation count mismatch: expected ${obligations.length}, got ${actualObligations}`
           );
+        }
+      }
+      // Type check call arguments and ensure they are assignable to requirements when both are known.
+      const callArgTypes = callArgs.map((arg) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN);
+      if (requirements.length) {
+        for (let i = 0; i < Math.min(requirements.length, callArgTypes.length); i++) {
+          const reqType = specTermToType(requirements[i] as SpecTerm);
+          if (!isUnknown(reqType)) {
+            ensureAssignable(reqType, callArgTypes[i], (callArgs[i] as any).range ?? stmt.range, diagnostics, true);
+            const arg = callArgs[i];
+            if (arg.kind === NodeKind.Identifier) {
+              const binding = lookup(scope, (arg as any).token.lexeme);
+              if (binding) {
+                binding.type = mergeTypes(binding.type, reqType);
+                recordTokenType((arg as any).token, scope, collector);
+              }
+            }
+          }
         }
       }
 
@@ -493,6 +575,9 @@ function typeCheckExpression(
     case NodeKind.Identifier: {
       const binding = lookup(scope, (expr as any).token.lexeme);
       const type = binding?.type ?? UNKNOWN;
+      if (binding && type.kind === TypeKind.Unknown) {
+        addTypeError(diagnostics, (expr as any).token.range, `Type of '${(expr as any).token.lexeme}' is unknown`);
+      }
       recordTypes((expr as any).token.range, [type], collector);
       return [type];
     }
@@ -529,8 +614,10 @@ function typeCheckExpression(
     }
     case NodeKind.Binary: {
       const binary = expr as any;
-      const left = typeCheckExpression(binary.left, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
-      const right = typeCheckExpression(binary.right, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+      const leftExpr = binary.left as ExpressionNode;
+      const rightExpr = binary.right as ExpressionNode;
+      const left = typeCheckExpression(leftExpr, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+      const right = typeCheckExpression(rightExpr, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
       const op = binary.operator.kind;
       let result: TypeResult = [UNKNOWN];
       switch (op) {
@@ -539,6 +626,22 @@ function typeCheckExpression(
           const rightInt = right.kind === TypeKind.Integer;
           const leftStr = left.kind === TypeKind.String;
           const rightStr = right.kind === TypeKind.String;
+          if (leftInt && right.kind === TypeKind.Unknown) {
+            assignToIdentifier(rightExpr, scope, INTEGER, diagnostics, collector);
+            propagateExpectedType(rightExpr, INTEGER, scope, diagnostics, collector);
+          }
+          if (rightInt && left.kind === TypeKind.Unknown) {
+            assignToIdentifier(leftExpr, scope, INTEGER, diagnostics, collector);
+            propagateExpectedType(leftExpr, INTEGER, scope, diagnostics, collector);
+          }
+          if (leftStr && right.kind === TypeKind.Unknown) {
+            assignToIdentifier(rightExpr, scope, STRING, diagnostics, collector);
+            propagateExpectedType(rightExpr, STRING, scope, diagnostics, collector);
+          }
+          if (rightStr && left.kind === TypeKind.Unknown) {
+            assignToIdentifier(leftExpr, scope, STRING, diagnostics, collector);
+            propagateExpectedType(leftExpr, STRING, scope, diagnostics, collector);
+          }
           if ((leftInt && (rightInt || isUnknown(right))) || (rightInt && isUnknown(left))) {
             result = [INTEGER];
             break;
@@ -557,6 +660,10 @@ function typeCheckExpression(
           break;
         }
         case TokenKind.Minus:
+          assignToIdentifier(leftExpr, scope, INTEGER, diagnostics, collector);
+          assignToIdentifier(rightExpr, scope, INTEGER, diagnostics, collector);
+          propagateExpectedType(leftExpr, INTEGER, scope, diagnostics, collector);
+          propagateExpectedType(rightExpr, INTEGER, scope, diagnostics, collector);
           ensureInteger(left, binary.operator.range, diagnostics);
           ensureInteger(right, binary.operator.range, diagnostics);
           if (left.kind === TypeKind.Integer || right.kind === TypeKind.Integer || isUnknown(left) || isUnknown(right)) {
@@ -570,6 +677,14 @@ function typeCheckExpression(
           const rightIsInt = right.kind === TypeKind.Integer;
           const leftIsString = left.kind === TypeKind.String;
           const rightIsString = right.kind === TypeKind.String;
+          if (leftIsInt && right.kind === TypeKind.Unknown) {
+            assignToIdentifier(rightExpr, scope, INTEGER, diagnostics, collector);
+            propagateExpectedType(rightExpr, INTEGER, scope, diagnostics, collector);
+          }
+          if (rightIsInt && left.kind === TypeKind.Unknown) {
+            assignToIdentifier(leftExpr, scope, INTEGER, diagnostics, collector);
+            propagateExpectedType(leftExpr, INTEGER, scope, diagnostics, collector);
+          }
           if ((leftIsInt && (rightIsInt || isUnknown(right))) || (rightIsInt && isUnknown(left))) {
             result = [INTEGER];
             break;
@@ -589,6 +704,10 @@ function typeCheckExpression(
         }
         case TokenKind.Slash:
         case TokenKind.Percent:
+          assignToIdentifier(leftExpr, scope, INTEGER, diagnostics, collector);
+          assignToIdentifier(rightExpr, scope, INTEGER, diagnostics, collector);
+          propagateExpectedType(leftExpr, INTEGER, scope, diagnostics, collector);
+          propagateExpectedType(rightExpr, INTEGER, scope, diagnostics, collector);
           ensureInteger(left, binary.operator.range, diagnostics);
           ensureInteger(right, binary.operator.range, diagnostics);
           if (left.kind === TypeKind.Integer || right.kind === TypeKind.Integer || isUnknown(left) || isUnknown(right)) {
@@ -599,6 +718,14 @@ function typeCheckExpression(
           break;
         case TokenKind.EqualsEquals:
         case TokenKind.BangEquals: {
+          if (!isUnknown(left) && right.kind === TypeKind.Unknown) {
+            assignToIdentifier(rightExpr, scope, left, diagnostics, collector);
+            propagateExpectedType(rightExpr, left, scope, diagnostics, collector);
+          }
+          if (!isUnknown(right) && left.kind === TypeKind.Unknown) {
+            assignToIdentifier(leftExpr, scope, right, diagnostics, collector);
+            propagateExpectedType(leftExpr, right, scope, diagnostics, collector);
+          }
           if (!isUnknown(left) && !isUnknown(right) && left.kind !== right.kind) {
             addTypeError(
               diagnostics,
@@ -614,6 +741,14 @@ function typeCheckExpression(
         case TokenKind.LessThan:
         case TokenKind.LessEquals: {
           const bothInts = left.kind === TypeKind.Integer && right.kind === TypeKind.Integer;
+          if (left.kind === TypeKind.Integer && right.kind === TypeKind.Unknown) {
+            assignToIdentifier(rightExpr, scope, INTEGER, diagnostics, collector);
+            propagateExpectedType(rightExpr, INTEGER, scope, diagnostics, collector);
+          }
+          if (right.kind === TypeKind.Integer && left.kind === TypeKind.Unknown) {
+            assignToIdentifier(leftExpr, scope, INTEGER, diagnostics, collector);
+            propagateExpectedType(leftExpr, INTEGER, scope, diagnostics, collector);
+          }
           if (!bothInts) {
             if ((left.kind === TypeKind.Integer && isUnknown(right)) || (right.kind === TypeKind.Integer && isUnknown(left))) {
               // assume integer comparison when one side is INTEGER
@@ -630,6 +765,14 @@ function typeCheckExpression(
         }
         case TokenKind.AndAnd:
         case TokenKind.OrOr:
+          if (left.kind === TypeKind.Boolean && right.kind === TypeKind.Unknown) {
+            assignToIdentifier(rightExpr, scope, BOOLEAN, diagnostics, collector);
+            propagateExpectedType(rightExpr, BOOLEAN, scope, diagnostics, collector);
+          }
+          if (right.kind === TypeKind.Boolean && left.kind === TypeKind.Unknown) {
+            assignToIdentifier(leftExpr, scope, BOOLEAN, diagnostics, collector);
+            propagateExpectedType(leftExpr, BOOLEAN, scope, diagnostics, collector);
+          }
           ensureBoolean(left, binary.operator.range, diagnostics);
           ensureBoolean(right, binary.operator.range, diagnostics);
           result = [BOOLEAN];
@@ -681,6 +824,25 @@ function typeCheckExpression(
       const argTypes = call.args.map(
         (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN
       );
+      // Propagate expected param types back into identifier arguments when the callee is known.
+      if (calleeType.kind === TypeKind.Function) {
+        const fn = calleeType as FunctionType;
+        const params = fn.params;
+        for (let i = 0; i < Math.min(params.length, call.args.length); i++) {
+          const expected = params[i];
+          if (isUnknown(expected)) continue;
+          const argExpr = call.args[i];
+          if (argExpr.kind === NodeKind.Identifier) {
+            const token = (argExpr as any).token;
+            const binding = lookup(scope, token.lexeme);
+            if (binding) {
+              binding.type = mergeTypes(binding.type, expected);
+              clearUnknownDiagnostic(diagnostics, token);
+              recordTokenType(token, scope, collector);
+            }
+          }
+        }
+      }
       const returns = applyFunctionType(calleeType, argTypes, call.range, diagnostics, builtin?.enforceArity ?? true);
       recordTypes(expr.range, returns, collector);
       return returns;

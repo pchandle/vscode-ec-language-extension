@@ -32,6 +32,7 @@ const BUILTIN_FUNCTION_TOKENS: Token[] = [
   "int2str",
   "pack",
   "pad",
+  "asset",
 ].map((lexeme) => ({
   kind: TokenKind.Keyword,
   lexeme,

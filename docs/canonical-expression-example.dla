@@ -10,6 +10,12 @@ sub /data/new/integer/default/x64(flow, 1, 10)
 sub /data/new/integer/default/x64(flow, 1, 10, 255)
 sub /data/new/integer/default/x64(flow, 1, 10, 255) -> int1
 
+"test.elf" -> fn
+asset(fn) -> MY_SITE
+
+sub new/program/./linux-x64(MY_SITE) -> prog
+
+
 job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
 
   // Parameters are in scope throughout the expression body.
@@ -39,6 +45,7 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
 
   // calls can use defs; targets after -> declare in the current scope.
   add_and_scale(NEG_INT, HEX_INT) -> DOUBLE_SUM
+  add_and_scale(NEG_INT, HELLO_STR) -> DOUBLE_SUM
 
   // built-in functions on integers and strings
   max(NEG_INT, HEX_INT, BIN_INT) -> MAX_INT
@@ -61,8 +68,7 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
     "fail" -> STATUS_OUT
   end
 
-  sub new/program/./linux-x64(site) -> prog
-  sub new/program/./linux-x64(site) -> {
+  sub new/program/./linux-x64(MY_SITE) -> {
     $ -> check
   }
 
@@ -94,7 +100,7 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
 
 
 
-    join /data/integer(_self_) -> min1, max1, _integer1
+    join /data/integer(int7) -> min1, max1, _integer1
     join /data/integer/./x64(_self_) -> min2, max2, _integer2
     join /data/integer/default(_self_) -> min3, max3, _integer3
     join /data/integer/default/x64(_self_) -> min4, max4, _integer4
@@ -109,6 +115,6 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
   }
 
   // Inline call targets; `_` is ignored.
-  sub /data/compare/integer(compare, int1, int2)
+  sub /data/compare/integer(condx, int1, int2)
 
 end
