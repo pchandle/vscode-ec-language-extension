@@ -1,4 +1,8 @@
 out
+client/dist
+server/dist
+media/main.js
+media/main.js.map
 node_modules
 client/server
 .vscode-test
