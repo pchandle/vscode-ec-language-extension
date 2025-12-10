@@ -301,6 +301,7 @@ end
 host /data/integer(_integer, minimum_value, maximum_value) -> int1
 host /data/integer/default(_integer, minimum_value, maximum_value) -> int3
 host /data/integer/.(_integer, minimum_value, maximum_value) -> int4
+host integer(_integer, minimum_value, maximum_value) -> int6
 join /data/integer(_self_) -> min1, max1, _integer1
 join /data/integer/default(_self_) -> min3, max3, _integer3
 `;
@@ -327,8 +328,17 @@ join /data/integer/default(_self_) -> min3, max3, _integer3
 sub /data/compare/integer(compare, int1, int2) -> out1
 sub compare/integer(compare, int1, int2) -> out2
 sub /data/compare/integer/.(compare, int1, int2) -> out3
+sub write/log-item(compare, int1, int2) -> out4
 `;
-    const spec = {
+    const compareSpec = {
+      requirements: [
+        { name: "compare", type: "/data/flow/default/x64" },
+        { name: "int1", type: "integer" },
+        { name: "int2", type: "integer" }
+      ],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const writeSpec = {
       requirements: [
         { name: "compare", type: "/data/flow/default/x64" },
         { name: "int1", type: "integer" },
@@ -339,7 +349,10 @@ sub /data/compare/integer/.(compare, int1, int2) -> out3
     const defaults = { layer: "data", variation: "default", platform: "x64" };
     const { program } = parseText(text);
     const { diagnostics } = typeCheckProgram(program, {
-      specs: { "/data/compare/integer/default/x64": spec as any },
+      specs: {
+        "/data/compare/integer/default/x64": compareSpec as any,
+        "/data/write/log-item/default/x64": writeSpec as any
+      },
       defaults
     });
     const unknowns = diagnostics.filter((d) => d.message.includes("Unknown contract specification"));

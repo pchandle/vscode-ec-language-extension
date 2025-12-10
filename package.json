@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.10.1",
+  "version": "0.10.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -283,8 +283,8 @@
   "scripts": {
     "build": "npm run build:webview && npm run bundle",
     "bundle": "npm run bundle:client && npm run bundle:server",
-    "bundle:client": "esbuild client/src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=client/dist/extension.js --sourcemap",
-    "bundle:server": "esbuild server/src/server.ts --bundle --platform=node --format=cjs --external:vscode --outfile=server/dist/server.js --sourcemap",
+    "bundle:client": "esbuild client/src/extension.ts --bundle --platform=node --format=cjs --external:vscode --external:jsonc-parser --outfile=client/dist/extension.js --sourcemap",
+    "bundle:server": "esbuild server/src/server.ts --bundle --platform=node --format=cjs --external:vscode --external:jsonc-parser --outfile=server/dist/server.js --sourcemap",
     "watch:client": "npm run bundle:client -- --watch",
     "watch:server": "npm run bundle:server -- --watch",
     "vscode:prepublish": "npm run build",

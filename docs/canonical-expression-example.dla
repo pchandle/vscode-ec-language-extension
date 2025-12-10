@@ -90,6 +90,8 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
       $ -> no4
     }
 
+    sub /system/write/log-item($, log_filter, LOGLEVEL_6INFO) ->  _
+
     host /data/integer(_integer, minimum_value, maximum_value) -> int1
     host /data/integer/./x64(_integer, minimum_value, maximum_value) -> int2
     host /data/integer/default(_integer, minimum_value, maximum_value) -> int3
