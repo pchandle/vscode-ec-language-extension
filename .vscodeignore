@@ -18,8 +18,6 @@ webview-src/**
 client/testFixture/**
 client/node_modules/**
 client/server/**
-node_modules/**
-**/node_modules/**
 # keep built/bundled assets
 !client/dist/**
 !server/dist/**
