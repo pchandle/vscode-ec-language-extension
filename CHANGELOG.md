@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## 0.10.1 - 2025-12-10
+- Bundle client and server with esbuild and simplify publishing via prepublish hook.
+- Tighten packaging to ship only bundled assets while keeping runtime dependencies, fixing missing module errors.
+- Update ignore rules to exclude source/tests and keep dist assets; add build outputs to .gitignore.
+
 ## 0.9.0 - 2025-12-02
 - Add protocol design definition custom editor (.pdd) plus a command to create protocol specs (with follow-up fixes).
 - Improve protocol editors with copy/paste fields, custom icons, collaboration/abstraction auto-complete, and host/join auto-completion.
