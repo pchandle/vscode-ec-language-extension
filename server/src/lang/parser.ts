@@ -104,6 +104,7 @@ function parseStatement(state: ParserState): Statement {
   const targets: Token[] = [];
   const obligationOrder: Array<Token | BlockNode> = [];
   const callArgs: ExpressionNode[] = [];
+  let supplier: Token | undefined;
   if (match(state, TokenKind.Arrow)) {
     parseTargetList(state, targets, obligationOrder);
   }
@@ -115,6 +116,13 @@ function parseStatement(state: ParserState): Statement {
     current(state).kind === TokenKind.Classification
   ) {
     classification = advance(state);
+    // optional supplier after classification
+    if (current(state).kind === TokenKind.At) {
+      advance(state);
+      if (current(state).kind === TokenKind.Supplier) {
+        supplier = advance(state);
+      }
+    }
     if (current(state).kind === TokenKind.LParen) {
       parseArgumentList(state, callArgs);
     }
@@ -178,6 +186,7 @@ function parseStatement(state: ParserState): Statement {
     expression: expr,
     targets,
     keyword: startTok,
+    supplier,
     callArgs: callArgs.length ? callArgs : undefined,
     obligationOrder: obligationOrder.length ? obligationOrder : undefined,
     block,

@@ -464,6 +464,18 @@ function typeCheckStatement(
         : spec;
       const obligations = roleSpec?.obligations ?? [];
       const requirements = (roleSpec as any)?.requirements ?? [];
+      // Supplier validation: if a supplier is provided, ensure it matches the spec suppliers.
+      const supplierTok = (stmt as any).supplier as Token | undefined;
+      const supplierName = supplierTok?.lexeme;
+      if (supplierName && roleSpec && Array.isArray((roleSpec as any).suppliers) && (roleSpec as any).suppliers.length > 0) {
+        if (!(roleSpec as any).suppliers.includes(supplierName)) {
+          addTypeError(
+            diagnostics,
+            supplierTok.range,
+            `Supplier '${supplierName}' is not available for '${classification}'`
+          );
+        }
+      }
       const exprTypes = typeCheckExpression(
         stmt.expression as ExpressionNode | null,
         scope,

@@ -34,6 +34,7 @@ export interface StatementNode extends BaseNode {
   expression: ExpressionNode | null;
   targets: Token[];
   keyword?: Token;
+  supplier?: Token;
   callArgs?: ExpressionNode[];
   obligationOrder?: Array<Token | BlockNode>;
   block?: BlockNode;

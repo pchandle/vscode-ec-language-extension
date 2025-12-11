@@ -13,7 +13,8 @@ sub /data/new/integer/default/x64(flow, 1, 10, 255) -> int1
 "test.elf" -> fn
 asset(fn) -> MY_SITE
 
-sub new/program/./linux-x64(MY_SITE) -> prog
+sub new/program/./linux-x64@codevalley(MY_SITE) -> prog
+sub new/program/./linux-x64@aptissio(MY_SITE) -> prog
 
 
 job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
