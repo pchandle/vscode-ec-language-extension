@@ -14,6 +14,7 @@ export enum NodeKind {
   Identifier = "Identifier",
   Classification = "Classification",
   Qualified = "Qualified",
+  ListLiteral = "ListLiteral",
   Call = "Call",
   Scope = "Scope",
 }
@@ -71,6 +72,7 @@ export interface BlockNode extends BaseNode {
 export type ScopeRefNode = BaseNode & { kind: NodeKind.Scope; token: Token };
 export type QualifiedNode = BaseNode & { kind: NodeKind.Qualified; base: ExpressionNode; supplier: Token };
 export type CallNode = BaseNode & { kind: NodeKind.Call; callee: ExpressionNode; args: ExpressionNode[] };
+export type ListLiteralNode = BaseNode & { kind: NodeKind.ListLiteral; elements: ExpressionNode[] };
 export type ExpressionNode =
   | BinaryNode
   | UnaryNode
@@ -79,6 +81,7 @@ export type ExpressionNode =
   | ClassificationNode
   | ScopeRefNode
   | QualifiedNode
+  | ListLiteralNode
   | CallNode;
 
 export interface BinaryNode extends BaseNode {

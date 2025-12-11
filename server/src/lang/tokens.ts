@@ -16,6 +16,8 @@ export enum TokenKind {
   RBrace = "RBrace",
   LParen = "LParen",
   RParen = "RParen",
+  LBracket = "LBracket",
+  RBracket = "RBracket",
   Comma = "Comma",
   EqualsEquals = "EqualsEquals",
   BangEquals = "BangEquals",

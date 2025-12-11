@@ -394,6 +394,14 @@ export function lexText(text: string): { tokens: Token[]; diagnostics: SyntaxDia
         advance(state);
         addToken(state, TokenKind.RParen, ")", startOffset, startLine, startCol);
         continue;
+      case "[":
+        advance(state);
+        addToken(state, TokenKind.LBracket, "[", startOffset, startLine, startCol);
+        continue;
+      case "]":
+        advance(state);
+        addToken(state, TokenKind.RBracket, "]", startOffset, startLine, startCol);
+        continue;
       case ",":
         advance(state);
         addToken(state, TokenKind.Comma, ",", startOffset, startLine, startCol);

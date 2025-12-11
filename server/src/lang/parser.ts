@@ -628,6 +628,28 @@ function parsePrimary(state: ParserState): ExpressionNode | null {
       const node: ScopeRefNode = { kind: NodeKind.Scope, token: tok, range: tok.range };
       return node;
     }
+    case TokenKind.LBracket: {
+      const l = advance(state);
+      const elements: ExpressionNode[] = [];
+      if (current(state).kind !== TokenKind.RBracket) {
+        while (current(state).kind !== TokenKind.EOF) {
+          const elem = parseExpression(state, 0);
+          if (elem) {
+            elements.push(elem);
+          } else {
+            state.diagnostics.push({ message: "Expected expression in list", range: current(state).range });
+          }
+          if (current(state).kind === TokenKind.Comma) {
+            advance(state);
+            continue;
+          }
+          break;
+        }
+      }
+      const r = expect(state, TokenKind.RBracket, "Expected ']'");
+      const range = { start: l.range.start, end: r.range.end };
+      return { kind: NodeKind.ListLiteral, elements, range } as any;
+    }
     case TokenKind.LParen: {
       const l = advance(state);
       const inner = parseExpression(state, 0);

@@ -542,11 +542,14 @@ function typeCheckStatement(
         if (exprTypes.length === 1) return exprTypes[0];
         return exprTypes[idx] ?? UNKNOWN;
       };
+      // Special case: list literal on the left mapping element types to targets 1:1.
+      const isListLiteral = (stmt.expression as any)?.kind === NodeKind.ListLiteral;
+      const listElementTypes = isListLiteral ? (stmt.expression as any).elements.map((_: any, i: number) => exprTypes[i] ?? UNKNOWN) : [];
 
       for (let i = 0; i < orderedItems.length; i++) {
         const item = orderedItems[i];
         const specType = obligationTypes[i] ?? UNKNOWN;
-        const exprType = getExprTypeForIndex(i);
+        const exprType = isListLiteral ? listElementTypes[i] ?? UNKNOWN : getExprTypeForIndex(i);
         const incomingType = !isUnknown(specType)
           ? specType
           : !isUnknown(exprType) && (!classification || spec)
@@ -635,6 +638,16 @@ function typeCheckExpression(
       const literalType = typeFromLiteral((expr as any).token);
       recordTypes((expr as any).token.range, [literalType], collector);
       return [literalType];
+    case NodeKind.ListLiteral: {
+      const list = expr as any;
+      const elementTypes: Type[] = [];
+      for (const el of list.elements) {
+        const t = typeCheckExpression(el, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+        elementTypes.push(t);
+      }
+      recordTypes(expr.range, elementTypes, collector);
+      return elementTypes;
+    }
     case NodeKind.Unary: {
       const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, specs, defaults);
       const operandType = operandTypes[0] ?? UNKNOWN;
