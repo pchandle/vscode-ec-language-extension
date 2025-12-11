@@ -86,6 +86,8 @@ job /example/arithmetic/string/default/x64(lhs, rhs, FLAGS) DOUBLE_SUM:
       $ -> no3
     }
 
+    sub new/bytes/constant(no4, "DOG") -> early
+
     sub check/condition(check) -> cond4, yes4, {
       $ -> no4
     }

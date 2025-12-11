@@ -484,6 +484,19 @@ function typeCheckStatement(
         for (let i = 0; i < Math.min(requirements.length, callArgTypes.length); i++) {
           const reqType = specTermToType(requirements[i] as SpecTerm);
           if (!isUnknown(reqType)) {
+            const argExpr = callArgs[i];
+            if (argExpr.kind === NodeKind.Identifier) {
+              const token = (argExpr as any).token;
+              const binding = lookup(scope, token.lexeme);
+              if (binding) {
+                binding.type = mergeTypes(binding.type, reqType);
+                callArgTypes[i] = binding.type;
+              } else {
+                declare(scope, token, reqType);
+                callArgTypes[i] = reqType;
+              }
+              recordTokenType(token, scope, collector);
+            }
             ensureAssignable(reqType, callArgTypes[i], (callArgs[i] as any).range ?? stmt.range, diagnostics, true);
             const arg = callArgs[i];
             if (arg.kind === NodeKind.Identifier) {

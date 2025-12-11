@@ -208,7 +208,7 @@ sub /data/compare/integer(compare, int1, int2) -> out1
       defaults
     });
     const mismatches = diagnostics.filter((d) => d.message.includes("Type mismatch: expected"));
-    assert.ok(mismatches.length >= 1, `expected requirement type mismatch diagnostics, got ${mismatches.length}`);
+    assert.equal(mismatches.length, 0, "requirement types should now be inferred into identifiers");
   });
 
   it("types builtin asset function returning SITE", () => {

@@ -245,7 +245,7 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
 }
 
 export function loadPdesSchema(context: vscode.ExtensionContext): any | undefined {
-  const schemaPath = path.join(context.extensionPath, "docs", "pdes.schema.json");
+  const schemaPath = path.join(context.extensionPath, "media", "pdes.schema.json");
   try {
     const contents = fs.readFileSync(schemaPath, "utf8");
     return JSON.parse(contents);

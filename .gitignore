@@ -1,12 +1,22 @@
+# TypeScript build output (tsc -b)
 out
+# esbuild bundle output for the client
 client/dist
+# esbuild bundle output for the server
 server/dist
+# bundled webview script and map
 media/main.js
 media/main.js.map
+# npm dependencies (installed locally, not committed)
 node_modules
+# generated test server fixture (kept out of repo)
 client/server
+# VS Code test harness workspace
 .vscode-test
+# packaged extension artifacts
 /*.vsix
-docs/fetched-specs
+# fetched specs cache (generated)
+docs/examples/fetched-specs
+# generated logs
 logs/schema-validation
 logs/spec-normalisation
