@@ -189,6 +189,48 @@ true && logic_label -> ANSWER_BOOL
     );
   });
 
+  it("applies job requirement types to parameters", () => {
+    const text = `
+job /data/compare/integer/default/x64(a, b, c) -> result:
+  a + b -> result
+end
+`;
+    const spec = {
+      requirements: [
+        { name: "a", type: "integer" },
+        { name: "b", type: "integer" },
+        { name: "c", type: "integer" }
+      ],
+      obligations: [{ type: "integer" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { collectTypes: true, specs: { "/data/compare/integer/default/x64": spec as any }, defaults });
+    const unknowns = diagnostics.filter((d) => d.message.includes("Type of 'a' is unknown") || d.message.includes("Type of 'b' is unknown"));
+    assert.equal(unknowns.length, 0, `job params should receive types from spec requirements`);
+  });
+
+  it("applies job obligation types to targets when spec is present", () => {
+    const text = `
+job /data/compare/integer/default/x64(a, b, c) -> result:
+  a + b -> result
+end
+`;
+    const spec = {
+      requirements: [
+        { name: "a", type: "integer" },
+        { name: "b", type: "integer" },
+        { name: "c", type: "integer" }
+      ],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { collectTypes: true, specs: { "/data/compare/integer/default/x64": spec as any }, defaults });
+    const mismatches = diagnostics.filter((d) => d.message.includes("Type mismatch: expected"));
+    assert.ok(mismatches.length >= 1, "job obligation types are enforced against block-assigned targets");
+  });
+
   it("emits requirement type mismatch when argument remains UNKNOWN", () => {
     const text = `
 sub /data/compare/integer(compare, int1, int2) -> out1

@@ -343,6 +343,19 @@ function typeCheckStatement(
       for (const target of job.targets) {
         declare(jobScope, target, UNKNOWN);
       }
+      // Apply requirement types to parameters when a spec is available.
+      if (jobSpec?.requirements?.length) {
+        for (let i = 0; i < job.params.length; i++) {
+          const param = job.params[i];
+          const req = jobSpec.requirements[i] as SpecTerm | undefined;
+          const reqType = specTermToType(req);
+          const binding = jobScope.bindings.get(param.lexeme);
+          if (binding && !isUnknown(reqType)) {
+            binding.type = mergeTypes(binding.type, reqType);
+            recordTokenType(param, jobScope, collector);
+          }
+        }
+      }
       typeCheckBlock(job.body, jobScope, diagnostics, collector, specs, defaults);
       for (const param of job.params) {
         recordTokenType(param, jobScope, collector);
@@ -350,7 +363,21 @@ function typeCheckStatement(
       for (const target of job.targets) {
         const binding = jobScope.bindings.get(target.lexeme);
         if (binding && jobSpec) {
-          recordTokenType(target, jobScope, collector);
+          const idx = job.targets.indexOf(target);
+          const obligationTerm = (jobSpec.obligations || [])[idx] as SpecTerm | undefined;
+          const obligationType = specTermToType(obligationTerm);
+          if (!isUnknown(obligationType)) {
+            if (isUnknown(binding.type)) {
+              binding.type = obligationType;
+            } else if (binding.type.kind !== obligationType.kind || (binding.type as any).classification !== (obligationType as any).classification) {
+              addTypeError(
+                diagnostics,
+                target.range,
+                `Type mismatch: expected ${typeToString(obligationType)}, got ${typeToString(binding.type)}`
+              );
+            }
+          }
+          recordTypes(target.range, [binding.type], collector);
         } else {
           // If the contract spec is missing, keep obligations unknown.
           recordTypes(target.range, [UNKNOWN], collector);

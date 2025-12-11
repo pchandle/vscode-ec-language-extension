@@ -247,11 +247,13 @@ function parseIf(state: ParserState): IfNode {
 
 function parseParameterList(state: ParserState, params: Token[]) {
   expect(state, TokenKind.LParen, "Expected '('");
+  while (current(state).kind === TokenKind.Newline) advance(state);
   if (current(state).kind === TokenKind.RParen) {
     advance(state);
     return;
   }
   while (current(state).kind !== TokenKind.EOF) {
+    while (current(state).kind === TokenKind.Newline) advance(state);
     if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Keyword || current(state).kind === TokenKind.Boolean) {
       params.push(advance(state));
     } else {
@@ -259,6 +261,11 @@ function parseParameterList(state: ParserState, params: Token[]) {
       advance(state);
     }
     if (current(state).kind === TokenKind.Comma) {
+      advance(state);
+      while (current(state).kind === TokenKind.Newline) advance(state);
+      continue;
+    }
+    if (current(state).kind === TokenKind.Newline) {
       advance(state);
       continue;
     }
@@ -269,14 +276,21 @@ function parseParameterList(state: ParserState, params: Token[]) {
 
 function parseArgumentList(state: ParserState, args: ExpressionNode[]) {
   expect(state, TokenKind.LParen, "Expected '('");
+  while (current(state).kind === TokenKind.Newline) advance(state);
   if (current(state).kind === TokenKind.RParen) {
     advance(state);
     return;
   }
   while (current(state).kind !== TokenKind.EOF) {
+    while (current(state).kind === TokenKind.Newline) advance(state);
     const expr = parseExpression(state, 0);
     if (expr) args.push(expr);
     if (current(state).kind === TokenKind.Comma) {
+      advance(state);
+      while (current(state).kind === TokenKind.Newline) advance(state);
+      continue;
+    }
+    if (current(state).kind === TokenKind.Newline) {
       advance(state);
       continue;
     }
@@ -287,19 +301,28 @@ function parseArgumentList(state: ParserState, args: ExpressionNode[]) {
 
 function parseInlineTargets(state: ParserState): Token[] {
   const targets: Token[] = [];
+  const reserved = new Set(["sub", "job", "host", "join", "def", "if", "deliver"]);
   while (current(state).kind !== TokenKind.EOF) {
     if (current(state).kind === TokenKind.Colon) {
       advance(state);
       break;
     }
-    if (current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.LBrace) {
-      break;
+    if (current(state).kind === TokenKind.Arrow) {
+      advance(state);
+      continue;
     }
-    if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Keyword || current(state).kind === TokenKind.Boolean) {
+    if (current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.LBrace) {
+      advance(state);
+      continue;
+    }
+    if (
+      current(state).kind === TokenKind.Identifier ||
+      current(state).kind === TokenKind.Boolean ||
+      (current(state).kind === TokenKind.Keyword && !reserved.has(current(state).lexeme.toLowerCase()))
+    ) {
       targets.push(advance(state));
-      if (current(state).kind === TokenKind.Comma) {
+      if (current(state).kind === TokenKind.Comma || current(state).kind === TokenKind.Newline) {
         advance(state);
-        continue;
       }
       continue;
     }
