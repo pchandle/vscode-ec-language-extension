@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -301,7 +301,11 @@
     "test:compile-client": "tsc -p client/tsconfig.json",
     "test": "bash ./scripts/e2e.sh",
     "test:server": "npm run build:server && mocha \"server/out/test/**/*.test.js\"",
-    "build:server": "tsc -p server/tsconfig.json && tsc -p server/tsconfig.test.json"
+    "build:server": "tsc -p server/tsconfig.json && tsc -p server/tsconfig.test.json",
+    "validate:corpus": "node ./scripts/validate-dla-corpus.js",
+    "validate:corpus:baseline": "node ./scripts/validate-dla-corpus.js --update-baseline",
+    "triage:diagnostics": "node ./scripts/triage-diagnostics.js --limit 20",
+    "triage:report": "node ./scripts/diagnostic-triage-report.js"
   },
   "devDependencies": {
     "@rjsf/core": "^5.18.3",

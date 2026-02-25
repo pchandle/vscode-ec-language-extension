@@ -49,6 +49,13 @@ Guidance for coding agents working in `vscode-ec-language-extension`.
 - If `.vscode-test/...` is missing, `npm test` may attempt to download VS Code from `update.code.visualstudio.com` and fail in restricted network environments.
 - Current integration baseline is 3 active tests in `client/src/test`: completion, diagnostics, formatting.
 - `npm run test:server` is currently green (58 passing) after fixing test fixture paths and outdated expectations.
+- For repeated corpus-scale diagnostics validation, follow `docs/diagnostics-validation-playbook.md`.
+- Local-only diagnostics workspace: `/.ops/diagnostics-lab/` (git-excluded via `.git/info/exclude`).
+- Corpus workflow commands:
+  - `npm run validate:corpus`
+  - `npm run validate:corpus:baseline`
+  - `npm run triage:diagnostics`
+  - `npm run triage:report`
 
 ## Code Style and Safety
 - TypeScript is primary language; preserve existing module and build patterns.
