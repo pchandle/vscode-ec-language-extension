@@ -524,6 +524,7 @@ function typeCheckStatement(
           const reqType = specTermToType(requirements[i] as SpecTerm);
           if (!isUnknown(reqType)) {
             const argExpr = callArgs[i];
+            let skipEnsureAssignable = false;
             if (argExpr.kind === NodeKind.Identifier) {
               const token = (argExpr as any).token;
               const binding = lookup(scope, token.lexeme);
@@ -535,8 +536,35 @@ function typeCheckStatement(
                 callArgTypes[i] = reqType;
               }
               recordTokenType(token, scope, collector);
+            } else if (isContract && argExpr.kind === NodeKind.Scope) {
+              // Contract requirement typing: '$' must satisfy the required classification.
+              const scopeRef = argExpr as ScopeRefNode;
+              const scopeBinding = lookup(scope, scopeRef.token.lexeme);
+              const currentScopeType = scopeBinding?.type ?? UNKNOWN;
+              if (
+                reqType.kind === TypeKind.Classification &&
+                currentScopeType.kind === TypeKind.Classification &&
+                reqType.classification &&
+                currentScopeType.classification &&
+                reqType.classification !== currentScopeType.classification
+              ) {
+                addTypeError(
+                  diagnostics,
+                  scopeRef.range,
+                  `Type mismatch: expected ${typeToString(reqType)}, got ${typeToString(currentScopeType)}`
+                );
+                callArgTypes[i] = currentScopeType;
+                skipEnsureAssignable = true;
+              } else if (scopeBinding && (currentScopeType.kind === TypeKind.Scope || currentScopeType.kind === TypeKind.Unknown)) {
+                scopeBinding.type =
+                  currentScopeType.kind === TypeKind.Scope ? reqType : mergeTypes(scopeBinding.type, reqType);
+                callArgTypes[i] = scopeBinding.type;
+                recordTypes(scopeRef.range, [scopeBinding.type], collector);
+              }
             }
-            ensureAssignable(reqType, callArgTypes[i], (callArgs[i] as any).range ?? stmt.range, diagnostics, true);
+            if (!skipEnsureAssignable) {
+              ensureAssignable(reqType, callArgTypes[i], (callArgs[i] as any).range ?? stmt.range, diagnostics, true);
+            }
             const arg = callArgs[i];
             if (arg.kind === NodeKind.Identifier) {
               const binding = lookup(scope, (arg as any).token.lexeme);

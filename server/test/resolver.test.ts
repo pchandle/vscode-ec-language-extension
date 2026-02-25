@@ -17,14 +17,14 @@ describe("resolver", () => {
   });
 
   it("reports duplicate declarations in the same scope", () => {
-    const text = "job /example/test(x)\n  1 -> a\n  2 -> a\nend";
+    const text = "job /example/test(x):\n  1 -> a\n  2 -> a\nend";
     const { program } = parseText(text);
     const { diagnostics } = resolveProgram(program);
     assert.ok(diagnostics.some((d) => d.message.toLowerCase().includes("duplicate")), "expected duplicate diagnostic");
   });
 
   it("allows shadowing in child scopes", () => {
-    const text = "job /example/test(x)\n  if true then\n    1 -> x\n  else\n    2 -> y\n  end\n  x -> ok\nend";
+    const text = "job /example/test(x):\n  if true then\n    1 -> x\n  else\n    2 -> y\n  end\n  x -> ok\nend";
     const { program, diagnostics: syntaxDiagnostics } = parseText(text);
     const { diagnostics } = resolveProgram(program);
     assert.equal(syntaxDiagnostics.length, 0, "unexpected syntax diagnostics");
@@ -32,7 +32,7 @@ describe("resolver", () => {
   });
 
   it("reports undefined identifiers", () => {
-    const text = "job /example/test()\n  foo(bar) -> out\nend";
+    const text = "job /example/test():\n  foo(bar) -> out\nend";
     const { program } = parseText(text);
     const { diagnostics } = resolveProgram(program);
     assert.ok(diagnostics.some((d) => d.message.includes("Undefined name 'bar'")), "expected undefined name diagnostic for bar");

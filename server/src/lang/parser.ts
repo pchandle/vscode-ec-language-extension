@@ -308,21 +308,36 @@ function parseArgumentList(state: ParserState, args: ExpressionNode[]) {
   expect(state, TokenKind.RParen, "Expected ')'");
 }
 
-function parseInlineTargets(state: ParserState): Token[] {
+function parseInlineTargets(
+  state: ParserState,
+  options?: { consumeColon?: boolean; allowNewlines?: boolean }
+): Token[] {
+  const consumeColon = options?.consumeColon ?? true;
+  const allowNewlines = options?.allowNewlines ?? false;
   const targets: Token[] = [];
   const reserved = new Set(["sub", "job", "host", "join", "def", "if", "deliver"]);
   while (current(state).kind !== TokenKind.EOF) {
     if (current(state).kind === TokenKind.Colon) {
-      advance(state);
+      if (consumeColon) {
+        advance(state);
+      }
       break;
     }
     if (current(state).kind === TokenKind.Arrow) {
       advance(state);
       continue;
     }
-    if (current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.LBrace) {
-      advance(state);
-      continue;
+    if (current(state).kind === TokenKind.Newline) {
+      if (allowNewlines) {
+        advance(state);
+        continue;
+      }
+      // Inline targets are only valid before the statement body starts.
+      // Newlines terminate the inline-target scan unless explicitly allowed.
+      break;
+    }
+    if (current(state).kind === TokenKind.LBrace) {
+      break;
     }
     if (
       current(state).kind === TokenKind.Identifier ||
@@ -354,7 +369,8 @@ function parseJob(state: ParserState): JobNode {
   if (current(state).kind === TokenKind.LParen) {
     parseParameterList(state, params);
   }
-  const targets = parseInlineTargets(state);
+  const targets = parseInlineTargets(state, { consumeColon: false, allowNewlines: true });
+  expect(state, TokenKind.Colon, "Expected ':' after job signature");
   const body = parseDelimitedBlock(state, ["end"]);
   if (!(current(state).kind === TokenKind.Keyword && current(state).lexeme.toLowerCase() === "end")) {
     state.diagnostics.push({ message: "Expected 'end' to close job", range: current(state).range });
@@ -462,9 +478,18 @@ function parseTargetList(state: ParserState, targets: Token[], order?: Array<Tok
   ) {
     return;
   }
+  // Trailing commas indicate continuation, including across newlines.
+  const consumeContinuationNewlines = () => {
+    while (current(state).kind === TokenKind.Newline) {
+      advance(state);
+    }
+  };
+
   while (current(state).kind === TokenKind.Comma) {
     advance(state);
+    consumeContinuationNewlines();
   }
+
   let readingTargets = true;
   while (readingTargets) {
     // Stop if the next obligation is a braced block; caller will parse it.
@@ -481,6 +506,7 @@ function parseTargetList(state: ParserState, targets: Token[], order?: Array<Tok
     }
     if (current(state).kind === TokenKind.Comma) {
       advance(state);
+      consumeContinuationNewlines();
       continue;
     }
     readingTargets = false;

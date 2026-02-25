@@ -322,6 +322,58 @@ sub /data/check/condition(check) -> cond, yes, no
     assert.equal((typeOf("check") as any)?.kind, TypeKind.String, "expected STRING requirement type to flow to argument");
   });
 
+  it("applies contract requirement classification type to scope argument '$'", () => {
+    const text = `
+sub /data/check/condition/default/x64($) -> cond
+`;
+    const spec = {
+      requirements: [{ name: "flow", type: "/data/flow/default/x64" }],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/data/check/condition/default/x64": spec as any },
+      defaults
+    });
+    const flowMismatch = diagnostics.find((d) =>
+      d.message.includes("Type mismatch: expected CLASSIFICATION(/data/flow/default/x64), got UNKNOWN") ||
+      d.message.includes("Type mismatch: expected CLASSIFICATION(/data/flow/default/x64), got SCOPE")
+    );
+    assert.ok(!flowMismatch, `expected '$' to satisfy flow requirement, got ${flowMismatch?.message ?? "no mismatch"}`);
+  });
+
+  it("reports mismatch when '$' flow type conflicts with contract requirement classification", () => {
+    const text = `
+sub /data/new/flow/default/x64() -> {
+  sub /data/check/condition/default/x64($) -> cond
+}
+`;
+    const flowSpec = {
+      requirements: [],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const conditionSpec = {
+      requirements: [{ name: "flow", type: "/system/log-manager/default/x64" }],
+      obligations: [{ type: "/data/flow/default/x64" }]
+    };
+    const defaults = { layer: "data", variation: "default", platform: "x64" };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: {
+        "/data/new/flow/default/x64": flowSpec as any,
+        "/data/check/condition/default/x64": conditionSpec as any
+      },
+      defaults
+    });
+    assert.ok(
+      diagnostics.some((d) =>
+        d.message.includes("Type mismatch: expected CLASSIFICATION(/system/log-manager/default/x64), got CLASSIFICATION(/data/flow/default/x64)")
+      ),
+      `expected mismatch for conflicting '$' classification, got ${diagnostics.map((d) => d.message).join(", ")}`
+    );
+  });
+
   it("emits diagnostics for identifiers whose type remains unknown", () => {
     const text = `
 def foo(a, b) -> sum
