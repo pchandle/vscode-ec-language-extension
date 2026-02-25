@@ -120,18 +120,21 @@ function scanIdentifier(state: State, startOffset: number, startLine: number, st
 function scanString(state: State, startOffset: number, startLine: number, startCol: number) {
   let lexeme = "";
   advance(state); // consume opening quote
-  while (true) {
+  let inString = true;
+  while (inString) {
     const ch = currentChar(state);
     if (ch === undefined) {
       state.diagnostics.push({
         message: "Unterminated string literal",
         range: makeRange(state, startOffset, startLine, startCol),
       });
-      break;
+      inString = false;
+      continue;
     }
     if (ch === '"') {
       advance(state);
-      break;
+      inString = false;
+      continue;
     }
     if (ch === "\\") {
       const next = state.text[state.offset + 1];
@@ -160,30 +163,36 @@ function scanString(state: State, startOffset: number, startLine: number, startC
 }
 
 function skipWhitespace(state: State) {
-  while (true) {
+  let skipping = true;
+  while (skipping) {
     const ch = currentChar(state);
     if (ch === " " || ch === "\t" || ch === "\r") {
       advance(state);
     } else {
-      break;
+      skipping = false;
     }
   }
 }
 
 function scanClassification(state: State, startOffset: number, startLine: number, startCol: number) {
   let lexeme = "";
-  while (true) {
+  let scanning = true;
+  while (scanning) {
     const ch = currentChar(state);
-    if (ch === undefined) break;
+    if (ch === undefined) {
+      scanning = false;
+      continue;
+    }
     if (ch === "@" || ch === "(" || ch === ")" || ch === "{" || ch === "}" || ch === "," || ch === ":" || ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
-      break;
+      scanning = false;
+      continue;
     }
     if (/[A-Za-z0-9._/-]/.test(ch)) {
       lexeme += ch;
       advance(state);
       continue;
     }
-    break;
+    scanning = false;
   }
   addToken(state, TokenKind.Classification, lexeme, startOffset, startLine, startCol);
 }

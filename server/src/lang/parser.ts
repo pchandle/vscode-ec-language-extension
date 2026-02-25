@@ -465,7 +465,8 @@ function parseTargetList(state: ParserState, targets: Token[], order?: Array<Tok
   while (current(state).kind === TokenKind.Comma) {
     advance(state);
   }
-  while (true) {
+  let readingTargets = true;
+  while (readingTargets) {
     // Stop if the next obligation is a braced block; caller will parse it.
     if (current(state).kind === TokenKind.LBrace || current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.EOF) {
       return;
@@ -482,7 +483,7 @@ function parseTargetList(state: ParserState, targets: Token[], order?: Array<Tok
       advance(state);
       continue;
     }
-    break;
+    readingTargets = false;
   }
 }
 
@@ -508,16 +509,19 @@ function getPrecedence(token: Token): number {
 
 function parseExpression(state: ParserState, minPrec: number): ExpressionNode | null {
   let expr = parseUnary(state);
-  while (true) {
+  let parsing = true;
+  while (parsing) {
     const tok = current(state);
     const prec = getPrecedence(tok);
     if (prec === 0 || prec < minPrec) {
-      break;
+      parsing = false;
+      continue;
     }
     advance(state);
     const rhs = parseExpression(state, prec + 1);
     if (!expr || !rhs) {
-      break;
+      parsing = false;
+      continue;
     }
     expr = {
       kind: NodeKind.Binary,
@@ -579,7 +583,8 @@ function parsePostfix(state: ParserState): ExpressionNode | null {
     const lparen = advance(state);
     const args: ExpressionNode[] = [];
     if (current(state).kind !== TokenKind.RParen) {
-      while (true) {
+      let parsingArgs = true;
+      while (parsingArgs) {
         const arg = parseExpression(state, 0);
         if (arg) {
           args.push(arg);
@@ -591,12 +596,13 @@ function parsePostfix(state: ParserState): ExpressionNode | null {
           if (state.tokens[state.index + 1]?.kind === TokenKind.RParen) {
             state.diagnostics.push({ message: "Trailing comma not allowed in argument list", range: current(state).range });
             advance(state); // consume comma
-            break;
+            parsingArgs = false;
+            continue;
           }
           advance(state);
           continue;
         }
-        break;
+        parsingArgs = false;
       }
     }
     const rparen = expect(state, TokenKind.RParen, "Expected ')'");

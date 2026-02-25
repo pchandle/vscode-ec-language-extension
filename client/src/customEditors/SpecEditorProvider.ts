@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import Ajv, { AnySchema, ErrorObject, ValidateFunction } from "ajv";
@@ -292,7 +293,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
 
   private loadProtocolCompletions(): string[] {
     try {
-      const cachePath = path.join(require("os").homedir(), ".emergent", "contractCache.json");
+      const cachePath = path.join(os.homedir(), ".emergent", "contractCache.json");
       if (!fs.existsSync(cachePath)) {
         return [];
       }

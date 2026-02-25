@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -298,7 +298,8 @@
     "build:webview": "node ./scripts/build-webview.js",
     "watch:webview": "node ./scripts/build-webview.js --watch",
     "test:validators": "TS_NODE_TRANSPILE_ONLY=1 TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\",\"target\":\"es2020\",\"esModuleInterop\":true,\"resolveJsonModule\":true,\"moduleResolution\":\"node\",\"jsx\":\"react-jsx\"}' node -r ts-node/register ./scripts/test-precompiled-validators.ts",
-    "test": "sh ./scripts/e2e.sh",
+    "test:compile-client": "tsc -p client/tsconfig.json",
+    "test": "bash ./scripts/e2e.sh",
     "test:server": "npm run build:server && mocha \"server/out/test/**/*.test.js\"",
     "build:server": "tsc -p server/tsconfig.json && tsc -p server/tsconfig.test.json"
   },

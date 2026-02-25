@@ -646,10 +646,11 @@ function typeCheckExpression(
     case NodeKind.Classification:
       recordTypes((expr as any).token.range, [{ kind: TypeKind.Classification, classification: (expr as any).token.lexeme }], collector);
       return [{ kind: TypeKind.Classification, classification: (expr as any).token.lexeme }];
-    case NodeKind.Literal:
+    case NodeKind.Literal: {
       const literalType = typeFromLiteral((expr as any).token);
       recordTypes((expr as any).token.range, [literalType], collector);
       return [literalType];
+    }
     case NodeKind.ListLiteral: {
       const list = expr as any;
       const elementTypes: Type[] = [];

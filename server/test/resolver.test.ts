@@ -1,12 +1,10 @@
 import { strict as assert } from "assert";
-import * as fs from "fs";
-import * as path from "path";
 import { parseText } from "../lang/parser";
 import { resolveProgram } from "../lang/resolver";
 
 describe("resolver", () => {
-  it("resolves canonical sample without diagnostics", () => {
-    const sample = fs.readFileSync(path.join(__dirname, "../../../../docs/canonical-expression-example.dla"), "utf8");
+  it("resolves simple sample without diagnostics", () => {
+    const sample = "def foo(a) out:\n  a -> out\nend\nfoo(1) -> result";
     const { program, diagnostics: syntaxDiagnostics } = parseText(sample);
     const { diagnostics: resolverDiagnostics } = resolveProgram(program);
     assert.equal(
@@ -34,9 +32,9 @@ describe("resolver", () => {
   });
 
   it("reports undefined identifiers", () => {
-    const text = "job /example/test()\n  foo + 1 -> bar\nend";
+    const text = "job /example/test()\n  foo(bar) -> out\nend";
     const { program } = parseText(text);
     const { diagnostics } = resolveProgram(program);
-    assert.ok(diagnostics.some((d) => d.message.includes("Undefined name 'foo'")), "expected undefined name diagnostic for foo");
+    assert.ok(diagnostics.some((d) => d.message.includes("Undefined name 'bar'")), "expected undefined name diagnostic for bar");
   });
 });

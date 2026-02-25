@@ -5,39 +5,51 @@
 
 import * as vscode from 'vscode';
 import * as assert from 'assert';
-import { getDocUri, activate } from './helper';
+import { activate, doc, getDocUri, setTestContent } from './helper';
 
-// Diagnostics are currently disabled in the language server.
-// Skip these sample tests until diagnostics are re-enabled or replaced with fixtures.
-suite.skip('Should get diagnostics (skipped)', () => {
-	const docUri = getDocUri('diagnostics.txt');
+suite('Should get diagnostics', () => {
+	const docUri = getDocUri('test.dla');
 
-	test('Diagnoses uppercase texts', async () => {
-		await testDiagnostics(docUri, [
-			{ message: 'ANY is all uppercase.', range: toRange(0, 0, 0, 3), severity: vscode.DiagnosticSeverity.Warning, source: 'ex' },
-			{ message: 'ANY is all uppercase.', range: toRange(0, 14, 0, 17), severity: vscode.DiagnosticSeverity.Warning, source: 'ex' },
-			{ message: 'OS is all uppercase.', range: toRange(0, 18, 0, 20), severity: vscode.DiagnosticSeverity.Warning, source: 'ex' }
-		]);
+	test('reports parser diagnostics for unterminated strings', async () => {
+		await activate(docUri);
+		const original = doc.getText();
+		const invalidText = [
+			'job /example/test(x)',
+			'  "unterminated',
+			'end'
+		].join('\n');
+
+		try {
+			await setTestContent(invalidText);
+			const diagnostics = await waitForDiagnostics(docUri, (items) =>
+				items.some((item) => item.message.toLowerCase().includes('unterminated string'))
+			);
+			assert.ok(
+				diagnostics.some((item) => item.message.toLowerCase().includes('unterminated string')),
+				`expected unterminated string diagnostic, got: ${diagnostics.map((d) => d.message).join('; ')}`
+			);
+		} finally {
+			await setTestContent(original);
+		}
 	});
 });
 
-function toRange(sLine: number, sChar: number, eLine: number, eChar: number) {
-	const start = new vscode.Position(sLine, sChar);
-	const end = new vscode.Position(eLine, eChar);
-	return new vscode.Range(start, end);
+async function waitForDiagnostics(
+	docUri: vscode.Uri,
+	predicate: (items: readonly vscode.Diagnostic[]) => boolean,
+	timeoutMs = 5000
+): Promise<readonly vscode.Diagnostic[]> {
+	const started = Date.now();
+	while (Date.now() - started < timeoutMs) {
+		const diagnostics = vscode.languages.getDiagnostics(docUri);
+		if (predicate(diagnostics)) {
+			return diagnostics;
+		}
+		await sleep(100);
+	}
+	return vscode.languages.getDiagnostics(docUri);
 }
 
-async function testDiagnostics(docUri: vscode.Uri, expectedDiagnostics: vscode.Diagnostic[]) {
-	await activate(docUri);
-
-	const actualDiagnostics = vscode.languages.getDiagnostics(docUri);
-
-	assert.equal(actualDiagnostics.length, expectedDiagnostics.length);
-
-	expectedDiagnostics.forEach((expectedDiagnostic, i) => {
-		const actualDiagnostic = actualDiagnostics[i];
-		assert.equal(actualDiagnostic.message, expectedDiagnostic.message);
-		assert.deepEqual(actualDiagnostic.range, expectedDiagnostic.range);
-		assert.equal(actualDiagnostic.severity, expectedDiagnostic.severity);
-	});
+async function sleep(ms: number): Promise<void> {
+	await new Promise((resolve) => setTimeout(resolve, ms));
 }

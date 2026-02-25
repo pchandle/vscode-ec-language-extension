@@ -7,39 +7,28 @@ import * as vscode from 'vscode';
 import * as assert from 'assert';
 import { getDocUri, activate } from './helper';
 
-// These sample completion tests depended on mock data from the old LSP sample.
-// Skipping until we have deterministic completions from the gateway or fixtures.
-suite.skip('Should do completion (skipped)', () => {
-	const docUri = getDocUri('completion.txt');
+suite('Should do completion', () => {
+	const docUri = getDocUri('test.dla');
 
-	test('Completes JS/TS in txt file', async () => {
-		await testCompletion(docUri, new vscode.Position(0, 0), {
-			items: [
-				{ label: 'JavaScript', kind: vscode.CompletionItemKind.Text },
-				{ label: 'TypeScript', kind: vscode.CompletionItemKind.Text }
-			]
-		});
+	test('does not offer emergent classification completions after classification is complete', async () => {
+		await activate(docUri);
+		const document = await vscode.workspace.openTextDocument(docUri);
+		const classificationLine = document.lineAt(3).text;
+		const cursor = new vscode.Position(3, classificationLine.indexOf('chmod,'));
+		const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
+			'vscode.executeCompletionItemProvider',
+			docUri,
+			cursor
+		);
+
+		assert.ok(completions, 'expected completion command result');
+		const emergentItems = (completions?.items ?? []).filter((item) =>
+			typeof item.sortText === 'string' && item.sortText.startsWith('emergent_completion_')
+		);
+		assert.equal(
+			emergentItems.length,
+			0,
+			`expected no emergent classification completions after classification, got ${emergentItems.map((item) => String(item.label)).join(', ')}`
+		);
 	});
 });
-
-async function testCompletion(
-	docUri: vscode.Uri,
-	position: vscode.Position,
-	expectedCompletionList: vscode.CompletionList
-) {
-	await activate(docUri);
-
-	// Executing the command `vscode.executeCompletionItemProvider` to simulate triggering completion
-	const actualCompletionList = (await vscode.commands.executeCommand(
-		'vscode.executeCompletionItemProvider',
-		docUri,
-		position
-	)) as vscode.CompletionList;
-
-	assert.ok(actualCompletionList.items.length >= 2);
-	expectedCompletionList.items.forEach((expectedItem, i) => {
-		const actualItem = actualCompletionList.items[i];
-		assert.equal(actualItem.label, expectedItem.label);
-		assert.equal(actualItem.kind, expectedItem.kind);
-	});
-}
