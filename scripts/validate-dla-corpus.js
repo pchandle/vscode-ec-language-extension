@@ -3,19 +3,21 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { collectDiagnostics } = require("../server/src/diagnostics.js");
 
 const ROOT = path.resolve(__dirname, "..");
 const LOCAL_ROOT = path.join(ROOT, ".ops", "diagnostics-lab");
 const DEFAULT_CORPUS_DIR = path.join(LOCAL_ROOT, "corpus");
 const DEFAULT_RUNS_DIR = path.join(LOCAL_ROOT, "runs");
 const DEFAULT_BASELINE_FILE = path.join(LOCAL_ROOT, "baseline", "current.jsonl");
+const DEFAULT_CACHE_FILE = path.join(LOCAL_ROOT, "tmp", "contractCache.json");
+const DIAGNOSTICS_MODULE_PATH = path.join(ROOT, "server", "out", "diagnostics.js");
 
 function parseArgs(argv) {
   const args = {
     corpusDir: DEFAULT_CORPUS_DIR,
     runsDir: DEFAULT_RUNS_DIR,
     baseline: DEFAULT_BASELINE_FILE,
+    cacheFile: DEFAULT_CACHE_FILE,
     maxProblems: 1000,
     updateBaseline: false,
   };
@@ -36,6 +38,14 @@ function parseArgs(argv) {
     }
     if (arg === "--max-problems" && argv[i + 1]) {
       args.maxProblems = Number(argv[++i]);
+      continue;
+    }
+    if (arg === "--cache" && argv[i + 1]) {
+      args.cacheFile = path.resolve(argv[++i]);
+      continue;
+    }
+    if (arg === "--no-cache") {
+      args.cacheFile = "";
       continue;
     }
     if (arg === "--update-baseline") {
@@ -62,6 +72,8 @@ Options:
   --corpus <dir>         Directory containing .dla files (default: ${DEFAULT_CORPUS_DIR})
   --runs-dir <dir>       Directory for run outputs (default: ${DEFAULT_RUNS_DIR})
   --baseline <file>      Baseline JSONL file (default: ${DEFAULT_BASELINE_FILE})
+  --cache <file>         Contract cache JSON file (default: ${DEFAULT_CACHE_FILE})
+  --no-cache             Disable loading any specification cache
   --max-problems <num>   Max diagnostics per file (default: 1000)
   --update-baseline      Overwrite baseline file from current run output
   -h, --help             Show help
@@ -126,6 +138,44 @@ function timestamp() {
   );
 }
 
+function detectExternalCachePath() {
+  const candidates = [];
+  const home = process.env.HOME || "";
+  const user = process.env.USER || process.env.USERNAME || "";
+  if (home) {
+    candidates.push(path.join(home, ".emergent", "contractCache.json"));
+  }
+  if (user) {
+    candidates.push(path.join("/mnt/c/Users", user, ".emergent", "contractCache.json"));
+  }
+  for (const candidate of candidates) {
+    if (candidate && fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function loadSpecCache(cacheFile) {
+  if (!cacheFile) {
+    return { specs: undefined, cachePath: null, specCount: 0 };
+  }
+  if (!fs.existsSync(cacheFile)) {
+    const detected = detectExternalCachePath();
+    if (!detected) {
+      return { specs: undefined, cachePath: null, specCount: 0 };
+    }
+    cacheFile = detected;
+  }
+  const payload = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+  const specs = payload && typeof payload.specCache === "object" ? payload.specCache : undefined;
+  return {
+    specs,
+    cachePath: cacheFile,
+    specCount: specs ? Object.keys(specs).length : 0,
+  };
+}
+
 function loadJsonl(filePath) {
   if (!fs.existsSync(filePath)) {
     return [];
@@ -144,10 +194,18 @@ function writeJsonl(filePath, records) {
 }
 
 function main() {
+  if (!fs.existsSync(DIAGNOSTICS_MODULE_PATH)) {
+    throw new Error(
+      `Missing compiled diagnostics module at ${DIAGNOSTICS_MODULE_PATH}. Run 'npm run build:server' first.`
+    );
+  }
+  const { collectDiagnostics } = require(DIAGNOSTICS_MODULE_PATH);
+
   const args = parseArgs(process.argv);
   if (!fs.existsSync(args.corpusDir)) {
     throw new Error(`Corpus directory not found: ${args.corpusDir}`);
   }
+  const { specs, cachePath, specCount } = loadSpecCache(args.cacheFile);
 
   fs.mkdirSync(args.runsDir, { recursive: true });
   const runDir = path.join(args.runsDir, timestamp());
@@ -159,6 +217,7 @@ function main() {
   const byMessage = new Map();
   const byFile = new Map();
 
+  const { getDefaultsFromText } = require(path.join(ROOT, "server", "out", "completionSupport.js"));
   for (const filePath of files) {
     const text = fs.readFileSync(filePath, "utf8");
     const sourceHash = sha1(text);
@@ -168,7 +227,8 @@ function main() {
       uri: `file://${filePath.replace(/\\/g, "/")}`,
       getText: () => text,
     };
-    const diagnostics = collectDiagnostics(doc, { maxNumberOfProblems: args.maxProblems });
+    const defaults = getDefaultsFromText(text) || undefined;
+    const diagnostics = collectDiagnostics(doc, { maxNumberOfProblems: args.maxProblems }, specs, defaults);
     if (diagnostics.length > 0) {
       filesWithDiagnostics += 1;
     }
@@ -218,6 +278,8 @@ function main() {
     filesWithDiagnostics,
     diagnosticsTotal: records.length,
     baselineFile: args.baseline,
+    cacheFileUsed: cachePath,
+    cacheSpecCount: specCount,
     baselineDiagnostics: baselineRecords.length,
     addedSinceBaseline: added.length,
     removedSinceBaseline: removed.length,
@@ -238,6 +300,8 @@ function main() {
   console.log(`Files scanned: ${summary.filesScanned}`);
   console.log(`Files with diagnostics: ${summary.filesWithDiagnostics}`);
   console.log(`Diagnostics total: ${summary.diagnosticsTotal}`);
+  console.log(`Spec cache used: ${summary.cacheFileUsed ?? "none"}`);
+  console.log(`Spec cache entries: ${summary.cacheSpecCount}`);
   console.log(`Added vs baseline: ${summary.addedSinceBaseline}`);
   console.log(`Removed vs baseline: ${summary.removedSinceBaseline}`);
   console.log(`Run output: ${runDir}`);

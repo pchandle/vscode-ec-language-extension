@@ -28,11 +28,12 @@ Recommended structure:
 `corpus/` is the nominated subdirectory for `.dla` expressions used during training-style iteration.
 
 ## Workflow Summary
-1. Run diagnostics across corpus.
-2. Triage a small batch (recommended: 20 items).
-3. Implement highest-leverage fixes.
-4. Re-run checks and corpus diagnostics.
-5. Diff against baseline and repeat.
+1. Sync and hydrate specification cache.
+2. Run diagnostics across corpus.
+3. Triage a small batch (recommended: 20 items).
+4. Implement highest-leverage fixes.
+5. Re-run checks and corpus diagnostics.
+6. Diff against baseline and repeat.
 
 ## Manual Work Required
 Automation handles collection, sorting, and reporting. Human input is still required for:
@@ -91,6 +92,15 @@ To keep tagging fast, use:
   - Same as `validate:corpus`, then updates:
   - `/.ops/diagnostics-lab/baseline/current.jsonl`
 
+- `npm run hydrate:spec-cache`
+  - Scans corpus files and collects referenced classifications (`sub/job/host/join`).
+  - Fetches missing spec payloads into `/.ops/diagnostics-lab/tmp/contractCache.json`.
+  - Shows live progress while running:
+    - processed/total classifications
+    - fetched/failed counts
+    - no-host count
+    - approximate throughput
+
 - `npm run triage:diagnostics`
   - Interactive tagging (default limit 20).
   - Reads latest run diagnostics.
@@ -124,12 +134,14 @@ Run these after each fix batch:
 1. `npm run lint`
 2. `npm run test:server`
 3. `npm test` (integration tests)
-4. Corpus diagnostics run + baseline diff
+4. `npm run hydrate:spec-cache` (if cache may be stale/incomplete)
+5. Corpus diagnostics run + baseline diff
 
 ## Recommended Project Tasks
 Scripts are now present:
 - `validate:corpus`
 - `validate:corpus:baseline`
+- `hydrate:spec-cache`
 - `triage:diagnostics`
 - `triage:report`
 
@@ -143,12 +155,14 @@ Per iteration with Codex:
 
 ## Practical Iteration Checklist
 1. Add or update `.dla` files under `/.ops/diagnostics-lab/corpus/`.
-2. Run `npm run validate:corpus`.
-3. Run `npm run triage:diagnostics` and tag about 20 diagnostics.
-4. Optionally run `npm run triage:report` to inspect coverage and top untagged messages.
-5. Ask Codex to analyze latest tags, then confirm/clarify any ambiguous intent before implementation.
-6. Review results in editor on sample files.
-7. If behavior is correct, update baseline with `npm run validate:corpus:baseline`.
+2. Run `npm run sync:spec-cache`.
+3. Run `npm run hydrate:spec-cache`.
+4. Run `npm run validate:corpus`.
+5. Run `npm run triage:diagnostics` and tag about 20 diagnostics.
+6. Optionally run `npm run triage:report` to inspect coverage and top untagged messages.
+7. Ask Codex to analyze latest tags, then confirm/clarify any ambiguous intent before implementation.
+8. Review results in editor on sample files.
+9. If behavior is correct, update baseline with `npm run validate:corpus:baseline`.
 
 ## Prompt Templates
 Use one of these prompts directly with Codex after tagging.
@@ -176,7 +190,7 @@ Tasks:
 2) Summarize your observations and assumptions.
 3) Ask clarification questions where intent is ambiguous; otherwise proceed with minimal fixes.
 4) Implement highest-leverage fixes first.
-5) Run quality gates: npm run lint, npm run test:server, npm test (if environment supports it), and npm run validate:corpus.
+5) Run quality gates: npm run lint, npm run test:server, npm test (if environment supports it), npm run hydrate:spec-cache, and npm run validate:corpus.
 6) Summarize net change: diagnostics total, added/removed vs baseline, and remaining top untagged messages.
 ```
 
