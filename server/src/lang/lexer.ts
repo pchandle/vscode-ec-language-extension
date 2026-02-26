@@ -337,15 +337,14 @@ export function lexText(text: string): { tokens: Token[]; diagnostics: SyntaxDia
 
     // Identifiers / keywords
     if (isIdentifierStart(ch)) {
-      if (["s", "j", "h"].includes(ch.toLowerCase())) {
-        const lookahead = state.text.substr(state.offset, 4).toLowerCase();
-        if (lookahead.startsWith("sub") || lookahead.startsWith("job") || lookahead.startsWith("host") || lookahead.startsWith("join")) {
-          scanIdentifier(state, startOffset, startLine, startCol);
+      scanIdentifier(state, startOffset, startLine, startCol);
+      const token = state.tokens[state.tokens.length - 1];
+      if (token?.kind === TokenKind.Keyword) {
+        const keyword = token.lexeme.toLowerCase();
+        if (keyword === "sub" || keyword === "job" || keyword === "host" || keyword === "join") {
           state.pendingClassification = true;
-          continue;
         }
       }
-      scanIdentifier(state, startOffset, startLine, startCol);
       continue;
     }
 

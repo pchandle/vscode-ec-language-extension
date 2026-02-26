@@ -316,6 +316,7 @@ function parseInlineTargets(
   const allowNewlines = options?.allowNewlines ?? false;
   const targets: Token[] = [];
   const reserved = new Set(["sub", "job", "host", "join", "def", "if", "deliver"]);
+  let newlineContinuation = false;
   while (current(state).kind !== TokenKind.EOF) {
     if (current(state).kind === TokenKind.Colon) {
       if (consumeColon) {
@@ -330,7 +331,10 @@ function parseInlineTargets(
     if (current(state).kind === TokenKind.Newline) {
       if (allowNewlines) {
         advance(state);
-        continue;
+        if (newlineContinuation || current(state).kind === TokenKind.Colon) {
+          newlineContinuation = false;
+          continue;
+        }
       }
       // Inline targets are only valid before the statement body starts.
       // Newlines terminate the inline-target scan unless explicitly allowed.
@@ -345,13 +349,16 @@ function parseInlineTargets(
       (current(state).kind === TokenKind.Keyword && !reserved.has(current(state).lexeme.toLowerCase()))
     ) {
       targets.push(advance(state));
-      if (current(state).kind === TokenKind.Comma || current(state).kind === TokenKind.Newline) {
+      newlineContinuation = false;
+      if (current(state).kind === TokenKind.Comma) {
         advance(state);
+        newlineContinuation = true;
       }
       continue;
     }
     if (current(state).kind === TokenKind.Comma) {
       advance(state);
+      newlineContinuation = true;
       continue;
     }
     break;

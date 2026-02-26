@@ -17,6 +17,14 @@ describe("lexer", () => {
     assert.ok(hasClassification, "missing classification token");
     assert.ok(hasIf, "missing if keyword");
   });
+
+  it("does not enter pending classification mode for identifiers like SUBMIT_*", () => {
+    const sample = "job /example/test(SUBMIT_BTN_HEADING):\nend";
+    const { tokens, diagnostics } = lexText(sample);
+    assert.equal(diagnostics.length, 0, `Expected no lex diagnostics, got ${diagnostics[0]?.message}`);
+    const emptyClassification = tokens.find((t) => t.kind === TokenKind.Classification && t.lexeme.length === 0);
+    assert.ok(!emptyClassification, "did not expect empty classification token");
+  });
 });
 
 describe("parser", () => {
@@ -43,6 +51,20 @@ describe("parser", () => {
       diagnostics.some((d) => d.message === "Expected ':' after job signature"),
       `Expected ':' diagnostic, got ${diagnostics.map((d) => d.message).join(", ")}`
     );
+  });
+
+  it("does not consume first body statement as job header target when ':' is missing", () => {
+    const { diagnostics, program } = parseText("job /example/test(x)\n  false -> debug_flag\nend");
+    assert.ok(
+      diagnostics.some((d) => d.message === "Expected ':' after job signature"),
+      `Expected ':' diagnostic, got ${diagnostics.map((d) => d.message).join(", ")}`
+    );
+    const job = program.statements[0] as any;
+    assert.equal(job.targets.length, 0, "expected no inline targets for missing-colon job header");
+    const bodyHasDebugFlagTarget = job.body.statements.some((s: any) =>
+      Array.isArray(s.targets) && s.targets.some((t: any) => t.lexeme === "debug_flag")
+    );
+    assert.ok(bodyHasDebugFlagTarget, "expected body assignment to debug_flag to remain in job body");
   });
 
   it("allows multiline job header targets before ':'", () => {
