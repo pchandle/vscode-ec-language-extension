@@ -235,9 +235,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	collect((program as ProgramNode).statements);
 
 	const specs: Record<string, RemoteContractSpec> = {};
+	const specLookupIssues: Record<string, string> = {};
 	for (const cls of classifications) {
 		try {
-			const spec = await gatewayClient.fetchContractSpec(cls);
+			const result = await gatewayClient.fetchContractSpecResult(cls);
+			const spec = result.spec;
 			if (spec) {
 				specs[cls] = spec;
 				for (const [raw, norm] of rawToNormalized.entries()) {
@@ -245,9 +247,23 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 						specs[raw] = spec;
 					}
 				}
+			} else if (result.reason) {
+				specLookupIssues[cls] = result.reason;
+				for (const [raw, norm] of rawToNormalized.entries()) {
+					if (norm === cls && raw !== cls) {
+						specLookupIssues[raw] = result.reason;
+					}
+				}
 			}
 		} catch (err: any) {
 			connection.console.warn(`Diagnostics: failed to fetch spec ${cls}: ${err?.message ?? err}`);
+			const fallbackReason = err?.message ?? String(err);
+			specLookupIssues[cls] = fallbackReason;
+			for (const [raw, norm] of rawToNormalized.entries()) {
+				if (norm === cls && raw !== cls) {
+					specLookupIssues[raw] = fallbackReason;
+				}
+			}
 		}
 	}
 
@@ -257,7 +273,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			maxNumberOfProblems: settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
 		},
 		specs,
-		defaults
+		defaults,
+		specLookupIssues
 	);
 
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });

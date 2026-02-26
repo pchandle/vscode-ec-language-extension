@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## 0.10.9 - 2026-02-26
+- Enforce `:` as a required terminator for `job` signatures, while allowing multi-line `job` headers (including `:` on its own line).
+- Keep deprecated `end -> ...` syntax emitting diagnostics.
+- Improve contract requirement typing for `$` in contract calls so required classification inference and mismatch diagnostics align with intent.
+- Normalize corpus validator behavior to use compiled server diagnostics/default extraction and support cached specification payloads.
+- Add diagnostics-lab workflow tooling for large corpus validation:
+  - `validate:corpus`, `validate:corpus:baseline`
+  - `triage:diagnostics`, `triage:report`
+  - `sync:spec-cache`, `hydrate:spec-cache`
+- Add spec-cache hydration script with live progress reporting and gateway-root fetch support for offline corpus type-checking.
+- Expand diagnostics triage UX with source context snippets, VS Code open targets, colored diagnostic lines, and source-drift detection.
+- Add/refresh parser and type-checker tests covering trailing-comma continuation, `job` signature parsing, and `$` classification requirement handling.
+
 ## 0.10.1 - 2025-12-10
 - Bundle client and server with esbuild and simplify publishing via prepublish hook.
 - Tighten packaging to ship only bundled assets while keeping runtime dependencies, fixing missing module errors.

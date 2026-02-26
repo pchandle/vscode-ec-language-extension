@@ -40,6 +40,21 @@ export type RemoteProtocolSpec = ProtocolSpecification & {
 
 type RemoteSpec = RemoteContractSpec | RemoteProtocolSpec;
 
+export type SpecFetchResult<TSpec extends RemoteSpec = RemoteSpec> = {
+  spec: TSpec | null;
+  reason?: string;
+  fromCache?: boolean;
+};
+
+class GatewayNotModifiedError extends Error {
+  readonly status = 304;
+
+  constructor(url: string) {
+    super(`Gateway 304 Not Modified fetching '${url}'`);
+    this.name = "GatewayNotModifiedError";
+  }
+}
+
 class GatewayClient {
   #config: GatewayConfig = { hostname: "localhost", port: 10000, allowInsecure: true };
   #apiRoot = "http://localhost:10000";
@@ -120,6 +135,10 @@ class GatewayClient {
       );
       this.persistDiskCache();
     } catch (err: any) {
+      if (this.isNotModifiedError(err)) {
+        this.#connection?.console.log("Gateway root returned 304 Not Modified; keeping existing contract/protocol cache.");
+        return;
+      }
       this.#connection?.console.error(`Failed to refresh contract cache: ${err.message}`);
     }
   }
@@ -138,7 +157,7 @@ class GatewayClient {
     }
   }
 
-  async fetchContractSpec(classification: string): Promise<RemoteContractSpec | null> {
+  async fetchContractSpecResult(classification: string): Promise<SpecFetchResult<RemoteContractSpec>> {
     const cached = this.#specCache[classification] as RemoteContractSpec | undefined;
 
     const gatewayUrl = `${this.#apiRoot}${this.#specPathPrefix}${classification}`;
@@ -146,8 +165,16 @@ class GatewayClient {
       const spec = (await this.fetchJson(gatewayUrl)) as RemoteContractSpec;
       this.#specCache[classification] = spec;
       this.persistDiskCache();
-      return spec;
+      return { spec };
     } catch (err: any) {
+      if (this.isNotModifiedError(err) && cached) {
+        this.#connection?.console.log(`Gateway returned 304 for ${classification}; serving cached contract spec.`);
+        return {
+          spec: cached,
+          fromCache: true,
+          reason: "Gateway returned 304 Not Modified; using cached specification.",
+        };
+      }
       this.#connection?.console.warn(`Gateway fetch failed for ${classification}: ${err.message}`);
     }
 
@@ -157,22 +184,42 @@ class GatewayClient {
       : null;
     if (!hostUrl) {
       this.#connection?.console.error(`No host available for contract ${classification}`);
-      return cached ?? null;
+      if (cached) {
+        return { spec: cached, fromCache: true, reason: "No host available in root document; using cached specification." };
+      }
+      return { spec: null, reason: "No host mapping found in root document for this classification." };
     }
 
     try {
       const spec = (await this.fetchJson(hostUrl)) as RemoteContractSpec;
       this.#specCache[classification] = spec;
       this.persistDiskCache();
-      return spec;
+      return { spec };
     } catch (err: any) {
+      if (this.isNotModifiedError(err) && cached) {
+        this.#connection?.console.log(`Host ${host} returned 304 for ${classification}; serving cached contract spec.`);
+        return {
+          spec: cached,
+          fromCache: true,
+          reason: "Host returned 304 Not Modified; using cached specification.",
+        };
+      }
       this.#connection?.console.error(`Failed to fetch contract spec ${classification} from host ${host}: ${err.message}`);
       if (cached) {
         this.#connection?.console.log(`Serving cached contract spec for ${classification}`);
-        return cached;
+        return {
+          spec: cached,
+          fromCache: true,
+          reason: `Gateway and host fetch failed; using cached specification (${err?.message ?? String(err)}).`,
+        };
       }
-      return null;
+      return { spec: null, reason: err?.message ?? String(err) };
     }
+  }
+
+  async fetchContractSpec(classification: string): Promise<RemoteContractSpec | null> {
+    const result = await this.fetchContractSpecResult(classification);
+    return result.spec;
   }
 
   async fetchProtocolSpec(classification: string): Promise<RemoteProtocolSpec | null> {
@@ -185,6 +232,10 @@ class GatewayClient {
       this.persistDiskCache();
       return spec;
     } catch (err: any) {
+      if (this.isNotModifiedError(err) && cached) {
+        this.#connection?.console.log(`Gateway returned 304 for protocol ${classification}; serving cached protocol spec.`);
+        return cached;
+      }
       this.#connection?.console.warn(`Gateway fetch failed for ${classification}: ${err.message}`);
     }
 
@@ -203,6 +254,10 @@ class GatewayClient {
       this.persistDiskCache();
       return spec;
     } catch (err: any) {
+      if (this.isNotModifiedError(err) && cached) {
+        this.#connection?.console.log(`Host ${host} returned 304 for protocol ${classification}; serving cached protocol spec.`);
+        return cached;
+      }
       this.#connection?.console.error(`Failed to fetch protocol spec ${classification} from host ${host}: ${err.message}`);
       if (cached) {
         this.#connection?.console.log(`Serving cached protocol spec for ${classification}`);
@@ -229,7 +284,15 @@ class GatewayClient {
 
   private async fetchJson(url: string): Promise<any> {
     try {
-      const res = await fetch(url, { headers: { "cache-control": "no-cache" } });
+      const res = await fetch(url, {
+        headers: {
+          "cache-control": "no-cache",
+          pragma: "no-cache",
+        },
+      });
+      if (res.status === 304) {
+        throw new GatewayNotModifiedError(url);
+      }
       if (!res.ok) {
         throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${url}`);
       }
@@ -250,6 +313,10 @@ class GatewayClient {
           throw new Error(error?.message ? error.message : `Failed to fetch ${url}`);
       }
     }
+  }
+
+  private isNotModifiedError(error: unknown): error is GatewayNotModifiedError {
+    return error instanceof GatewayNotModifiedError;
   }
 
   private async ensureHostForClassification(classification: string): Promise<string | undefined> {

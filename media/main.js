@@ -397,7 +397,7 @@
             }
             return null;
           }
-          var hasOwnProperty16 = Object.prototype.hasOwnProperty;
+          var hasOwnProperty17 = Object.prototype.hasOwnProperty;
           var RESERVED_PROPS = {
             key: true,
             ref: true,
@@ -410,7 +410,7 @@
           }
           function hasValidRef(config) {
             {
-              if (hasOwnProperty16.call(config, "ref")) {
+              if (hasOwnProperty17.call(config, "ref")) {
                 var getter = Object.getOwnPropertyDescriptor(config, "ref").get;
                 if (getter && getter.isReactWarning) {
                   return false;
@@ -421,7 +421,7 @@
           }
           function hasValidKey(config) {
             {
-              if (hasOwnProperty16.call(config, "key")) {
+              if (hasOwnProperty17.call(config, "key")) {
                 var getter = Object.getOwnPropertyDescriptor(config, "key").get;
                 if (getter && getter.isReactWarning) {
                   return false;
@@ -533,7 +533,7 @@
               self2 = config.__self === void 0 ? null : config.__self;
               source = config.__source === void 0 ? null : config.__source;
               for (propName in config) {
-                if (hasOwnProperty16.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
+                if (hasOwnProperty17.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
                   props[propName] = config[propName];
                 }
               }
@@ -605,7 +605,7 @@
                 defaultProps = element.type.defaultProps;
               }
               for (propName in config) {
-                if (hasOwnProperty16.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
+                if (hasOwnProperty17.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
                   if (config[propName] === void 0 && defaultProps !== void 0) {
                     props[propName] = defaultProps[propName];
                   } else {
@@ -1405,7 +1405,7 @@
           }
           function checkPropTypes(typeSpecs, values, location, componentName, element) {
             {
-              var has2 = Function.call.bind(hasOwnProperty16);
+              var has2 = Function.call.bind(hasOwnProperty17);
               for (var typeSpecName in typeSpecs) {
                 if (has2(typeSpecs, typeSpecName)) {
                   var error$1 = void 0;
@@ -2489,7 +2489,7 @@
             }
           }
           var canUseDOM = !!(typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined");
-          var hasOwnProperty16 = Object.prototype.hasOwnProperty;
+          var hasOwnProperty17 = Object.prototype.hasOwnProperty;
           function typeName(value) {
             {
               var hasToStringTag = typeof Symbol === "function" && Symbol.toStringTag;
@@ -2571,10 +2571,10 @@
           var illegalAttributeNameCache = {};
           var validatedAttributeNameCache = {};
           function isAttributeNameSafe(attributeName) {
-            if (hasOwnProperty16.call(validatedAttributeNameCache, attributeName)) {
+            if (hasOwnProperty17.call(validatedAttributeNameCache, attributeName)) {
               return true;
             }
-            if (hasOwnProperty16.call(illegalAttributeNameCache, attributeName)) {
+            if (hasOwnProperty17.call(illegalAttributeNameCache, attributeName)) {
               return false;
             }
             if (VALID_ATTRIBUTE_NAME_REGEX.test(attributeName)) {
@@ -5188,7 +5188,7 @@
           var rARIACamel = new RegExp("^(aria)[A-Z][" + ATTRIBUTE_NAME_CHAR + "]*$");
           function validateProperty(tagName, name) {
             {
-              if (hasOwnProperty16.call(warnedProperties, name) && warnedProperties[name]) {
+              if (hasOwnProperty17.call(warnedProperties, name) && warnedProperties[name]) {
                 return true;
               }
               if (rARIACamel.test(name)) {
@@ -5271,7 +5271,7 @@
             var rARIA$1 = new RegExp("^(aria)-[" + ATTRIBUTE_NAME_CHAR + "]*$");
             var rARIACamel$1 = new RegExp("^(aria)[A-Z][" + ATTRIBUTE_NAME_CHAR + "]*$");
             validateProperty$1 = function(tagName, name, value, eventRegistry) {
-              if (hasOwnProperty16.call(warnedProperties$1, name) && warnedProperties$1[name]) {
+              if (hasOwnProperty17.call(warnedProperties$1, name) && warnedProperties$1[name]) {
                 return true;
               }
               var lowerCasedName = name.toLowerCase();
@@ -8412,7 +8412,7 @@
             }
             for (var i2 = 0; i2 < keysA.length; i2++) {
               var currentKey = keysA[i2];
-              if (!hasOwnProperty16.call(objB, currentKey) || !objectIs(objA[currentKey], objB[currentKey])) {
+              if (!hasOwnProperty17.call(objB, currentKey) || !objectIs(objA[currentKey], objB[currentKey])) {
                 return false;
               }
             }
@@ -9456,7 +9456,7 @@
             }
             {
               if (namespaceURI === HTML_NAMESPACE) {
-                if (!isCustomComponentTag && Object.prototype.toString.call(domElement) === "[object HTMLUnknownElement]" && !hasOwnProperty16.call(warnedUnknownTags, type)) {
+                if (!isCustomComponentTag && Object.prototype.toString.call(domElement) === "[object HTMLUnknownElement]" && !hasOwnProperty17.call(warnedUnknownTags, type)) {
                   warnedUnknownTags[type] = true;
                   error("The tag <%s> is unrecognized in this browser. If you meant to render a React component, start its name with an uppercase letter.", type);
                 }
@@ -10807,7 +10807,7 @@
           }
           function checkPropTypes(typeSpecs, values, location, componentName, element) {
             {
-              var has3 = Function.call.bind(hasOwnProperty16);
+              var has3 = Function.call.bind(hasOwnProperty17);
               for (var typeSpecName in typeSpecs) {
                 if (has3(typeSpecs, typeSpecName)) {
                   var error$1 = void 0;
@@ -23986,7 +23986,7 @@
             }
             return "";
           }
-          var hasOwnProperty16 = Object.prototype.hasOwnProperty;
+          var hasOwnProperty17 = Object.prototype.hasOwnProperty;
           var loggedTypeFailures = {};
           var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
           function setCurrentlyValidatingElement(element) {
@@ -24002,7 +24002,7 @@
           }
           function checkPropTypes(typeSpecs, values, location, componentName, element) {
             {
-              var has2 = Function.call.bind(hasOwnProperty16);
+              var has2 = Function.call.bind(hasOwnProperty17);
               for (var typeSpecName in typeSpecs) {
                 if (has2(typeSpecs, typeSpecName)) {
                   var error$1 = void 0;
@@ -24078,7 +24078,7 @@
           }
           function hasValidRef(config) {
             {
-              if (hasOwnProperty16.call(config, "ref")) {
+              if (hasOwnProperty17.call(config, "ref")) {
                 var getter = Object.getOwnPropertyDescriptor(config, "ref").get;
                 if (getter && getter.isReactWarning) {
                   return false;
@@ -24089,7 +24089,7 @@
           }
           function hasValidKey(config) {
             {
-              if (hasOwnProperty16.call(config, "key")) {
+              if (hasOwnProperty17.call(config, "key")) {
                 var getter = Object.getOwnPropertyDescriptor(config, "key").get;
                 if (getter && getter.isReactWarning) {
                   return false;
@@ -24201,7 +24201,7 @@
                 warnIfStringRefCannotBeAutoConverted(config, self2);
               }
               for (propName in config) {
-                if (hasOwnProperty16.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
+                if (hasOwnProperty17.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
                   props[propName] = config[propName];
                 }
               }
@@ -24433,7 +24433,7 @@
                 }
               }
               {
-                if (hasOwnProperty16.call(props, "key")) {
+                if (hasOwnProperty17.call(props, "key")) {
                   var componentName = getComponentNameFromType(type);
                   var keys2 = Object.keys(props).filter(function(k2) {
                     return k2 !== "key";
@@ -24780,12 +24780,12 @@
   var require_getRawTag = __commonJS({
     "node_modules/lodash/_getRawTag.js"(exports2, module2) {
       var Symbol3 = require_Symbol();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
-      var nativeObjectToString3 = objectProto19.toString;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
+      var nativeObjectToString3 = objectProto20.toString;
       var symToStringTag3 = Symbol3 ? Symbol3.toStringTag : void 0;
       function getRawTag2(value) {
-        var isOwn = hasOwnProperty16.call(value, symToStringTag3), tag = value[symToStringTag3];
+        var isOwn = hasOwnProperty17.call(value, symToStringTag3), tag = value[symToStringTag3];
         try {
           value[symToStringTag3] = void 0;
           var unmasked = true;
@@ -24808,8 +24808,8 @@
   // node_modules/lodash/_objectToString.js
   var require_objectToString = __commonJS({
     "node_modules/lodash/_objectToString.js"(exports2, module2) {
-      var objectProto19 = Object.prototype;
-      var nativeObjectToString3 = objectProto19.toString;
+      var objectProto20 = Object.prototype;
+      var nativeObjectToString3 = objectProto20.toString;
       function objectToString2(value) {
         return nativeObjectToString3.call(value);
       }
@@ -24923,11 +24923,11 @@
       var reRegExpChar2 = /[\\^$.*+?()[\]{}|]/g;
       var reIsHostCtor2 = /^\[object .+?Constructor\]$/;
       var funcProto4 = Function.prototype;
-      var objectProto19 = Object.prototype;
+      var objectProto20 = Object.prototype;
       var funcToString4 = funcProto4.toString;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       var reIsNative2 = RegExp(
-        "^" + funcToString4.call(hasOwnProperty16).replace(reRegExpChar2, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$"
+        "^" + funcToString4.call(hasOwnProperty17).replace(reRegExpChar2, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$"
       );
       function baseIsNative2(value) {
         if (!isObject3(value) || isMasked2(value)) {
@@ -25011,15 +25011,15 @@
     "node_modules/lodash/_hashGet.js"(exports2, module2) {
       var nativeCreate2 = require_nativeCreate();
       var HASH_UNDEFINED4 = "__lodash_hash_undefined__";
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function hashGet2(key) {
         var data = this.__data__;
         if (nativeCreate2) {
           var result = data[key];
           return result === HASH_UNDEFINED4 ? void 0 : result;
         }
-        return hasOwnProperty16.call(data, key) ? data[key] : void 0;
+        return hasOwnProperty17.call(data, key) ? data[key] : void 0;
       }
       module2.exports = hashGet2;
     }
@@ -25029,11 +25029,11 @@
   var require_hashHas = __commonJS({
     "node_modules/lodash/_hashHas.js"(exports2, module2) {
       var nativeCreate2 = require_nativeCreate();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function hashHas2(key) {
         var data = this.__data__;
-        return nativeCreate2 ? data[key] !== void 0 : hasOwnProperty16.call(data, key);
+        return nativeCreate2 ? data[key] !== void 0 : hasOwnProperty17.call(data, key);
       }
       module2.exports = hashHas2;
     }
@@ -25299,11 +25299,11 @@
     "node_modules/lodash/_assignValue.js"(exports2, module2) {
       var baseAssignValue2 = require_baseAssignValue();
       var eq2 = require_eq();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function assignValue2(object, key, value) {
         var objValue = object[key];
-        if (!(hasOwnProperty16.call(object, key) && eq2(objValue, value)) || value === void 0 && !(key in object)) {
+        if (!(hasOwnProperty17.call(object, key) && eq2(objValue, value)) || value === void 0 && !(key in object)) {
           baseAssignValue2(object, key, value);
         }
       }
@@ -25380,13 +25380,13 @@
     "node_modules/lodash/isArguments.js"(exports2, module2) {
       var baseIsArguments2 = require_baseIsArguments();
       var isObjectLike2 = require_isObjectLike();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
-      var propertyIsEnumerable3 = objectProto19.propertyIsEnumerable;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
+      var propertyIsEnumerable3 = objectProto20.propertyIsEnumerable;
       var isArguments2 = baseIsArguments2(/* @__PURE__ */ (function() {
         return arguments;
       })()) ? baseIsArguments2 : function(value) {
-        return isObjectLike2(value) && hasOwnProperty16.call(value, "callee") && !propertyIsEnumerable3.call(value, "callee");
+        return isObjectLike2(value) && hasOwnProperty17.call(value, "callee") && !propertyIsEnumerable3.call(value, "callee");
       };
       module2.exports = isArguments2;
     }
@@ -25545,12 +25545,12 @@
       var isBuffer2 = require_isBuffer();
       var isIndex2 = require_isIndex();
       var isTypedArray2 = require_isTypedArray();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function arrayLikeKeys2(value, inherited) {
         var isArr = isArray2(value), isArg = !isArr && isArguments2(value), isBuff = !isArr && !isArg && isBuffer2(value), isType = !isArr && !isArg && !isBuff && isTypedArray2(value), skipIndexes = isArr || isArg || isBuff || isType, result = skipIndexes ? baseTimes2(value.length, String) : [], length = result.length;
         for (var key in value) {
-          if ((inherited || hasOwnProperty16.call(value, key)) && !(skipIndexes && // Safari 9 has enumerable `arguments.length` in strict mode.
+          if ((inherited || hasOwnProperty17.call(value, key)) && !(skipIndexes && // Safari 9 has enumerable `arguments.length` in strict mode.
           (key == "length" || // Node.js 0.10 has enumerable non-index properties on buffers.
           isBuff && (key == "offset" || key == "parent") || // PhantomJS 2 has enumerable non-index properties on typed arrays.
           isType && (key == "buffer" || key == "byteLength" || key == "byteOffset") || // Skip index properties.
@@ -25567,9 +25567,9 @@
   // node_modules/lodash/_isPrototype.js
   var require_isPrototype = __commonJS({
     "node_modules/lodash/_isPrototype.js"(exports2, module2) {
-      var objectProto19 = Object.prototype;
+      var objectProto20 = Object.prototype;
       function isPrototype2(value) {
-        var Ctor = value && value.constructor, proto = typeof Ctor == "function" && Ctor.prototype || objectProto19;
+        var Ctor = value && value.constructor, proto = typeof Ctor == "function" && Ctor.prototype || objectProto20;
         return value === proto;
       }
       module2.exports = isPrototype2;
@@ -25602,15 +25602,15 @@
     "node_modules/lodash/_baseKeys.js"(exports2, module2) {
       var isPrototype2 = require_isPrototype();
       var nativeKeys2 = require_nativeKeys();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function baseKeys2(object) {
         if (!isPrototype2(object)) {
           return nativeKeys2(object);
         }
         var result = [];
         for (var key in Object(object)) {
-          if (hasOwnProperty16.call(object, key) && key != "constructor") {
+          if (hasOwnProperty17.call(object, key) && key != "constructor") {
             result.push(key);
           }
         }
@@ -25679,15 +25679,15 @@
       var isObject3 = require_isObject();
       var isPrototype2 = require_isPrototype();
       var nativeKeysIn2 = require_nativeKeysIn();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function baseKeysIn2(object) {
         if (!isObject3(object)) {
           return nativeKeysIn2(object);
         }
         var isProto = isPrototype2(object), result = [];
         for (var key in object) {
-          if (!(key == "constructor" && (isProto || !hasOwnProperty16.call(object, key)))) {
+          if (!(key == "constructor" && (isProto || !hasOwnProperty17.call(object, key)))) {
             result.push(key);
           }
         }
@@ -25790,8 +25790,8 @@
     "node_modules/lodash/_getSymbols.js"(exports2, module2) {
       var arrayFilter2 = require_arrayFilter();
       var stubArray2 = require_stubArray();
-      var objectProto19 = Object.prototype;
-      var propertyIsEnumerable3 = objectProto19.propertyIsEnumerable;
+      var objectProto20 = Object.prototype;
+      var propertyIsEnumerable3 = objectProto20.propertyIsEnumerable;
       var nativeGetSymbols3 = Object.getOwnPropertySymbols;
       var getSymbols2 = !nativeGetSymbols3 ? stubArray2 : function(object) {
         if (object == null) {
@@ -26001,11 +26001,11 @@
   // node_modules/lodash/_initCloneArray.js
   var require_initCloneArray = __commonJS({
     "node_modules/lodash/_initCloneArray.js"(exports2, module2) {
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function initCloneArray2(array) {
         var length = array.length, result = new array.constructor(length);
-        if (length && typeof array[0] == "string" && hasOwnProperty16.call(array, "index")) {
+        if (length && typeof array[0] == "string" && hasOwnProperty17.call(array, "index")) {
           result.index = array.index;
           result.input = array.input;
         }
@@ -26602,8 +26602,8 @@
     "node_modules/lodash/_equalObjects.js"(exports2, module2) {
       var getAllKeys2 = require_getAllKeys();
       var COMPARE_PARTIAL_FLAG7 = 1;
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function equalObjects2(object, other, bitmask, customizer, equalFunc, stack) {
         var isPartial = bitmask & COMPARE_PARTIAL_FLAG7, objProps = getAllKeys2(object), objLength = objProps.length, othProps = getAllKeys2(other), othLength = othProps.length;
         if (objLength != othLength && !isPartial) {
@@ -26612,7 +26612,7 @@
         var index = objLength;
         while (index--) {
           var key = objProps[index];
-          if (!(isPartial ? key in other : hasOwnProperty16.call(other, key))) {
+          if (!(isPartial ? key in other : hasOwnProperty17.call(other, key))) {
             return false;
           }
         }
@@ -26666,8 +26666,8 @@
       var argsTag5 = "[object Arguments]";
       var arrayTag4 = "[object Array]";
       var objectTag6 = "[object Object]";
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       function baseIsEqualDeep2(object, other, bitmask, customizer, equalFunc, stack) {
         var objIsArr = isArray2(object), othIsArr = isArray2(other), objTag = objIsArr ? arrayTag4 : getTag2(object), othTag = othIsArr ? arrayTag4 : getTag2(other);
         objTag = objTag == argsTag5 ? objectTag6 : objTag;
@@ -26685,7 +26685,7 @@
           return objIsArr || isTypedArray2(object) ? equalArrays2(object, other, bitmask, customizer, equalFunc, stack) : equalByTag2(object, other, objTag, bitmask, customizer, equalFunc, stack);
         }
         if (!(bitmask & COMPARE_PARTIAL_FLAG7)) {
-          var objIsWrapped = objIsObj && hasOwnProperty16.call(object, "__wrapped__"), othIsWrapped = othIsObj && hasOwnProperty16.call(other, "__wrapped__");
+          var objIsWrapped = objIsObj && hasOwnProperty17.call(object, "__wrapped__"), othIsWrapped = othIsObj && hasOwnProperty17.call(other, "__wrapped__");
           if (objIsWrapped || othIsWrapped) {
             var objUnwrapped = objIsWrapped ? object.value() : object, othUnwrapped = othIsWrapped ? other.value() : other;
             stack || (stack = new Stack2());
@@ -27785,8 +27785,8 @@
       var eq2 = require_eq();
       var isIterateeCall2 = require_isIterateeCall();
       var keysIn2 = require_keysIn();
-      var objectProto19 = Object.prototype;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var objectProto20 = Object.prototype;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       var defaults = baseRest2(function(object, sources) {
         object = Object(object);
         var index = -1;
@@ -27803,7 +27803,7 @@
           while (++propsIndex < propsLength) {
             var key = props[propsIndex];
             var value = object[key];
-            if (value === void 0 || eq2(value, objectProto19[key]) && !hasOwnProperty16.call(object, key)) {
+            if (value === void 0 || eq2(value, objectProto20[key]) && !hasOwnProperty17.call(object, key)) {
               object[key] = source[key];
             }
           }
@@ -27922,9 +27922,9 @@
       var isObjectLike2 = require_isObjectLike();
       var objectTag6 = "[object Object]";
       var funcProto4 = Function.prototype;
-      var objectProto19 = Object.prototype;
+      var objectProto20 = Object.prototype;
       var funcToString4 = funcProto4.toString;
-      var hasOwnProperty16 = objectProto19.hasOwnProperty;
+      var hasOwnProperty17 = objectProto20.hasOwnProperty;
       var objectCtorString2 = funcToString4.call(Object);
       function isPlainObject2(value) {
         if (!isObjectLike2(value) || baseGetTag2(value) != objectTag6) {
@@ -27934,7 +27934,7 @@
         if (proto === null) {
           return true;
         }
-        var Ctor = hasOwnProperty16.call(proto, "constructor") && proto.constructor;
+        var Ctor = hasOwnProperty17.call(proto, "constructor") && proto.constructor;
         return typeof Ctor == "function" && Ctor instanceof Ctor && funcToString4.call(Ctor) == objectCtorString2;
       }
       module2.exports = isPlainObject2;
@@ -34180,6 +34180,7 @@
       "use strict";
       Object.defineProperty(exports2, "__esModule", { value: true });
       var code_1 = require_code2();
+      var util_1 = require_util();
       var codegen_1 = require_codegen();
       var error = {
         message: ({ schemaCode }) => (0, codegen_1.str)`must match pattern "${schemaCode}"`,
@@ -34192,10 +34193,18 @@
         $data: true,
         error,
         code(cxt) {
-          const { data, $data, schema, schemaCode, it } = cxt;
+          const { gen, data, $data, schema, schemaCode, it } = cxt;
           const u2 = it.opts.unicodeRegExp ? "u" : "";
-          const regExp = $data ? (0, codegen_1._)`(new RegExp(${schemaCode}, ${u2}))` : (0, code_1.usePattern)(cxt, schema);
-          cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
+          if ($data) {
+            const { regExp } = it.opts.code;
+            const regExpCode = regExp.code === "new RegExp" ? (0, codegen_1._)`new RegExp` : (0, util_1.useFunc)(gen, regExp);
+            const valid = gen.let("valid");
+            gen.try(() => gen.assign(valid, (0, codegen_1._)`${regExpCode}(${schemaCode}, ${u2}).test(${data})`), () => gen.assign(valid, false));
+            cxt.fail$data((0, codegen_1._)`!${valid}`);
+          } else {
+            const regExp = (0, code_1.usePattern)(cxt, schema);
+            cxt.fail$data((0, codegen_1._)`!${regExp}.test(${data})`);
+          }
         }
       };
       exports2.default = def;
@@ -38038,10 +38047,32 @@
   var parent_default = parent;
 
   // node_modules/lodash-es/_baseUnset.js
+  var objectProto18 = Object.prototype;
+  var hasOwnProperty15 = objectProto18.hasOwnProperty;
   function baseUnset(object, path) {
     path = castPath_default(path, object);
-    object = parent_default(object, path);
-    return object == null || delete object[toKey_default(last_default(path))];
+    var index = -1, length = path.length;
+    if (!length) {
+      return true;
+    }
+    var isRootPrimitive = object == null || typeof object !== "object" && typeof object !== "function";
+    while (++index < length) {
+      var key = path[index];
+      if (typeof key !== "string") {
+        continue;
+      }
+      if (key === "__proto__" && !hasOwnProperty15.call(object, "__proto__")) {
+        return false;
+      }
+      if (key === "constructor" && index + 1 < length && typeof path[index + 1] === "string" && path[index + 1] === "prototype") {
+        if (isRootPrimitive && index === 0) {
+          continue;
+        }
+        return false;
+      }
+    }
+    var obj = parent_default(object, path);
+    return obj == null || delete obj[toKey_default(last_default(path))];
   }
   var baseUnset_default = baseUnset;
 
@@ -38248,10 +38279,10 @@
   }
 
   // node_modules/lodash-es/_baseHas.js
-  var objectProto18 = Object.prototype;
-  var hasOwnProperty15 = objectProto18.hasOwnProperty;
+  var objectProto19 = Object.prototype;
+  var hasOwnProperty16 = objectProto19.hasOwnProperty;
   function baseHas(object, key) {
-    return object != null && hasOwnProperty15.call(object, key);
+    return object != null && hasOwnProperty16.call(object, key);
   }
   var baseHas_default = baseHas;
 

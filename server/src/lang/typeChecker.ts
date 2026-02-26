@@ -79,13 +79,22 @@ export function typeCheckProgram(
     collectTypes?: boolean;
     specs?: Record<string, RemoteContractSpec>;
     defaults?: Defaults;
+    specLookupIssues?: Record<string, string>;
   }
 ): { diagnostics: SyntaxDiagnostic[]; types?: TypeAtPosition[] } {
   const diagnostics: SyntaxDiagnostic[] = [];
   const types: TypeAtPosition[] | undefined = options?.collectTypes ? [] : undefined;
   const scope = makeScope();
   for (const stmt of program.statements) {
-    typeCheckStatement(stmt, scope, diagnostics, types, options?.specs, options?.defaults);
+    typeCheckStatement(
+      stmt,
+      scope,
+      diagnostics,
+      types,
+      options?.specs,
+      options?.defaults,
+      options?.specLookupIssues
+    );
   }
   return { diagnostics, types };
 }
@@ -316,24 +325,53 @@ function recordTokenType(token: Token, scope: TypeScope, collector?: TypeAtPosit
   }
 }
 
+function buildUnknownSpecificationMessage(
+  kind: "contract" | "protocol" | "classification",
+  classification: string,
+  opts?: { normalizedClassification?: string | null; specLookupIssues?: Record<string, string> }
+): string {
+  const base =
+    kind === "protocol"
+      ? `Unknown protocol specification for '${classification}'`
+      : kind === "contract"
+      ? `Unknown contract specification for '${classification}'`
+      : `Unknown classification '${classification}'`;
+  const details: string[] = [];
+  const normalized = opts?.normalizedClassification;
+  if (normalized && normalized !== classification) {
+    details.push(`resolved as '${normalized}'`);
+  }
+  const reason =
+    opts?.specLookupIssues?.[classification] ?? (normalized ? opts?.specLookupIssues?.[normalized] : undefined);
+  if (reason) {
+    details.push(reason);
+  }
+  return details.length ? `${base} (${details.join("; ")})` : base;
+}
+
 function typeCheckStatement(
   stmt: Statement,
   scope: TypeScope,
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
-  defaults?: Defaults
+  defaults?: Defaults,
+  specLookupIssues?: Record<string, string>
 ) {
   switch (stmt.kind) {
     case NodeKind.Job: {
       const job = stmt as JobNode;
       const classification = job.classification?.lexeme;
+      const normalizedClassification = classification ? normalizeContractClassification(classification, defaults) : null;
       const jobSpec = classification ? specs?.[classification] : undefined;
       if (classification && !jobSpec) {
         addTypeError(
           diagnostics,
           job.classification!.range,
-          `Unknown contract specification for '${classification}'`
+          buildUnknownSpecificationMessage("contract", classification, {
+            normalizedClassification,
+            specLookupIssues,
+          })
         );
       }
       const jobScope = makeScope(scope);
@@ -356,7 +394,7 @@ function typeCheckStatement(
           }
         }
       }
-      typeCheckBlock(job.body, jobScope, diagnostics, collector, specs, defaults);
+      typeCheckBlock(job.body, jobScope, diagnostics, collector, specs, defaults, specLookupIssues);
       for (const param of job.params) {
         recordTokenType(param, jobScope, collector);
       }
@@ -404,7 +442,7 @@ function typeCheckStatement(
       for (const target of def.targets) {
         declare(defScope, target, UNKNOWN);
       }
-      typeCheckBlock(def.body, defScope, diagnostics, collector, specs, defaults);
+      typeCheckBlock(def.body, defScope, diagnostics, collector, specs, defaults, specLookupIssues);
 
       placeholder.params = def.params.map((p) => lookup(defScope, p.lexeme)?.type ?? UNKNOWN);
       placeholder.returns = def.targets.map((t) => lookup(defScope, t.lexeme)?.type ?? UNKNOWN);
@@ -453,10 +491,19 @@ function typeCheckStatement(
           diagnostics,
           (stmt as any).classification.range,
           isProtocol
-            ? `Unknown protocol specification for '${classification}'`
+            ? buildUnknownSpecificationMessage("protocol", classification, {
+                normalizedClassification,
+                specLookupIssues,
+              })
             : isContract
-            ? `Unknown contract specification for '${classification}'`
-            : `Unknown classification '${classification}'`
+            ? buildUnknownSpecificationMessage("contract", classification, {
+                normalizedClassification,
+                specLookupIssues,
+              })
+            : buildUnknownSpecificationMessage("classification", classification, {
+                normalizedClassification,
+                specLookupIssues,
+              })
         );
       }
       const roleSpec = isProtocol
@@ -482,7 +529,8 @@ function typeCheckStatement(
         diagnostics,
         collector,
         specs,
-        defaults
+        defaults,
+        specLookupIssues
       );
       const scopeBinding = scope.bindings.get("$");
       const originalScopeType = scopeBinding?.type ?? UNKNOWN;
@@ -518,7 +566,9 @@ function typeCheckStatement(
         }
       }
       // Type check call arguments and ensure they are assignable to requirements when both are known.
-      const callArgTypes = callArgs.map((arg) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN);
+      const callArgTypes = callArgs.map(
+        (arg) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults, specLookupIssues)[0] ?? UNKNOWN
+      );
       if (requirements.length) {
         for (let i = 0; i < Math.min(requirements.length, callArgTypes.length); i++) {
           const reqType = specTermToType(requirements[i] as SpecTerm);
@@ -613,7 +663,7 @@ function typeCheckStatement(
           if (scopeBinding) {
             scopeBinding.type = incomingType;
           }
-          typeCheckBlock(item.block, scope, diagnostics, collector, specs, defaults);
+          typeCheckBlock(item.block, scope, diagnostics, collector, specs, defaults, specLookupIssues);
           if (scopeBinding) {
             scopeBinding.type = originalScopeType;
           }
@@ -632,10 +682,11 @@ function typeCheckBlock(
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
-  defaults?: Defaults
+  defaults?: Defaults,
+  specLookupIssues?: Record<string, string>
 ): Map<string, Type> {
   for (const stmt of block.statements) {
-    typeCheckStatement(stmt, scope, diagnostics, collector, specs, defaults);
+    typeCheckStatement(stmt, scope, diagnostics, collector, specs, defaults, specLookupIssues);
   }
   const declared = new Map<string, Type>();
   for (const [name, binding] of scope.bindings.entries()) {
@@ -651,7 +702,8 @@ function typeCheckExpression(
   diagnostics: SyntaxDiagnostic[],
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
-  defaults?: Defaults
+  defaults?: Defaults,
+  specLookupIssues?: Record<string, string>
 ): TypeResult {
   if (!expr) return [];
   switch (expr.kind) {
@@ -683,14 +735,14 @@ function typeCheckExpression(
       const list = expr as any;
       const elementTypes: Type[] = [];
       for (const el of list.elements) {
-        const t = typeCheckExpression(el, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+        const t = typeCheckExpression(el, scope, diagnostics, collector, specs, defaults, specLookupIssues)[0] ?? UNKNOWN;
         elementTypes.push(t);
       }
       recordTypes(expr.range, elementTypes, collector);
       return elementTypes;
     }
     case NodeKind.Unary: {
-      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, specs, defaults);
+      const operandTypes = typeCheckExpression((expr as any).operand, scope, diagnostics, collector, specs, defaults, specLookupIssues);
       const operandType = operandTypes[0] ?? UNKNOWN;
       const op = (expr as any).operator;
       if (op.kind === TokenKind.Bang) {
@@ -710,8 +762,8 @@ function typeCheckExpression(
       const binary = expr as any;
       const leftExpr = binary.left as ExpressionNode;
       const rightExpr = binary.right as ExpressionNode;
-      const left = typeCheckExpression(leftExpr, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
-      const right = typeCheckExpression(rightExpr, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+      const left = typeCheckExpression(leftExpr, scope, diagnostics, collector, specs, defaults, specLookupIssues)[0] ?? UNKNOWN;
+      const right = typeCheckExpression(rightExpr, scope, diagnostics, collector, specs, defaults, specLookupIssues)[0] ?? UNKNOWN;
       const op = binary.operator.kind;
       let result: TypeResult = [UNKNOWN];
       switch (op) {
@@ -902,7 +954,7 @@ function typeCheckExpression(
     }
     case NodeKind.Qualified: {
       const qualified = expr as QualifiedNode;
-      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, specs, defaults);
+      const types = typeCheckExpression(qualified.base, scope, diagnostics, collector, specs, defaults, specLookupIssues);
       recordTypes(expr.range, types, collector);
       return types;
     }
@@ -913,10 +965,10 @@ function typeCheckExpression(
       const calleeType =
         builtin
           ? builtinToFunctionType(builtin)
-          : typeCheckExpression(call.callee, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN;
+          : typeCheckExpression(call.callee, scope, diagnostics, collector, specs, defaults, specLookupIssues)[0] ?? UNKNOWN;
 
       const argTypes = call.args.map(
-        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults)[0] ?? UNKNOWN
+        (arg: ExpressionNode) => typeCheckExpression(arg, scope, diagnostics, collector, specs, defaults, specLookupIssues)[0] ?? UNKNOWN
       );
       // Propagate expected param types back into identifier arguments when the callee is known.
       if (calleeType.kind === TypeKind.Function) {
@@ -943,14 +995,14 @@ function typeCheckExpression(
     }
     case NodeKind.If: {
       const ifNode = expr as IfNode;
-      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, specs, defaults);
+      const conditionTypes = typeCheckExpression(ifNode.condition, scope, diagnostics, collector, specs, defaults, specLookupIssues);
       ensureBoolean(conditionTypes[0] ?? UNKNOWN, ifNode.range, diagnostics);
 
       const thenScope = makeScope(scope, lookup(scope, "$")?.type);
       const elseScope = makeScope(scope, lookup(scope, "$")?.type);
-      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, specs, defaults);
+      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, specs, defaults, specLookupIssues);
       const elseBindings = ifNode.elseBlock
-        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, specs, defaults)
+        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, specs, defaults, specLookupIssues)
         : new Map<string, Type>();
       for (const [name, thenType] of thenBindings.entries()) {
         if (elseBindings.has(name)) {

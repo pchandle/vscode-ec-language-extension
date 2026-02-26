@@ -12,11 +12,12 @@ export function collectDiagnostics(
   textDocument: TextDocument,
   settings: DiagnosticSettings,
   specs?: Record<string, any>,
-  defaults?: { layer: string; variation: string; platform: string }
+  defaults?: { layer: string; variation: string; platform: string },
+  specLookupIssues?: Record<string, string>
 ): Diagnostic[] {
   const { program, diagnostics: syntaxDiagnostics } = parseText(textDocument.getText());
   const { diagnostics: resolverDiagnostics } = resolveProgram(program);
-  const { diagnostics: typeDiagnostics } = typeCheckProgram(program, { specs, defaults });
+  const { diagnostics: typeDiagnostics } = typeCheckProgram(program, { specs, defaults, specLookupIssues });
   const combined = [...syntaxDiagnostics, ...resolverDiagnostics, ...typeDiagnostics];
   return combined.slice(0, settings.maxNumberOfProblems).map((diag) => ({
     severity: DiagnosticSeverity.Error,

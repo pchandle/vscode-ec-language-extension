@@ -99,6 +99,26 @@ describe("typeChecker", () => {
     assert.equal(match!.types[0].kind, TypeKind.Unknown, "expected target to stay UNKNOWN when spec is missing");
   });
 
+  it("includes normalized classification and lookup reason in unknown spec diagnostics", () => {
+    const text = "sub new/integer/subordinate($, 0, 1) -> out";
+    const { program } = parseText(text);
+    const defaults = { layer: "system", variation: "default", platform: "x64" };
+    const normalized = "/system/new/integer/subordinate/x64";
+    const { diagnostics } = typeCheckProgram(program, {
+      defaults,
+      specs: {},
+      specLookupIssues: {
+        [normalized]: "No host mapping found in root document for this classification.",
+      },
+    });
+    const message = diagnostics.find((d) => d.message.includes("Unknown contract specification"))?.message ?? "";
+    assert.ok(message.includes("resolved as '/system/new/integer/subordinate/x64'"), `unexpected diagnostic: ${message}`);
+    assert.ok(
+      message.includes("No host mapping found in root document for this classification."),
+      `unexpected diagnostic: ${message}`
+    );
+  });
+
   it("validates requirement and obligation counts against the spec", () => {
     const spec = {
       requirements: [

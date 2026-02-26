@@ -9,6 +9,7 @@ contributing.md
 .travis.yml
 .npm-cache/**
 .vscode-test/**
+.ops/**
 logs/**
 scripts/**
 docs/**
