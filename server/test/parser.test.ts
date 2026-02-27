@@ -100,4 +100,91 @@ describe("parser", () => {
     const { diagnostics } = parseText(text);
     assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
+
+  it("parses nested weave-in if/else/end with output targets", () => {
+    const text = `
+if true then
+  if false then
+    1
+  else
+    2
+  end -> inner_out
+else
+  3
+end -> outer_out
+`;
+    const { diagnostics, program } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+
+    const outerStmt = program.statements[0] as any;
+    const outerIf = outerStmt.expression;
+    assert.equal(outerIf.kind, "If");
+    assert.equal(outerIf.targets.length, 1);
+    assert.equal(outerIf.targets[0].lexeme, "outer_out");
+
+    const innerStmt = outerIf.thenBlock.statements[0];
+    const innerIf = innerStmt.expression;
+    assert.equal(innerIf.kind, "If");
+    assert.equal(innerIf.targets.length, 1);
+    assert.equal(innerIf.targets[0].lexeme, "inner_out");
+  });
+
+  it("allows multiline parameter list close-paren followed by inline targets and ':'", () => {
+    const text =
+      "job /data/apply/example/default/x64(flow,\n" +
+      "  asal,\n" +
+      "  network_address\n" +
+      "  ) result_code, success_flow, failure_flow:\n" +
+      "  flow -> { }\n" +
+      "end\n";
+    const { diagnostics } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("parses arithmetic arguments containing '-1' without requiring signed integer tokens", () => {
+    const text = "min(bytes_out_len - 1, number_of_bytes_to_copy -1) -> initial_target_pointer_offset";
+    const { diagnostics } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("keeps typed parameter annotations invalid", () => {
+    const text = "job /data/example/default/x64(flow::/data/flow) out:\nend";
+    const { diagnostics } = parseText(text);
+    assert.ok(diagnostics.length > 0, "expected diagnostics for typed parameter annotation");
+  });
+
+  it("allows line continuation in call arguments with backslash-newline", () => {
+    const text =
+      "sub /data/new/currency/reserve@aptissio($, 18,\\\n" +
+      "  len(SYMBOL),\\\n" +
+      "  len(TICKER),\\\n" +
+      "  len(DESC)\\\n" +
+      ") -> out\n";
+    const { diagnostics } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("allows multiline expressions inside call arguments without backslash continuation", () => {
+    const text =
+      'sub /data/write/constant/default/linux-x64($, "A" +\n' +
+      '  "B" +\n' +
+      '  "C")\n';
+    const { diagnostics } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("parses unqualified slash classifications after 'sub'", () => {
+    const text = `
+sub check/flag($, cfg_enable_debug) -> {
+  sub /system/log/constant($, "x")
+}, _
+`;
+    const { program, diagnostics } = parseText(text);
+    const parseErrors = diagnostics.filter((d) => /Expected/.test(d.message));
+    assert.equal(parseErrors.length, 0, `expected no parse errors, got ${parseErrors.map((d) => d.message).join(", ")}`);
+
+    const stmt: any = program.statements[0];
+    assert.equal(stmt.classification?.lexeme, "check/flag");
+    assert.ok(Array.isArray(stmt.callArgs) && stmt.callArgs.length === 2, "expected call args for check/flag");
+  });
 });

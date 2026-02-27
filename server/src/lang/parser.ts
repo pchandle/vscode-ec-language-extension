@@ -51,6 +51,12 @@ function expect(state: ParserState, kind: TokenKind, message: string) {
   return current(state);
 }
 
+function skipNewlines(state: ParserState) {
+  while (current(state).kind === TokenKind.Newline) {
+    advance(state);
+  }
+}
+
 export function parseText(text: string): { program: ProgramNode; diagnostics: SyntaxDiagnostic[] } {
   const { tokens, diagnostics } = lexText(text);
   const state: ParserState = { tokens, index: 0, diagnostics: [...diagnostics] };
@@ -100,7 +106,60 @@ function parseStatement(state: ParserState): Statement {
     return parseDef(state);
   }
 
+  if (
+    startTok.kind === TokenKind.Keyword &&
+    ["sub", "host", "join"].includes(startTok.lexeme.toLowerCase())
+  ) {
+    const parsedInvocation = parseInvocationStatement(state);
+    if (parsedInvocation) {
+      return parsedInvocation;
+    }
+  }
+
   const expr = parseExpression(state, 0);
+  return parseGenericStatement(state, startTok, expr);
+}
+
+function parseInvocationStatement(state: ParserState): StatementNode | null {
+  const keywordTok = current(state);
+  const startIndex = state.index;
+  advance(state); // consume sub/host/join keyword
+
+  if (!(current(state).kind === TokenKind.Classification || looksLikeRelativeClassification(state))) {
+    state.index = startIndex;
+    return null;
+  }
+
+  const expr: IdentifierNode = {
+    kind: NodeKind.Identifier,
+    token: keywordTok,
+    range: keywordTok.range,
+  };
+
+  const targets: Token[] = [];
+  const obligationOrder: Array<Token | BlockNode> = [];
+  const callArgs: ExpressionNode[] = [];
+  let supplier: Token | undefined;
+  const classification = current(state).kind === TokenKind.Classification ? advance(state) : parseRelativeClassification(state);
+
+  if (current(state).kind === TokenKind.At) {
+    advance(state);
+    if (current(state).kind === TokenKind.Supplier) {
+      supplier = advance(state);
+    }
+  }
+  if (current(state).kind === TokenKind.LParen) {
+    parseArgumentList(state, callArgs);
+  }
+
+  if (match(state, TokenKind.Arrow)) {
+    parseTargetList(state, targets, obligationOrder);
+  }
+
+  return finalizeStatement(state, keywordTok, expr, targets, obligationOrder, callArgs, supplier, classification);
+}
+
+function parseGenericStatement(state: ParserState, startTok: Token, expr: ExpressionNode | null): StatementNode {
   const targets: Token[] = [];
   const obligationOrder: Array<Token | BlockNode> = [];
   const callArgs: ExpressionNode[] = [];
@@ -109,25 +168,20 @@ function parseStatement(state: ParserState): Statement {
     parseTargetList(state, targets, obligationOrder);
   }
 
-  let classification: Token | undefined;
-  if (
-    startTok.kind === TokenKind.Keyword &&
-    ["sub", "host", "join"].includes(startTok.lexeme.toLowerCase()) &&
-    current(state).kind === TokenKind.Classification
-  ) {
-    classification = advance(state);
-    // optional supplier after classification
-    if (current(state).kind === TokenKind.At) {
-      advance(state);
-      if (current(state).kind === TokenKind.Supplier) {
-        supplier = advance(state);
-      }
-    }
-    if (current(state).kind === TokenKind.LParen) {
-      parseArgumentList(state, callArgs);
-    }
-  }
+  const classification: Token | undefined = undefined;
+  return finalizeStatement(state, startTok, expr, targets, obligationOrder, callArgs, supplier, classification);
+}
 
+function finalizeStatement(
+  state: ParserState,
+  startTok: Token,
+  expr: ExpressionNode | null,
+  targets: Token[],
+  obligationOrder: Array<Token | BlockNode>,
+  callArgs: ExpressionNode[],
+  supplier?: Token,
+  classification?: Token
+): StatementNode {
   // Optional block following -> { ... }
   let block: BlockNode | undefined;
   let seenBlock = false;
@@ -198,6 +252,49 @@ function parseStatement(state: ParserState): Statement {
   };
 }
 
+function isClassificationSegment(kind: TokenKind): boolean {
+  return kind === TokenKind.Identifier || kind === TokenKind.Keyword || kind === TokenKind.Boolean;
+}
+
+function looksLikeRelativeClassification(state: ParserState): boolean {
+  const first = current(state);
+  if (!isClassificationSegment(first.kind)) return false;
+  let i = state.index + 1;
+  let sawSlash = false;
+  while (state.tokens[i]?.kind === TokenKind.Slash) {
+    if (!isClassificationSegment(state.tokens[i + 1]?.kind)) break;
+    sawSlash = true;
+    i += 2;
+  }
+  return sawSlash;
+}
+
+function parseRelativeClassification(state: ParserState): Token {
+  const start = current(state);
+  let end = start;
+  let lexeme = "";
+  while (current(state).kind !== TokenKind.EOF) {
+    if (isClassificationSegment(current(state).kind)) {
+      const tok = advance(state);
+      lexeme += tok.lexeme;
+      end = tok;
+      continue;
+    }
+    if (current(state).kind === TokenKind.Slash && isClassificationSegment(state.tokens[state.index + 1]?.kind)) {
+      const slash = advance(state);
+      lexeme += slash.lexeme;
+      end = slash;
+      continue;
+    }
+    break;
+  }
+  return {
+    kind: TokenKind.Classification,
+    lexeme,
+    range: { start: start.range.start, end: end.range.end },
+  };
+}
+
 function consumeBalanced(
   state: ParserState,
   open: TokenKind,
@@ -241,6 +338,8 @@ function parseIf(state: ParserState): IfNode {
     parseTargetList(state, targets);
   }
 
+  const endRange = targets[targets.length - 1]?.range ?? (elseBlock ?? thenBlock).range;
+
   return {
     kind: NodeKind.If,
     condition,
@@ -249,34 +348,39 @@ function parseIf(state: ParserState): IfNode {
     targets,
     range: {
       start: ifTok.range.start,
-      end: (elseBlock ?? thenBlock).range.end,
+      end: endRange.end,
     },
   };
 }
 
 function parseParameterList(state: ParserState, params: Token[]) {
   expect(state, TokenKind.LParen, "Expected '('");
-  while (current(state).kind === TokenKind.Newline) advance(state);
+  skipNewlines(state);
   if (current(state).kind === TokenKind.RParen) {
     advance(state);
     return;
   }
   while (current(state).kind !== TokenKind.EOF) {
-    while (current(state).kind === TokenKind.Newline) advance(state);
+    skipNewlines(state);
+    if (current(state).kind === TokenKind.RParen) {
+      advance(state);
+      return;
+    }
     if (current(state).kind === TokenKind.Identifier || current(state).kind === TokenKind.Keyword || current(state).kind === TokenKind.Boolean) {
       params.push(advance(state));
     } else {
       state.diagnostics.push({ message: "Expected parameter name", range: current(state).range });
       advance(state);
     }
+    skipNewlines(state);
     if (current(state).kind === TokenKind.Comma) {
       advance(state);
-      while (current(state).kind === TokenKind.Newline) advance(state);
+      skipNewlines(state);
       continue;
     }
-    if (current(state).kind === TokenKind.Newline) {
+    if (current(state).kind === TokenKind.RParen) {
       advance(state);
-      continue;
+      return;
     }
     break;
   }
@@ -285,23 +389,28 @@ function parseParameterList(state: ParserState, params: Token[]) {
 
 function parseArgumentList(state: ParserState, args: ExpressionNode[]) {
   expect(state, TokenKind.LParen, "Expected '('");
-  while (current(state).kind === TokenKind.Newline) advance(state);
+  skipNewlines(state);
   if (current(state).kind === TokenKind.RParen) {
     advance(state);
     return;
   }
   while (current(state).kind !== TokenKind.EOF) {
-    while (current(state).kind === TokenKind.Newline) advance(state);
+    skipNewlines(state);
+    if (current(state).kind === TokenKind.RParen) {
+      advance(state);
+      return;
+    }
     const expr = parseExpression(state, 0);
     if (expr) args.push(expr);
+    skipNewlines(state);
     if (current(state).kind === TokenKind.Comma) {
       advance(state);
-      while (current(state).kind === TokenKind.Newline) advance(state);
+      skipNewlines(state);
       continue;
     }
-    if (current(state).kind === TokenKind.Newline) {
+    if (current(state).kind === TokenKind.RParen) {
       advance(state);
-      continue;
+      return;
     }
     break;
   }
@@ -541,9 +650,11 @@ function getPrecedence(token: Token): number {
 }
 
 function parseExpression(state: ParserState, minPrec: number): ExpressionNode | null {
+  skipNewlines(state);
   let expr = parseUnary(state);
   let parsing = true;
   while (parsing) {
+    skipNewlines(state);
     const tok = current(state);
     const prec = getPrecedence(tok);
     if (prec === 0 || prec < minPrec) {
@@ -551,6 +662,7 @@ function parseExpression(state: ParserState, minPrec: number): ExpressionNode | 
       continue;
     }
     advance(state);
+    skipNewlines(state);
     const rhs = parseExpression(state, prec + 1);
     if (!expr || !rhs) {
       parsing = false;
@@ -613,20 +725,30 @@ function parsePostfix(state: ParserState): ExpressionNode | null {
 
   // Call expressions
   while (current(state).kind === TokenKind.LParen) {
-    const lparen = advance(state);
+    advance(state);
     const args: ExpressionNode[] = [];
+    skipNewlines(state);
     if (current(state).kind !== TokenKind.RParen) {
       let parsingArgs = true;
       while (parsingArgs) {
+        skipNewlines(state);
+        if (current(state).kind === TokenKind.RParen) {
+          break;
+        }
         const arg = parseExpression(state, 0);
         if (arg) {
           args.push(arg);
         } else {
           state.diagnostics.push({ message: "Expected expression in argument list", range: current(state).range });
         }
+        skipNewlines(state);
         if (current(state).kind === TokenKind.Comma) {
           // detect trailing comma before ')'
-          if (state.tokens[state.index + 1]?.kind === TokenKind.RParen) {
+          let lookahead = state.index + 1;
+          while (state.tokens[lookahead]?.kind === TokenKind.Newline) {
+            lookahead++;
+          }
+          if (state.tokens[lookahead]?.kind === TokenKind.RParen) {
             state.diagnostics.push({ message: "Trailing comma not allowed in argument list", range: current(state).range });
             advance(state); // consume comma
             parsingArgs = false;
@@ -679,14 +801,17 @@ function parsePrimary(state: ParserState): ExpressionNode | null {
     case TokenKind.LBracket: {
       const l = advance(state);
       const elements: ExpressionNode[] = [];
+      skipNewlines(state);
       if (current(state).kind !== TokenKind.RBracket) {
         while (current(state).kind !== TokenKind.EOF) {
+          skipNewlines(state);
           const elem = parseExpression(state, 0);
           if (elem) {
             elements.push(elem);
           } else {
             state.diagnostics.push({ message: "Expected expression in list", range: current(state).range });
           }
+          skipNewlines(state);
           if (current(state).kind === TokenKind.Comma) {
             advance(state);
             continue;
@@ -700,7 +825,9 @@ function parsePrimary(state: ParserState): ExpressionNode | null {
     }
     case TokenKind.LParen: {
       const l = advance(state);
+      skipNewlines(state);
       const inner = parseExpression(state, 0);
+      skipNewlines(state);
       const r = expect(state, TokenKind.RParen, "Expected ')'");
       const range = { start: l.range.start, end: r.range.end };
       return inner ?? ({ kind: NodeKind.Literal, token: l, range } as any);

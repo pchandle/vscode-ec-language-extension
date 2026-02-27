@@ -59,9 +59,8 @@ function isHexDigit(ch: string) {
   return /[0-9a-fA-F]/.test(ch);
 }
 
-function scanNumber(state: State, startOffset: number, startLine: number, startCol: number, sign: string) {
-  let lexeme = sign;
-  const startIdx = state.offset;
+function scanNumber(state: State, startOffset: number, startLine: number, startCol: number) {
+  let lexeme = "";
   if (state.text.startsWith("0x", state.offset) || state.text.startsWith("0X", state.offset)) {
     lexeme += state.text.substr(state.offset, 2);
     advance(state, 2);
@@ -88,12 +87,6 @@ function scanNumber(state: State, startOffset: number, startLine: number, startC
       lexeme += currentChar(state)!;
       advance(state);
     }
-  }
-
-  if (state.offset === startIdx && sign) {
-    // Only a sign with no digits.
-    addToken(state, sign === "-" ? TokenKind.Minus : TokenKind.Plus, sign, startOffset, startLine, startCol);
-    return;
   }
 
   addToken(state, TokenKind.Integer, lexeme, startOffset, startLine, startCol);
@@ -323,15 +316,8 @@ export function lexText(text: string): { tokens: Token[]; diagnostics: SyntaxDia
       continue;
     }
 
-    // Numbers with optional sign (must be directly adjacent)
-    if ((ch === "+" || ch === "-") && isDigit(state.text[state.offset + 1] ?? "")) {
-      const sign = ch;
-      advance(state);
-      scanNumber(state, startOffset, startLine, startCol, sign);
-      continue;
-    }
     if (isDigit(ch)) {
-      scanNumber(state, startOffset, startLine, startCol, "");
+      scanNumber(state, startOffset, startLine, startCol);
       continue;
     }
 

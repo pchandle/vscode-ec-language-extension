@@ -144,6 +144,96 @@ sub /data/new/integer/default/x64(flow, 1, 10, 255)
     assert.equal(oblErrors.length, 3, `expected 3 obligation count errors, got ${oblErrors.length}`);
   });
 
+  it("supports weave-in outputs from terminal contract calls in if branches", () => {
+    const spec = {
+      requirements: [],
+      obligations: [{ type: "integer" }]
+    };
+    const text = `
+if true then
+  sub /data/new/integer/default/x64()
+else
+  sub /data/new/integer/default/x64()
+end -> out
+`;
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/data/new/integer/default/x64": spec as any }
+    });
+    const obligationErrors = diagnostics.filter((d) => d.message.includes("Obligation count mismatch"));
+    const branchErrors = diagnostics.filter((d) => d.message.includes("If branch output count mismatch"));
+    assert.equal(obligationErrors.length, 0, `expected no obligation mismatches, got ${obligationErrors.map((d) => d.message).join(", ")}`);
+    assert.equal(branchErrors.length, 0, `expected no branch output mismatch, got ${branchErrors.map((d) => d.message).join(", ")}`);
+  });
+
+  it("supports nested weave-in with terminal expressions when arity/types match", () => {
+    const text = `
+if true then
+  if false then
+    1
+  else
+    2
+  end -> inner_out
+else
+  3
+end -> final_out
+`;
+    const { program } = parseText(text);
+    const { diagnostics, types } = typeCheckProgram(program, { collectTypes: true });
+    const branchErrors = diagnostics.filter((d) => d.message.includes("If branch output count mismatch"));
+    assert.equal(branchErrors.length, 0, `expected no branch output mismatch, got ${branchErrors.map((d) => d.message).join(", ")}`);
+
+    const finalStmt = (program as any).statements[0];
+    const finalTarget = finalStmt.targets?.find((t: any) => t.lexeme === "final_out");
+    assert.ok(finalTarget, "expected final_out target");
+    const finalTypeEntry = types?.find(
+      (t) =>
+        t.range.start.line === finalTarget.range.start.line &&
+        t.range.start.character === finalTarget.range.start.character &&
+        t.range.end.line === finalTarget.range.end.line &&
+        t.range.end.character === finalTarget.range.end.character
+    );
+    assert.equal(finalTypeEntry?.types?.[0]?.kind, TypeKind.Integer, "expected final_out to be INTEGER");
+  });
+
+  it("suppresses unknown flow diagnostic when later inferred in same block via '$'", () => {
+    const text = `
+def test(flow):
+  flow -> {
+    sub /data/write/constant/default/linux-x64($, "ok")
+  }
+end
+`;
+    const spec = {
+      requirements: [{ type: "/system/log-manager/default/x64" }, { type: "string" }],
+      obligations: []
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/data/write/constant/default/linux-x64": spec as any }
+    });
+    const unknownFlow = diagnostics.filter((d) => d.message === "Type of 'flow' is unknown");
+    assert.equal(unknownFlow.length, 0, `expected no unknown flow diagnostic, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("does not force def flow parameter to SCOPE when block only provides generic '$'", () => {
+    const text = `
+def dbgConst(flow, msg):
+  flow -> {
+    sub unknown/contract($, msg)
+  }
+end
+
+job /data/example/default/x64(flow):
+  dbgConst(flow, "x")
+end
+`;
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program);
+    const scopeMismatch = diagnostics.find((d) => d.message.includes("Type mismatch: expected SCOPE"));
+    assert.ok(!scopeMismatch, `did not expect SCOPE mismatch, got ${scopeMismatch?.message ?? diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
   it("infers scalar types for assignment targets from arithmetic/concat/logical expressions", () => {
     const text = `
 2 * (a + b) -> resultInt
@@ -394,6 +484,46 @@ sub /data/new/flow/default/x64() -> {
     );
   });
 
+  it("keeps outer '$'/identifier ancestry when nested blocks retarget '$' classifications", () => {
+    const text = `
+def test(flow):
+  flow -> {
+    sub /system/write/log-item/default/x64($, /system/log-manager/default/x64, 1) -> {
+      sub /system/log/constant/default/x64($, "x")
+    }
+  }
+  sub /data/check/condition/default/x64(flow) -> ok
+end
+`;
+    const specs = {
+      "/system/write/log-item/default/x64": {
+        requirements: [
+          { name: "write log", type: "/data/flow/default/x64" },
+          { name: "log manager", type: "/system/log-manager/default/x64" },
+          { name: "criticality level", type: "integer" }
+        ],
+        obligations: [{ type: "/system/log-manager/default/x64" }]
+      },
+      "/system/log/constant/default/x64": {
+        requirements: [
+          { name: "log-item", type: "/system/log-manager/default/x64" },
+          { name: "log string", type: "string" }
+        ],
+        obligations: []
+      },
+      "/data/check/condition/default/x64": {
+        requirements: [{ name: "flow", type: "/data/flow/default/x64" }],
+        obligations: [{ type: "/data/flow/default/x64" }]
+      }
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { specs: specs as any });
+    const leakedMismatch = diagnostics.find((d) =>
+      d.message.includes("Type mismatch: expected CLASSIFICATION(/data/flow/default/x64), got CLASSIFICATION(/system/log-manager/default/x64)")
+    );
+    assert.ok(!leakedMismatch, `expected no leaked '$' classification, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
   it("emits diagnostics for identifiers whose type remains unknown", () => {
     const text = `
 def foo(a, b) -> sum
@@ -469,5 +599,50 @@ sub write/log-item(compare, int1, int2) -> out4
     });
     const unknowns = diagnostics.filter((d) => d.message.includes("Unknown contract specification"));
     assert.equal(unknowns.length, 0, `expected contract specs to resolve after normalization, got ${unknowns.map((d) => d.message).join(", ")}`);
+  });
+
+  it("resolves forward def calls when typing block obligations", () => {
+    const text = `
+job /data/example/default/x64(flow):
+  sub /data/new/flow/default/x64() -> {
+    logMacro($) -> {
+      sub /system/log/constant/default/x64($, "x")
+    }
+  }
+  
+  def logMacro(flow) out:
+    sub /mock/emit-logmanager/default/x64(flow) -> {
+      $ -> out
+    }
+  end
+end
+`;
+    const specs = {
+      "/data/example/default/x64": {
+        requirements: [{ name: "flow", type: "/data/flow/default/x64" }],
+        obligations: []
+      },
+      "/data/new/flow/default/x64": {
+        requirements: [],
+        obligations: [{ type: "/data/flow/default/x64" }]
+      },
+      "/mock/emit-logmanager/default/x64": {
+        requirements: [{ name: "flow", type: "/data/flow/default/x64" }],
+        obligations: [{ type: "/system/log-manager/default/x64" }]
+      },
+      "/system/log/constant/default/x64": {
+        requirements: [
+          { name: "log-item", type: "/system/log-manager/default/x64" },
+          { name: "log string", type: "string" }
+        ],
+        obligations: []
+      }
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { specs: specs as any });
+    const leakedMismatch = diagnostics.find((d) =>
+      d.message.includes("Type mismatch: expected CLASSIFICATION(/system/log-manager/default/x64), got CLASSIFICATION(/data/flow/default/x64)")
+    );
+    assert.ok(!leakedMismatch, `expected forward def call to type block '$' correctly, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 });

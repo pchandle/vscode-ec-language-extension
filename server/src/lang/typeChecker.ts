@@ -105,6 +105,17 @@ function makeScope(parent?: TypeScope, scopeType?: Type): TypeScope {
   return scope;
 }
 
+function makeLexicalScopeWithDollar(parent: TypeScope, scopeType?: Type): TypeScope {
+  const scope: TypeScope = { parent, bindings: new Map() };
+  // Keep existing symbol bindings addressable/mutable while isolating '$' per lexical block.
+  for (const [name, binding] of parent.bindings.entries()) {
+    if (name === "$") continue;
+    scope.bindings.set(name, binding);
+  }
+  scope.bindings.set("$", { type: scopeType ?? (lookup(parent, "$")?.type ?? SCOPE_TYPE) });
+  return scope;
+}
+
 function lookup(scope: TypeScope, name: string): TypeBinding | undefined {
   let current: TypeScope | undefined = scope;
   while (current) {
@@ -154,6 +165,10 @@ function mergeTypes(existing: Type, incoming: Type): Type {
 
 function isUnknown(type: Type): boolean {
   return type.kind === TypeKind.Unknown;
+}
+
+function isConcreteClassification(type: Type): boolean {
+  return type.kind === TypeKind.Classification && Boolean(type.classification);
 }
 
 export function typeToString(type: Type): string {
@@ -208,6 +223,26 @@ function clearUnknownDiagnostic(diagnostics: SyntaxDiagnostic[], token: Token) {
   for (let i = diagnostics.length - 1; i >= 0; i--) {
     const d = diagnostics[i];
     if (d.message === msg && sameRange(d)) {
+      diagnostics.splice(i, 1);
+    }
+  }
+}
+
+function clearUnknownDiagnosticsByName(diagnostics: SyntaxDiagnostic[], name: string, within?: Range) {
+  const msg = `Type of '${name}' is unknown`;
+  const inRange = (d: SyntaxDiagnostic) => {
+    if (!within) return true;
+    const startsAfter =
+      d.range.start.line > within.start.line ||
+      (d.range.start.line === within.start.line && d.range.start.character >= within.start.character);
+    const endsBefore =
+      d.range.end.line < within.end.line ||
+      (d.range.end.line === within.end.line && d.range.end.character <= within.end.character);
+    return startsAfter && endsBefore;
+  };
+  for (let i = diagnostics.length - 1; i >= 0; i--) {
+    const d = diagnostics[i];
+    if (d.message === msg && inRange(d)) {
       diagnostics.splice(i, 1);
     }
   }
@@ -349,6 +384,108 @@ function buildUnknownSpecificationMessage(
   return details.length ? `${base} (${details.join("; ")})` : base;
 }
 
+function resolveStatementSpec(
+  stmt: Statement,
+  specs?: Record<string, RemoteContractSpec>,
+  defaults?: Defaults
+): {
+  classification?: string;
+  normalizedClassification: string | null;
+  spec?: RemoteContractSpec;
+  roleSpec?: any;
+  isContract: boolean;
+  isProtocol: boolean;
+  stmtKeyword?: string;
+} {
+  const classification = (stmt as any).classification?.lexeme as string | undefined;
+  const stmtKeyword = ((stmt as any).keyword as Token | undefined)?.lexeme?.toLowerCase();
+  const isContract = stmtKeyword === "sub" || stmtKeyword === "job";
+  const isProtocol = stmtKeyword === "host" || stmtKeyword === "join";
+  const normalizedClassification = classification
+    ? isProtocol
+      ? normalizeProtocolClassification(classification, defaults)
+      : normalizeContractClassification(classification, defaults)
+    : null;
+
+  let spec = classification ? specs?.[classification] : undefined;
+  if (!spec && normalizedClassification) {
+    spec = specs?.[normalizedClassification];
+  }
+  if (!spec && classification && specs) {
+    const key = Object.keys(specs).find((k) => k.startsWith(classification));
+    if (key) {
+      spec = specs[key];
+    }
+  }
+  if (!spec && normalizedClassification && specs) {
+    const key = Object.keys(specs).find((k) => k.startsWith(normalizedClassification));
+    if (key) {
+      spec = specs[key];
+    }
+  }
+
+  const roleSpec = isProtocol
+    ? (stmtKeyword === "host" ? (spec as any)?.host : (spec as any)?.join) ?? spec
+    : spec;
+
+  return {
+    classification,
+    normalizedClassification,
+    spec,
+    roleSpec,
+    isContract,
+    isProtocol,
+    stmtKeyword,
+  };
+}
+
+function terminalStatementTypes(
+  block: BlockNode,
+  scope: TypeScope,
+  diagnostics: SyntaxDiagnostic[],
+  specs?: Record<string, RemoteContractSpec>,
+  defaults?: Defaults,
+  specLookupIssues?: Record<string, string>
+): TypeResult {
+  const terminal = block.statements[block.statements.length - 1];
+  if (!terminal || terminal.kind !== NodeKind.Statement) {
+    return [UNKNOWN];
+  }
+
+  const stmt = terminal as any;
+  if (stmt.targets?.length) {
+    return stmt.targets.map((t: Token) => lookup(scope, t.lexeme)?.type ?? UNKNOWN);
+  }
+
+  const resolved = resolveStatementSpec(terminal, specs, defaults);
+  const obligations = resolved.roleSpec?.obligations ?? [];
+  if (obligations.length > 0) {
+    return obligations.map((o: any) => specTermToType(o as SpecTerm));
+  }
+
+  if (terminal.expression) {
+    const scratchDiagnostics: SyntaxDiagnostic[] = [];
+    const types = typeCheckExpression(
+      terminal.expression as ExpressionNode | null,
+      scope,
+      scratchDiagnostics,
+      undefined,
+      specs,
+      defaults,
+      specLookupIssues
+    );
+    // Surface only hard arity/type errors from terminal expression evaluation.
+    for (const d of scratchDiagnostics) {
+      if (/operator|type mismatch|requires/i.test(d.message)) {
+        diagnostics.push(d);
+      }
+    }
+    return types.length ? types : [UNKNOWN];
+  }
+
+  return [UNKNOWN];
+}
+
 function typeCheckStatement(
   stmt: Statement,
   scope: TypeScope,
@@ -356,7 +493,8 @@ function typeCheckStatement(
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
   defaults?: Defaults,
-  specLookupIssues?: Record<string, string>
+  specLookupIssues?: Record<string, string>,
+  implicitOutputArity?: number
 ) {
   switch (stmt.kind) {
     case NodeKind.Job: {
@@ -428,12 +566,24 @@ function typeCheckStatement(
     }
     case NodeKind.Def: {
       const def = stmt as DefNode;
-      const placeholder: FunctionType = {
-        kind: TypeKind.Function,
-        params: def.params.map(() => UNKNOWN),
-        returns: def.targets.map(() => UNKNOWN),
-      };
-      declare(scope, def.name, placeholder);
+      const existing = scope.bindings.get(def.name.lexeme);
+      let placeholder: FunctionType;
+      if (existing?.type.kind === TypeKind.Function) {
+        placeholder = existing.type as FunctionType;
+        if (placeholder.params.length !== def.params.length) {
+          placeholder.params = def.params.map(() => UNKNOWN);
+        }
+        if (placeholder.returns.length !== def.targets.length) {
+          placeholder.returns = def.targets.map(() => UNKNOWN);
+        }
+      } else {
+        placeholder = {
+          kind: TypeKind.Function,
+          params: def.params.map(() => UNKNOWN),
+          returns: def.targets.map(() => UNKNOWN),
+        };
+        declare(scope, def.name, placeholder);
+      }
 
       const defScope = makeScope(scope);
       for (const param of def.params) {
@@ -456,36 +606,18 @@ function typeCheckStatement(
       return;
     }
     case NodeKind.Statement: {
-      const classification = (stmt as any).classification?.lexeme;
-      const stmtKeyword = ((stmt as any).keyword as Token | undefined)?.lexeme?.toLowerCase();
-      const isContract = stmtKeyword === "sub" || stmtKeyword === "job";
-      const isProtocol = stmtKeyword === "host" || stmtKeyword === "join";
-      const normalizedClassification = classification
-        ? isProtocol
-          ? normalizeProtocolClassification(classification, defaults)
-          : normalizeContractClassification(classification, defaults)
-        : null;
+      const resolved = resolveStatementSpec(stmt, specs, defaults);
+      const classification = resolved.classification;
+      const isContract = resolved.isContract;
+      const isProtocol = resolved.isProtocol;
+      const normalizedClassification = resolved.normalizedClassification;
+      const stmtKeyword = resolved.stmtKeyword;
       const obligationOrder: Array<any> =
         (stmt as any).obligationOrder && (stmt as any).obligationOrder.length
           ? (stmt as any).obligationOrder
           : [];
       const callArgs: ExpressionNode[] = ((stmt as any).callArgs as ExpressionNode[] | undefined) ?? [];
-      let spec = classification ? specs?.[classification] : undefined;
-      if (!spec && normalizedClassification) {
-        spec = specs?.[normalizedClassification];
-      }
-      if (!spec && classification && specs) {
-        const key = Object.keys(specs).find((k) => k.startsWith(classification));
-        if (key) {
-          spec = specs[key];
-        }
-      }
-      if (!spec && normalizedClassification && specs) {
-        const key = Object.keys(specs).find((k) => k.startsWith(normalizedClassification));
-        if (key) {
-          spec = specs[key];
-        }
-      }
+      const spec = resolved.spec;
       if (classification && specs && !spec) {
         addTypeError(
           diagnostics,
@@ -506,9 +638,7 @@ function typeCheckStatement(
               })
         );
       }
-      const roleSpec = isProtocol
-        ? (stmtKeyword === "host" ? (spec as any)?.host : (spec as any)?.join) ?? spec
-        : spec;
+      const roleSpec = resolved.roleSpec;
       const obligations = roleSpec?.obligations ?? [];
       const requirements = (roleSpec as any)?.requirements ?? [];
       // Supplier validation: if a supplier is provided, ensure it matches the spec suppliers.
@@ -530,10 +660,10 @@ function typeCheckStatement(
         collector,
         specs,
         defaults,
-        specLookupIssues
+        specLookupIssues,
+        stmt.targets.length > 0 ? stmt.targets.length : implicitOutputArity
       );
-      const scopeBinding = scope.bindings.get("$");
-      const originalScopeType = scopeBinding?.type ?? UNKNOWN;
+      const originalScopeType = lookup(scope, "$")?.type ?? UNKNOWN;
 
       // Build an ordered list of obligation items (blocks and targets) as they appear.
       const orderedItems: Array<{ type: "block"; block: any } | { type: "target"; token: any }> =
@@ -556,7 +686,9 @@ function typeCheckStatement(
             `Requirement count mismatch: expected ${requirements.length}, got ${callCount}`
           );
         }
-        const actualObligations = orderedItems.length;
+        const canUseImplicitBranchOutputs =
+          (isContract || isProtocol) && orderedItems.length === 0 && Number.isInteger(implicitOutputArity) && (implicitOutputArity ?? 0) > 0;
+        const actualObligations = canUseImplicitBranchOutputs ? (implicitOutputArity as number) : orderedItems.length;
         if (obligations.length && actualObligations !== obligations.length) {
           addTypeError(
             diagnostics,
@@ -633,8 +765,9 @@ function typeCheckStatement(
         return exprTypes[idx] ?? UNKNOWN;
       };
       // Special case: list literal on the left mapping element types to targets 1:1.
-      const isListLiteral = (stmt.expression as any)?.kind === NodeKind.ListLiteral;
-      const listElementTypes = isListLiteral ? (stmt.expression as any).elements.map((_: any, i: number) => exprTypes[i] ?? UNKNOWN) : [];
+      const listExpr = stmt.expression as any;
+      const isListLiteral = !!listExpr && listExpr.kind === NodeKind.ListLiteral;
+      const listElementTypes = isListLiteral ? listExpr.elements.map((_: any, i: number) => exprTypes[i] ?? UNKNOWN) : [];
 
       for (let i = 0; i < orderedItems.length; i++) {
         const item = orderedItems[i];
@@ -660,12 +793,11 @@ function typeCheckStatement(
           declare(scope, target, incomingType);
           recordTokenType(target, scope, collector);
         } else {
-          if (scopeBinding) {
-            scopeBinding.type = incomingType;
-          }
-          typeCheckBlock(item.block, scope, diagnostics, collector, specs, defaults, specLookupIssues);
-          if (scopeBinding) {
-            scopeBinding.type = originalScopeType;
+          const blockScope = makeLexicalScopeWithDollar(scope, incomingType);
+          typeCheckBlock(item.block, blockScope, diagnostics, collector, specs, defaults, specLookupIssues);
+          const inferredScopeType = lookup(blockScope, "$")?.type ?? UNKNOWN;
+          if ((stmt.expression as any)?.kind === NodeKind.Identifier && isConcreteClassification(inferredScopeType)) {
+            assignToIdentifier(stmt.expression as ExpressionNode, scope, inferredScopeType, diagnostics, collector);
           }
         }
       }
@@ -683,10 +815,61 @@ function typeCheckBlock(
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
   defaults?: Defaults,
-  specLookupIssues?: Record<string, string>
+  specLookupIssues?: Record<string, string>,
+  terminalOutputArity?: number
 ): Map<string, Type> {
+  // Predeclare defs in this lexical block so forward calls can resolve function shapes.
   for (const stmt of block.statements) {
+    if (stmt.kind !== NodeKind.Def) continue;
+    const def = stmt as DefNode;
+    const existing = scope.bindings.get(def.name.lexeme);
+    if (existing?.type.kind === TypeKind.Function) {
+      const fn = existing.type as FunctionType;
+      if (fn.params.length !== def.params.length) {
+        fn.params = def.params.map(() => UNKNOWN);
+      }
+      if (fn.returns.length !== def.targets.length) {
+        fn.returns = def.targets.map(() => UNKNOWN);
+      }
+      continue;
+    }
+    scope.bindings.set(def.name.lexeme, {
+      type: {
+        kind: TypeKind.Function,
+        params: def.params.map(() => UNKNOWN),
+        returns: def.targets.map(() => UNKNOWN),
+      },
+    });
+  }
+
+  // Type defs first so forward calls in the same block can use inferred signatures.
+  const precheckedDefs = new Set<Statement>();
+  for (let i = block.statements.length - 1; i >= 0; i--) {
+    const stmt = block.statements[i];
+    if (stmt.kind !== NodeKind.Def) continue;
     typeCheckStatement(stmt, scope, diagnostics, collector, specs, defaults, specLookupIssues);
+    precheckedDefs.add(stmt);
+  }
+
+  const wasUnknown = new Map<string, boolean>();
+  for (const [name, binding] of scope.bindings.entries()) {
+    wasUnknown.set(name, isUnknown(binding.type));
+  }
+  for (let i = 0; i < block.statements.length; i++) {
+    const stmt = block.statements[i];
+    if (precheckedDefs.has(stmt)) {
+      continue;
+    }
+    const implicitOutputArity = i === block.statements.length - 1 ? terminalOutputArity : undefined;
+    typeCheckStatement(stmt, scope, diagnostics, collector, specs, defaults, specLookupIssues, implicitOutputArity);
+    for (const [name, binding] of scope.bindings.entries()) {
+      const prevUnknown = wasUnknown.get(name) ?? true;
+      const nowUnknown = isUnknown(binding.type);
+      if (prevUnknown && !nowUnknown) {
+        clearUnknownDiagnosticsByName(diagnostics, name, block.range);
+      }
+      wasUnknown.set(name, nowUnknown);
+    }
   }
   const declared = new Map<string, Type>();
   for (const [name, binding] of scope.bindings.entries()) {
@@ -703,7 +886,8 @@ function typeCheckExpression(
   collector?: TypeAtPosition[],
   specs?: Record<string, RemoteContractSpec>,
   defaults?: Defaults,
-  specLookupIssues?: Record<string, string>
+  specLookupIssues?: Record<string, string>,
+  expectedOutputArity?: number
 ): TypeResult {
   if (!expr) return [];
   switch (expr.kind) {
@@ -981,7 +1165,7 @@ function typeCheckExpression(
           if (argExpr.kind === NodeKind.Identifier) {
             const token = (argExpr as any).token;
             const binding = lookup(scope, token.lexeme);
-            if (binding) {
+            if (binding && isUnknown(binding.type)) {
               binding.type = mergeTypes(binding.type, expected);
               clearUnknownDiagnostic(diagnostics, token);
               recordTokenType(token, scope, collector);
@@ -1000,9 +1184,28 @@ function typeCheckExpression(
 
       const thenScope = makeScope(scope, lookup(scope, "$")?.type);
       const elseScope = makeScope(scope, lookup(scope, "$")?.type);
-      const thenBindings = typeCheckBlock(ifNode.thenBlock, thenScope, diagnostics, collector, specs, defaults, specLookupIssues);
+      const outputCount = ifNode.targets.length > 0 ? ifNode.targets.length : expectedOutputArity ?? 0;
+      const thenBindings = typeCheckBlock(
+        ifNode.thenBlock,
+        thenScope,
+        diagnostics,
+        collector,
+        specs,
+        defaults,
+        specLookupIssues,
+        outputCount > 0 ? outputCount : undefined
+      );
       const elseBindings = ifNode.elseBlock
-        ? typeCheckBlock(ifNode.elseBlock, elseScope, diagnostics, collector, specs, defaults, specLookupIssues)
+        ? typeCheckBlock(
+            ifNode.elseBlock,
+            elseScope,
+            diagnostics,
+            collector,
+            specs,
+            defaults,
+            specLookupIssues,
+            outputCount > 0 ? outputCount : undefined
+          )
         : new Map<string, Type>();
       for (const [name, thenType] of thenBindings.entries()) {
         if (elseBindings.has(name)) {
@@ -1017,8 +1220,40 @@ function typeCheckExpression(
         }
       }
 
-      const outputCount = ifNode.targets.length;
+      const thenResults =
+        outputCount > 0
+          ? terminalStatementTypes(ifNode.thenBlock, thenScope, diagnostics, specs, defaults, specLookupIssues)
+          : [];
+      const elseResults = ifNode.elseBlock
+        ? outputCount > 0
+          ? terminalStatementTypes(ifNode.elseBlock, elseScope, diagnostics, specs, defaults, specLookupIssues)
+          : []
+        : [];
+
+      if (outputCount > 0) {
+        if (thenResults.length !== outputCount) {
+          addTypeError(
+            diagnostics,
+            ifNode.thenBlock.range,
+            `If branch output count mismatch: expected ${outputCount}, got ${thenResults.length}`
+          );
+        }
+        if (ifNode.elseBlock && elseResults.length !== outputCount) {
+          addTypeError(
+            diagnostics,
+            ifNode.elseBlock.range,
+            `If branch output count mismatch: expected ${outputCount}, got ${elseResults.length}`
+          );
+        }
+      }
+
       const results = new Array(outputCount).fill(UNKNOWN) as TypeResult;
+      for (let i = 0; i < outputCount; i++) {
+        const thenType = thenResults[i] ?? UNKNOWN;
+        const elseType = ifNode.elseBlock ? elseResults[i] ?? UNKNOWN : UNKNOWN;
+        ensureAssignable(thenType, elseType, ifNode.range, diagnostics);
+        results[i] = !isUnknown(thenType) ? thenType : elseType;
+      }
       recordTypes(ifNode.range, results, collector);
       return results;
     }
