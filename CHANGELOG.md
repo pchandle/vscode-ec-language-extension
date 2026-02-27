@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## 0.11.5 - 2026-02-27
+- Unify specification caching across diagnostics, hover, and classification navigation to improve lookup consistency.
+- Add centralized stale-safe cache behavior with soft TTL (24h) and refresh-on-demand semantics.
+- Improve parser support for multiline `job` headers, including target lists that span multiple lines.
+- Fix declarative endpoint handling (`label -> { ... }`) in resolver/type-checker to avoid false duplicate declaration diagnostics.
+- Improve type propagation for forward references and nested obligation blocks, reducing false `UNKNOWN`/undefined diagnostics.
+- Improve hover/type selection to prefer known types over overlapping unknown ranges.
+- Add regression coverage for parser/resolver/type-checker/hover and unified specification cache behavior.
+
 ## 0.10.9 - 2026-02-26
 - Enforce `:` as a required terminator for `job` signatures, while allowing multi-line `job` headers (including `:` on its own line).
 - Keep deprecated `end -> ...` syntax emitting diagnostics.
