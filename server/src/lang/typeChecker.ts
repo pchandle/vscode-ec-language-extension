@@ -248,6 +248,129 @@ function clearUnknownDiagnosticsByName(diagnostics: SyntaxDiagnostic[], name: st
   }
 }
 
+function forEachIdentifierInExpression(
+  expr: ExpressionNode | IfNode | null | undefined,
+  cb: (token: Token) => void
+) {
+  if (!expr) return;
+  if (expr.kind === NodeKind.Identifier) {
+    cb((expr as any).token as Token);
+    return;
+  }
+  if (expr.kind === NodeKind.If) {
+    const ifNode = expr as IfNode;
+    forEachIdentifierInExpression(ifNode.condition as any, cb);
+    forEachIdentifierInBlock(ifNode.thenBlock, cb);
+    if (ifNode.elseBlock) forEachIdentifierInBlock(ifNode.elseBlock, cb);
+    return;
+  }
+  if (expr.kind === NodeKind.Binary) {
+    forEachIdentifierInExpression((expr as any).left, cb);
+    forEachIdentifierInExpression((expr as any).right, cb);
+    return;
+  }
+  if (expr.kind === NodeKind.Unary) {
+    forEachIdentifierInExpression((expr as any).operand, cb);
+    return;
+  }
+  if (expr.kind === NodeKind.Call) {
+    forEachIdentifierInExpression((expr as any).callee, cb);
+    for (const arg of (expr as any).args ?? []) {
+      forEachIdentifierInExpression(arg as any, cb);
+    }
+    return;
+  }
+  if (expr.kind === NodeKind.Qualified) {
+    forEachIdentifierInExpression((expr as any).base, cb);
+    return;
+  }
+  if (expr.kind === NodeKind.ListLiteral) {
+    for (const el of (expr as any).elements ?? []) {
+      forEachIdentifierInExpression(el as any, cb);
+    }
+  }
+}
+
+function forEachIdentifierInStatement(stmt: Statement, cb: (token: Token) => void) {
+  if (stmt.kind === NodeKind.Statement) {
+    const s = stmt as any;
+    forEachIdentifierInExpression(s.expression as any, cb);
+    for (const arg of s.callArgs ?? []) {
+      forEachIdentifierInExpression(arg as any, cb);
+    }
+    if (s.block) {
+      forEachIdentifierInBlock(s.block, cb);
+    }
+    if (s.obligationOrder) {
+      for (const item of s.obligationOrder) {
+        if ((item as any)?.kind === NodeKind.Block) {
+          forEachIdentifierInBlock(item as any, cb);
+        }
+      }
+    }
+    return;
+  }
+  if (stmt.kind === NodeKind.Job || stmt.kind === NodeKind.Def) {
+    forEachIdentifierInBlock((stmt as any).body, cb);
+  }
+}
+
+function forEachIdentifierInBlock(block: BlockNode, cb: (token: Token) => void) {
+  for (const stmt of block.statements) {
+    forEachIdentifierInStatement(stmt, cb);
+  }
+}
+
+function backfillKnownIdentifierTypesInBlock(block: BlockNode, name: string, type: Type, collector?: TypeAtPosition[]) {
+  if (!collector || isUnknown(type)) return;
+  forEachIdentifierInBlock(block, (token) => {
+    if (token.lexeme !== name) return;
+    recordTypes(token.range, [type], collector);
+  });
+}
+
+function getDeclarativeEndpointToken(stmt: Statement): Token | null {
+  if (stmt.kind !== NodeKind.Statement) return null;
+  const statement = stmt as any;
+  if (!statement.block) return null;
+  if (statement.classification || (statement.callArgs && statement.callArgs.length > 0)) return null;
+  if (statement.targets && statement.targets.length > 0) return null;
+  if (!statement.expression || statement.expression.kind !== NodeKind.Identifier) return null;
+  const token = statement.expression.token as Token;
+  if (!token || token.lexeme === "_" || token.lexeme === "$") return null;
+  return token;
+}
+
+function defaultFlowType(defaults?: Defaults): Type {
+  const platform = defaults?.platform || "x64";
+  return { kind: TypeKind.Classification, classification: `/data/flow/default/${platform}` };
+}
+
+function isBoundInTypeScope(scope: TypeScope, name: string): boolean {
+  return Boolean(lookup(scope, name));
+}
+
+function typeCheckBlockWithDollar(
+  parentScope: TypeScope,
+  dollarType: Type,
+  block: BlockNode,
+  diagnostics: SyntaxDiagnostic[],
+  collector?: TypeAtPosition[],
+  specs?: Record<string, RemoteContractSpec>,
+  defaults?: Defaults,
+  specLookupIssues?: Record<string, string>
+): Type {
+  const dollarBinding = parentScope.bindings.get("$");
+  const previousDollar = dollarBinding?.type ?? SCOPE_TYPE;
+  parentScope.bindings.set("$", { type: dollarType });
+  try {
+    typeCheckBlock(block, parentScope, diagnostics, collector, specs, defaults, specLookupIssues);
+    return lookup(parentScope, "$")?.type ?? dollarType;
+  } finally {
+    parentScope.bindings.set("$", { type: previousDollar });
+  }
+}
+
 function assignToIdentifier(
   expr: ExpressionNode,
   scope: TypeScope,
@@ -324,7 +447,27 @@ function ensureAssignable(expected: Type, actual: Type, range: Range, diagnostic
 
 function recordTypes(range: Range, result: TypeResult, collector?: TypeAtPosition[]) {
   if (!collector) return;
-  collector.push({ range, types: result });
+  const sameRange = (a: Range, b: Range) =>
+    a.start.line === b.start.line &&
+    a.start.character === b.start.character &&
+    a.end.line === b.end.line &&
+    a.end.character === b.end.character;
+  const hasKnown = (types: TypeResult) => types.some((t) => t.kind !== TypeKind.Unknown);
+  const existing = collector.find((entry) => sameRange(entry.range, range));
+  if (!existing) {
+    collector.push({ range, types: result });
+    return;
+  }
+  const existingKnown = hasKnown(existing.types);
+  const incomingKnown = hasKnown(result);
+  if (!existingKnown && incomingKnown) {
+    existing.types = result;
+    return;
+  }
+  if (existingKnown && !incomingKnown) {
+    return;
+  }
+  existing.types = result;
 }
 
 type SpecTerm = { type?: string; protocol?: string } | undefined;
@@ -519,11 +662,42 @@ function typeCheckStatement(
       for (const target of job.targets) {
         declare(jobScope, target, UNKNOWN);
       }
+      const reqTerms = (jobSpec?.requirements ?? []) as SpecTerm[];
+      const oblTerms = (jobSpec?.obligations ?? []) as SpecTerm[];
+      const hasRequirementCountMismatch = !!jobSpec && job.params.length !== reqTerms.length;
+      const hasObligationCountMismatch = !!jobSpec && job.targets.length !== oblTerms.length;
+      if (hasRequirementCountMismatch) {
+        addTypeError(
+          diagnostics,
+          job.classification?.range ?? job.range,
+          `Requirement count mismatch: expected ${reqTerms.length}, got ${job.params.length}`
+        );
+      }
+      if (hasObligationCountMismatch) {
+        addTypeError(
+          diagnostics,
+          job.classification?.range ?? job.range,
+          `Obligation count mismatch: expected ${oblTerms.length}, got ${job.targets.length}`
+        );
+      }
+      // Seed job target types from obligations before body type-checking so prechecked defs
+      // can rely on job target classifications.
+      if (jobSpec?.obligations?.length && !hasObligationCountMismatch) {
+        for (let i = 0; i < Math.min(job.targets.length, oblTerms.length); i++) {
+          const target = job.targets[i];
+          const binding = jobScope.bindings.get(target.lexeme);
+          const obligationType = specTermToType(oblTerms[i] as SpecTerm | undefined);
+          if (binding && !isUnknown(obligationType)) {
+            binding.type = mergeTypes(binding.type, obligationType);
+            recordTokenType(target, jobScope, collector);
+          }
+        }
+      }
       // Apply requirement types to parameters when a spec is available.
       if (jobSpec?.requirements?.length) {
-        for (let i = 0; i < job.params.length; i++) {
+        for (let i = 0; i < Math.min(job.params.length, reqTerms.length); i++) {
           const param = job.params[i];
-          const req = jobSpec.requirements[i] as SpecTerm | undefined;
+          const req = reqTerms[i] as SpecTerm | undefined;
           const reqType = specTermToType(req);
           const binding = jobScope.bindings.get(param.lexeme);
           if (binding && !isUnknown(reqType)) {
@@ -540,9 +714,9 @@ function typeCheckStatement(
         const binding = jobScope.bindings.get(target.lexeme);
         if (binding && jobSpec) {
           const idx = job.targets.indexOf(target);
-          const obligationTerm = (jobSpec.obligations || [])[idx] as SpecTerm | undefined;
+          const obligationTerm = oblTerms[idx] as SpecTerm | undefined;
           const obligationType = specTermToType(obligationTerm);
-          if (!isUnknown(obligationType)) {
+          if (!hasObligationCountMismatch && !isUnknown(obligationType)) {
             if (isUnknown(binding.type)) {
               binding.type = obligationType;
             } else if (binding.type.kind !== obligationType.kind || (binding.type as any).classification !== (obligationType as any).classification) {
@@ -606,6 +780,40 @@ function typeCheckStatement(
       return;
     }
     case NodeKind.Statement: {
+      const endpointToken = getDeclarativeEndpointToken(stmt);
+      if (endpointToken) {
+        const existing = lookup(scope, endpointToken.lexeme)?.type ?? UNKNOWN;
+        const shouldDeclare = !isBoundInTypeScope(scope, endpointToken.lexeme);
+        const endpointType = shouldDeclare
+          ? isConcreteClassification(existing)
+            ? existing
+            : mergeTypes(existing, defaultFlowType(defaults))
+          : existing;
+        if (shouldDeclare) {
+          declare(scope, endpointToken, endpointType);
+        }
+        recordTokenType(endpointToken, scope, collector);
+
+        if (stmt.block) {
+          const inferredScopeType = typeCheckBlockWithDollar(
+            scope,
+            endpointType,
+            stmt.block,
+            diagnostics,
+            collector,
+            specs,
+            defaults,
+            specLookupIssues
+          );
+          const binding = lookup(scope, endpointToken.lexeme);
+          if (binding) {
+            binding.type = mergeTypes(binding.type, inferredScopeType);
+            recordTokenType(endpointToken, scope, collector);
+          }
+        }
+        return;
+      }
+
       const resolved = resolveStatementSpec(stmt, specs, defaults);
       const classification = resolved.classification;
       const isContract = resolved.isContract;
@@ -793,9 +1001,16 @@ function typeCheckStatement(
           declare(scope, target, incomingType);
           recordTokenType(target, scope, collector);
         } else {
-          const blockScope = makeLexicalScopeWithDollar(scope, incomingType);
-          typeCheckBlock(item.block, blockScope, diagnostics, collector, specs, defaults, specLookupIssues);
-          const inferredScopeType = lookup(blockScope, "$")?.type ?? UNKNOWN;
+          const inferredScopeType = typeCheckBlockWithDollar(
+            scope,
+            incomingType,
+            item.block,
+            diagnostics,
+            collector,
+            specs,
+            defaults,
+            specLookupIssues
+          );
           if ((stmt.expression as any)?.kind === NodeKind.Identifier && isConcreteClassification(inferredScopeType)) {
             assignToIdentifier(stmt.expression as ExpressionNode, scope, inferredScopeType, diagnostics, collector);
           }
@@ -867,6 +1082,7 @@ function typeCheckBlock(
       const nowUnknown = isUnknown(binding.type);
       if (prevUnknown && !nowUnknown) {
         clearUnknownDiagnosticsByName(diagnostics, name, block.range);
+        backfillKnownIdentifierTypesInBlock(block, name, binding.type, collector);
       }
       wasUnknown.set(name, nowUnknown);
     }

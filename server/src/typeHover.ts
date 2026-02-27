@@ -31,8 +31,8 @@ function pickBestType(types: TypeAtPosition[], position: Position): TypeAtPositi
     const known = hasKnownType(entry.types);
     const bestKnown = best ? hasKnownType(best.types) : false;
     if (
-      size < bestSize ||
-      (size === bestSize && known && !bestKnown)
+      (known && !bestKnown) ||
+      (known === bestKnown && size < bestSize)
     ) {
       best = entry;
       bestSize = size;

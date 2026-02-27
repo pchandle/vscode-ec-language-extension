@@ -181,16 +181,51 @@ function resolveStatement(stmt: Statement, scope: Scope, diagnostics: SyntaxDiag
       return;
     }
     case NodeKind.Statement: {
-      resolveExpression(stmt.expression, scope, diagnostics);
-      if (stmt.block) {
+      const endpointToken = getDeclarativeEndpointToken(stmt);
+      if (endpointToken) {
+        if (!isBoundInScopeChain(scope, endpointToken.lexeme)) {
+          declare(scope, endpointToken, "target", diagnostics, "body");
+        }
+      } else {
+        resolveExpression(stmt.expression, scope, diagnostics);
+      }
+      const obligationOrder: Array<any> = ((stmt as any).obligationOrder as Array<any> | undefined) ?? [];
+      const blocks: BlockNode[] =
+        obligationOrder.length > 0
+          ? obligationOrder.filter((item) => item?.kind === NodeKind.Block)
+          : stmt.block
+          ? [stmt.block]
+          : [];
+      for (const block of blocks) {
         // Braced blocks do not create new scopes; they leak to the current scope.
-        resolveBlock(stmt.block, scope, diagnostics);
+        resolveBlock(block, scope, diagnostics);
       }
       return;
     }
     default:
       return;
   }
+}
+
+function getDeclarativeEndpointToken(stmt: Statement): Token | null {
+  if (stmt.kind !== NodeKind.Statement) return null;
+  const statement = stmt as any;
+  if (!statement.block) return null;
+  if (statement.classification || (statement.callArgs && statement.callArgs.length > 0)) return null;
+  if (statement.targets && statement.targets.length > 0) return null;
+  if (!statement.expression || statement.expression.kind !== NodeKind.Identifier) return null;
+  const token = statement.expression.token as Token;
+  if (!token || token.lexeme === "_" || token.lexeme === "$") return null;
+  return token;
+}
+
+function isBoundInScopeChain(scope: Scope, name: string): boolean {
+  let current: Scope | undefined = scope;
+  while (current) {
+    if (current.bindings.has(name)) return true;
+    current = current.parent;
+  }
+  return false;
 }
 
 export function resolveProgram(program: ProgramNode): { diagnostics: SyntaxDiagnostic[] } {

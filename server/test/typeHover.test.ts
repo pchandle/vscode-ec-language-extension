@@ -163,4 +163,28 @@ sub /data/check/condition(check) -> {
     assert.equal((yesType as any).classification, "/data/flow/default/x64");
     assert.equal((noType as any).classification, "/data/flow/default/x64");
   });
+
+  it("prefers known literal type over overlapping unknown ranges", () => {
+    const text = `
+0 -> KNOWN
+if true then
+  60
+else
+  SOME_UNKNOWN
+end
+`;
+    const doc = TextDocument.create("file:///test.dla", "emergent", 1, text);
+    const hover = getTypeHoverMarkdown(doc, { line: 3, character: 2 });
+    assert.ok(hover && hover.includes("INTEGER"), `expected INTEGER hover for literal, got ${hover}`);
+  });
+
+  it("backfills forward-referenced identifier types for hover", () => {
+    const text = `
+2 * TX_HASH_LEN -> TX_HASH_ENC_LEN
+32 -> TX_HASH_LEN
+`;
+    const doc = TextDocument.create("file:///test.dla", "emergent", 1, text);
+    const hover = getTypeHoverMarkdown(doc, { line: 1, character: 5 });
+    assert.ok(hover && hover.includes("INTEGER"), `expected INTEGER hover for TX_HASH_LEN, got ${hover}`);
+  });
 });

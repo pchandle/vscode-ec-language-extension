@@ -485,7 +485,13 @@ function parseJob(state: ParserState): JobNode {
   if (current(state).kind === TokenKind.LParen) {
     parseParameterList(state, params);
   }
-  const targets = parseInlineTargets(state, { consumeColon: false, allowNewlines: true });
+  let targets = parseInlineTargets(state, { consumeColon: false, allowNewlines: true });
+  if (targets.length === 0 && looksLikeJobHeaderTargetsAfterNewline(state)) {
+    if (current(state).kind === TokenKind.Newline) {
+      skipNewlines(state);
+    }
+    targets = parseInlineTargets(state, { consumeColon: false, allowNewlines: true });
+  }
   expect(state, TokenKind.Colon, "Expected ':' after job signature");
   const body = parseDelimitedBlock(state, ["end"]);
   if (!(current(state).kind === TokenKind.Keyword && current(state).lexeme.toLowerCase() === "end")) {
@@ -501,6 +507,41 @@ function parseJob(state: ParserState): JobNode {
     body,
     range: { start: jobTok.range.start, end: body.range.end },
   };
+}
+
+function looksLikeJobHeaderTargetsAfterNewline(state: ParserState): boolean {
+  let i = state.index;
+  while (state.tokens[i]?.kind === TokenKind.Newline) i++;
+
+  let sawTarget = false;
+  while (i < state.tokens.length) {
+    const tok = state.tokens[i];
+    if (!tok) return false;
+    if (tok.kind === TokenKind.Colon) {
+      return sawTarget;
+    }
+    if (tok.kind === TokenKind.Arrow || tok.kind === TokenKind.LBrace || tok.kind === TokenKind.RBrace || tok.kind === TokenKind.EOF) {
+      return false;
+    }
+    if (
+      tok.kind === TokenKind.Identifier ||
+      tok.kind === TokenKind.Boolean ||
+      (tok.kind === TokenKind.Keyword &&
+        !["sub", "job", "host", "join", "deliver", "def", "if", "then", "else", "end"].includes(
+          tok.lexeme.toLowerCase()
+        ))
+    ) {
+      sawTarget = true;
+      i++;
+      continue;
+    }
+    if (tok.kind === TokenKind.Comma || tok.kind === TokenKind.Newline) {
+      i++;
+      continue;
+    }
+    return false;
+  }
+  return false;
 }
 
 function parseDef(state: ParserState): DefNode {

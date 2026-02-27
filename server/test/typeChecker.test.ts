@@ -335,8 +335,86 @@ end
     const defaults = { layer: "data", variation: "default", platform: "x64" };
     const { program } = parseText(text);
     const { diagnostics } = typeCheckProgram(program, { collectTypes: true, specs: { "/data/compare/integer/default/x64": spec as any }, defaults });
-    const mismatches = diagnostics.filter((d) => d.message.includes("Type mismatch: expected"));
-    assert.ok(mismatches.length >= 1, "job obligation types are enforced against block-assigned targets");
+    const unknown = diagnostics.find((d) => d.message.includes("Type of 'result' is unknown"));
+    assert.ok(!unknown, `expected job target to be typed from obligations, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("emits job obligation count mismatch and suppresses misleading per-target type mismatch when misaligned", () => {
+    const text = `
+job /system/fetch/electrum-cash-api/blockchain-address-listunspent/x64(fetch_api, logman, cfgman, task_sched, timerman,
+      tcp_client_mgr, fetch_token_in, fetch_cashaddr, SYSTEM_LABEL, SYSTEM_PRIORITY)
+  utxo__outp_index, utxo__outp_value, fetch_failure, api__fetch_error_code:
+  1 -> api__fetch_error_code
+end
+`;
+    const spec = {
+      requirements: [
+        { type: "/data/flow/default/x64" },
+        { type: "/system/log-manager/default/x64" },
+        { type: "/system/configuration-manager/default/x64" },
+        { type: "/system/task-scheduler/default/x64" },
+        { type: "/system/timer-manager/default/x64" },
+        { type: "/system/tcp-client-manager/default/x64" },
+        { type: "/data/integer/default/x64" },
+        { type: "/data/bytesequence/default/x64" },
+        { type: "string" },
+        { type: "integer" },
+      ],
+      obligations: [
+        { type: "/data/integer/default/x64" },
+        { type: "/data/flow/default/x64" },
+        { type: "/data/linkedlist/default/x64" },
+        { type: "/data/bytes/default/x64" },
+        { type: "/data/integer/default/x64" },
+        { type: "/data/unsigned-integer/default/x64" },
+        { type: "/data/flow/default/x64" },
+        { type: "/data/integer/default/x64" },
+      ],
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: { "/system/fetch/electrum-cash-api/blockchain-address-listunspent/x64": spec as any },
+      defaults: { layer: "data", variation: "default", platform: "x64" },
+    });
+    const countMismatch = diagnostics.find((d) => d.message.includes("Obligation count mismatch: expected 8, got 4"));
+    const bytesMismatch = diagnostics.find((d) =>
+      d.message.includes("expected CLASSIFICATION(/data/bytes/default/x64), got CLASSIFICATION(/data/integer/default/x64)")
+    );
+    assert.ok(countMismatch, `expected job obligation count mismatch, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.ok(!bytesMismatch, `did not expect misleading bytes mismatch, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("makes job target obligation types available to prechecked defs", () => {
+    const text = `
+job /sys/example/default/x64(flow) -> api__fetch_error_code:
+  def logErr(flow):
+    flow -> {
+      sub /system/log/integer/default/x64($, api__fetch_error_code)
+    }
+  end
+end
+`;
+    const spec = {
+      requirements: [{ type: "/data/flow/default/x64" }],
+      obligations: [{ type: "/data/integer/default/x64" }],
+    };
+    const logIntSpec = {
+      requirements: [
+        { type: "/system/log-manager/default/x64" },
+        { type: "/data/integer/default/x64" }
+      ],
+      obligations: []
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: {
+        "/sys/example/default/x64": spec as any,
+        "/system/log/integer/default/x64": logIntSpec as any,
+      },
+      defaults: { layer: "data", variation: "default", platform: "x64" },
+    });
+    const unknown = diagnostics.find((d) => d.message.includes("Type of 'api__fetch_error_code' is unknown"));
+    assert.ok(!unknown, `did not expect unknown target type in prechecked def, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 
   it("emits requirement type mismatch when argument remains UNKNOWN", () => {
@@ -644,5 +722,71 @@ end
       d.message.includes("Type mismatch: expected CLASSIFICATION(/system/log-manager/default/x64), got CLASSIFICATION(/data/flow/default/x64)")
     );
     assert.ok(!leakedMismatch, `expected forward def call to type block '$' correctly, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("treats 'identifier -> { ... }' as declarative endpoint with flow-typed '$'", () => {
+    const text = `
+sub /sys/source/default/x64() -> timer_expired_cb
+timer_expired_cb -> {
+  sub /sys/consume/default/x64($)
+}
+`;
+    const specs = {
+      "/sys/source/default/x64": {
+        requirements: [],
+        obligations: [{ type: "/data/flow/default/x64" }]
+      },
+      "/sys/consume/default/x64": {
+        requirements: [{ type: "/data/flow/default/x64" }],
+        obligations: []
+      }
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { specs: specs as any });
+    const mismatch = diagnostics.find((d) => d.message.includes("Type mismatch"));
+    const unknown = diagnostics.find((d) => d.message.includes("Type of 'timer_expired_cb' is unknown"));
+    assert.ok(!mismatch, `did not expect flow mismatch, got ${mismatch?.message ?? diagnostics.map((d) => d.message).join(", ")}`);
+    assert.ok(!unknown, `did not expect unknown endpoint type, got ${unknown?.message ?? diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("reuses existing identifier type for 'identifier -> { ... }' blocks", () => {
+    const text = `
+job /sys/job/default/x64(fetch_api):
+  fetch_api -> {
+    sub /sys/consume/default/x64($)
+  }
+end
+`;
+    const specs = {
+      "/sys/job/default/x64": {
+        requirements: [{ type: "/data/flow/default/x64" }],
+        obligations: []
+      },
+      "/sys/consume/default/x64": {
+        requirements: [{ type: "/data/flow/default/x64" }],
+        obligations: []
+      }
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { specs: specs as any });
+    const duplicate = diagnostics.find((d) => d.message.includes("Duplicate declaration of 'fetch_api'"));
+    const mismatch = diagnostics.find((d) => d.message.includes("Type mismatch"));
+    assert.ok(!duplicate, `did not expect duplicate declaration, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.ok(!mismatch, `did not expect flow mismatch, got ${mismatch?.message ?? diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("leaks declarations from earlier obligation blocks to later statements", () => {
+    const text = `
+true -> _, {
+  1 -> api__token_in
+}, {
+  2 -> ignored
+}
+api__token_in -> out
+`;
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program);
+    const unknown = diagnostics.find((d) => d.message.includes("Type of 'api__token_in' is unknown"));
+    assert.ok(!unknown, `did not expect unknown api__token_in, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 });

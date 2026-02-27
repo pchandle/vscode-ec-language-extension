@@ -89,6 +89,16 @@ describe("parser", () => {
     assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 
+  it("allows job header targets that start on the line after ')' and end with ':'", () => {
+    const text =
+      "job /system/fetch/electrum-cash-api/blockchain-address-listunspent/x64(fetch_api, logman, cfgman, task_sched, timerman,\n" +
+      "  tcp_client_mgr, fetch_token_in, fetch_cashaddr, SYSTEM_LABEL, SYSTEM_PRIORITY)\n" +
+      "  utxo__outp_index, utxo__outp_value, fetch_failure, api__fetch_error_code:\n" +
+      "end";
+    const { diagnostics } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
   it("allows trailing comma before block in target list", () => {
     const text = "sub /data/new/test/default/x64($) -> _, {\n  1 -> out\n}";
     const { diagnostics } = parseText(text);

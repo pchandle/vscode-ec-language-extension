@@ -37,4 +37,83 @@ describe("resolver", () => {
     const { diagnostics } = resolveProgram(program);
     assert.ok(diagnostics.some((d) => d.message.includes("Undefined name 'bar'")), "expected undefined name diagnostic for bar");
   });
+
+  it("treats 'identifier -> { ... }' as a declarative endpoint label", () => {
+    const text = `
+job /example/test():
+  sub /system/start/timer-manager($, 0, 0, 0) -> _, _, _, timer_expired_cb
+  timer_expired_cb -> {
+    1 -> done
+  }
+end
+`;
+    const { program, diagnostics: syntaxDiagnostics } = parseText(text);
+    const { diagnostics } = resolveProgram(program);
+    assert.equal(syntaxDiagnostics.length, 0, "unexpected syntax diagnostics");
+    assert.ok(
+      !diagnostics.some((d) => d.message.includes("Undefined name 'timer_expired_cb'")),
+      `did not expect undefined endpoint diagnostic, got ${diagnostics.map((d) => d.message).join(", ")}`
+    );
+  });
+
+  it("does not redeclare an existing binding for 'identifier -> { ... }'", () => {
+    const text = `
+job /example/test(fetch_api):
+  fetch_api -> {
+    1 -> done
+  }
+end
+`;
+    const { program, diagnostics: syntaxDiagnostics } = parseText(text);
+    const { diagnostics } = resolveProgram(program);
+    assert.equal(syntaxDiagnostics.length, 0, "unexpected syntax diagnostics");
+    assert.ok(
+      !diagnostics.some((d) => d.message.includes("Duplicate declaration of 'fetch_api'")),
+      `did not expect duplicate declaration, got ${diagnostics.map((d) => d.message).join(", ")}`
+    );
+  });
+
+  it("resolves declarations from earlier obligation blocks in the same statement", () => {
+    const text = `
+job /example/test():
+  sub /example/multi() -> _, {
+    1 -> api__token_in
+  }, {
+    2 -> ignored
+  }
+  api__token_in -> out
+end
+`;
+    const { program, diagnostics: syntaxDiagnostics } = parseText(text);
+    const { diagnostics } = resolveProgram(program);
+    assert.equal(syntaxDiagnostics.length, 0, "unexpected syntax diagnostics");
+    assert.ok(
+      !diagnostics.some((d) => d.message.includes("Undefined name 'api__token_in'")),
+      `did not expect undefined api__token_in, got ${diagnostics.map((d) => d.message).join(", ")}`
+    );
+  });
+
+  it("does not predeclare endpoint labels ahead of leaking nested-block declarations", () => {
+    const text = `
+job /example/test():
+  fetch_api -> {
+    sub /example/decode() -> api_sequence, api_data_valid, api_data_invalid
+  }
+  api_sequence -> {
+    1 -> x
+  }
+  api_data_valid -> {
+    1 -> y
+  }
+  api_data_invalid -> {
+    1 -> z
+  }
+end
+`;
+    const { program, diagnostics: syntaxDiagnostics } = parseText(text);
+    const { diagnostics } = resolveProgram(program);
+    assert.equal(syntaxDiagnostics.length, 0, "unexpected syntax diagnostics");
+    const duplicates = diagnostics.filter((d) => d.message.includes("Duplicate declaration"));
+    assert.equal(duplicates.length, 0, `did not expect duplicate declarations, got ${duplicates.map((d) => d.message).join(", ")}`);
+  });
 });
