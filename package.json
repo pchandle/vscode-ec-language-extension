@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -159,6 +159,36 @@
             "type": "boolean",
             "default": false,
             "description": "Emit detailed hover classification and fetch logging to the Language Server output."
+          },
+          "emergent.specCache.softTtlHours": {
+            "scope": "window",
+            "type": "number",
+            "default": 24,
+            "description": "Soft TTL for cached specifications in hours. Stale entries may still be served while refresh is attempted."
+          },
+          "emergent.specCache.fetchConcurrency": {
+            "scope": "window",
+            "type": "number",
+            "default": 6,
+            "description": "Maximum number of concurrent specification fetch requests."
+          },
+          "emergent.specCache.retryCount": {
+            "scope": "window",
+            "type": "number",
+            "default": 2,
+            "description": "Number of retry attempts for specification fetches after the initial request."
+          },
+          "emergent.specCache.retryBaseMs": {
+            "scope": "window",
+            "type": "number",
+            "default": 250,
+            "description": "Base backoff duration in milliseconds between specification fetch retries."
+          },
+          "emergent.specCache.allowStale": {
+            "scope": "window",
+            "type": "boolean",
+            "default": true,
+            "description": "Allow serving stale cached specifications while background refresh runs."
           }
         }
       }

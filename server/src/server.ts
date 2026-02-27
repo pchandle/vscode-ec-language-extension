@@ -35,6 +35,7 @@ import { getTypeHoverMarkdown } from './typeHover';
 import { parseText } from './lang/parser';
 import { ProgramNode, Statement } from './lang/ast';
 import { normalizeContractClassification, normalizeProtocolClassification } from './lang/normalization';
+import { collectReferencedClassifications } from './specReferenceCollector';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -115,6 +116,13 @@ connection.onInitialize((params: InitializeParams) => {
 	}
 
 	gatewayClient.attachConnection(connection);
+	gatewayClient.setCacheConfig({
+		softTtlHours: defaultSettings.specCache?.softTtlHours,
+		fetchConcurrency: defaultSettings.specCache?.fetchConcurrency,
+		retryCount: defaultSettings.specCache?.retryCount,
+		retryBaseMs: defaultSettings.specCache?.retryBaseMs,
+		allowStale: defaultSettings.specCache?.allowStale,
+	});
 	void gatewayClient.refreshContractCache();
 	gatewayClient.startCacheTimer();
 	return result;
@@ -140,6 +148,13 @@ interface EmergentSettings {
 	hoverDisabled?: boolean;
 	hover?: { disabled?: boolean };
 	traceServer?: TraceLevel;
+	specCache?: {
+		softTtlHours?: number;
+		fetchConcurrency?: number;
+		retryCount?: number;
+		retryBaseMs?: number;
+		allowStale?: boolean;
+	};
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
@@ -150,7 +165,14 @@ const defaultSettings: EmergentSettings = {
 	hoverDebugLogging: false,
 	gatewayNetwork: '31',
 	hoverDisabled: true,
-	traceServer: 'off'
+	traceServer: 'off',
+	specCache: {
+		softTtlHours: 24,
+		fetchConcurrency: 6,
+		retryCount: 2,
+		retryBaseMs: 250,
+		allowStale: true,
+	}
 };
 let globalSettings: EmergentSettings = defaultSettings;
 
@@ -165,6 +187,13 @@ connection.onDidChangeConfiguration(change => {
 		globalSettings = <EmergentSettings>(
 			(change.settings.emergent || defaultSettings)
 		);
+		gatewayClient.setCacheConfig({
+			softTtlHours: globalSettings.specCache?.softTtlHours,
+			fetchConcurrency: globalSettings.specCache?.fetchConcurrency,
+			retryCount: globalSettings.specCache?.retryCount,
+			retryBaseMs: globalSettings.specCache?.retryBaseMs,
+			allowStale: globalSettings.specCache?.allowStale,
+		});
 	}
 
 	if (change.settings?.gateway?.network && typeof change.settings.gateway.network === 'string') {
@@ -201,6 +230,13 @@ function clearScheduledValidation(uri: string) {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	const settings = await getDocumentSettings(textDocument.uri);
+	gatewayClient.setCacheConfig({
+		softTtlHours: settings.specCache?.softTtlHours,
+		fetchConcurrency: settings.specCache?.fetchConcurrency,
+		retryCount: settings.specCache?.retryCount,
+		retryBaseMs: settings.specCache?.retryBaseMs,
+		allowStale: settings.specCache?.allowStale,
+	});
 	const traceLevel = settings.traceServer ?? 'off';
 	const started = performance.now();
 	const defaults = getDefaultsFromText(textDocument.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
@@ -208,43 +244,23 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// Collect contract specifications referenced in the document so that diagnostics can validate
 	// requirements/obligations.
 	const { program } = parseText(textDocument.getText());
-	const classifications = new Set<string>();
-	const rawToNormalized = new Map<string, string>();
-	const collect = (stmts: Statement[]) => {
-		for (const stmt of stmts) {
-			const cls = (stmt as any).classification?.lexeme;
-			if (cls) {
-				const keyword = (stmt as any).keyword?.lexeme?.toLowerCase?.();
-				const isProtocol = keyword === 'host' || keyword === 'join';
-				const normalized = isProtocol
-					? normalizeProtocolClassification(cls, defaults)
-					: normalizeContractClassification(cls, defaults);
-				if (normalized) {
-					classifications.add(normalized);
-					rawToNormalized.set(cls, normalized);
-				}
-			}
-			if ((stmt as any).body?.statements) {
-				collect((stmt as any).body.statements);
-			}
-			if ((stmt as any).block?.statements) {
-				collect((stmt as any).block.statements);
-			}
-		}
-	};
-	collect((program as ProgramNode).statements);
+	const { classifications, classificationKinds, rawToNormalized } = collectReferencedClassifications(
+		program as ProgramNode,
+		{ layer: defaults.layer, variation: defaults.variation, platform: defaults.platform }
+	);
 
 	const specs: Record<string, RemoteContractSpec> = {};
 	const specLookupIssues: Record<string, string> = {};
 	for (const cls of classifications) {
 		try {
-			const result = await gatewayClient.fetchContractSpecResult(cls);
+			const kind = classificationKinds.get(cls) ?? 'contract';
+			const result = await gatewayClient.fetchSpecResult(cls, { kind, defaults });
 			const spec = result.spec;
 			if (spec) {
-				specs[cls] = spec;
+				specs[cls] = spec as any;
 				for (const [raw, norm] of rawToNormalized.entries()) {
 					if (norm === cls && raw !== cls) {
-						specs[raw] = spec;
+						specs[raw] = spec as any;
 					}
 				}
 			} else if (result.reason) {
@@ -500,12 +516,18 @@ connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpe
 		return null;
 	}
 
-	const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+	const result = await gatewayClient.fetchSpecResult(parsed.classification, {
+		kind: parsed.kind === 'protocol' ? 'protocol' : 'contract',
+		defaults,
+	});
+	const spec = result.spec;
 	if (!spec) {
 		return null;
 	}
+	scheduleValidation(document);
 
-	return { classification: parsed.classification, specification: spec };
+	return { classification: result.canonical ?? parsed.classification, specification: spec };
 });
 
 connection.onRequest(clearSpecCacheRequest, async (): Promise<boolean> => {
@@ -552,13 +574,17 @@ connection.onHover(async (params): Promise<Hover | null> => {
 				? normalizeProtocolClassification(parsed.classification, defaults)
 				: normalizeContractClassification(parsed.classification, defaults);
 		const clsToFetch = normalized ?? parsed.classification;
-		const spec = await gatewayClient.fetchContractSpec(clsToFetch);
+		const result = await gatewayClient.fetchSpecResult(clsToFetch, {
+			kind: parsed.kind === 'protocol' ? 'protocol' : 'contract',
+			defaults,
+		});
+		const spec = result.spec;
 		if (!spec) {
 			debugLog(`Hover: no spec returned for ${clsToFetch}`);
 		} else {
-			contractSpecs = { [clsToFetch]: spec };
+			contractSpecs = { [clsToFetch]: spec as any };
 			if (clsToFetch !== parsed.classification) {
-				contractSpecs[parsed.classification] = spec;
+				contractSpecs[parsed.classification] = spec as any;
 			}
 			debugLog(`Hover: fetched spec for ${clsToFetch} (not rendering spec hover)`);
 		}
@@ -598,7 +624,12 @@ connection.onCompletion(
 	if (specContext) {
 		const parsed = getClassificationFromDocument(document, params);
 		if (parsed?.classification) {
-			const spec = await gatewayClient.fetchContractSpec(parsed.classification);
+			const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+			const result = await gatewayClient.fetchSpecResult(parsed.classification, {
+				kind: 'contract',
+				defaults,
+			});
+			const spec = result.spec as RemoteContractSpec | null;
 			if (spec) {
 				const specItems = buildContractSpecCompletionItems(
 					spec,
@@ -630,7 +661,12 @@ connection.onCompletion(
 	if (protocolSpecContext) {
 		const parsed = getClassificationFromDocument(document, params);
 		if (parsed?.classification) {
-			const spec = await gatewayClient.fetchProtocolSpec(parsed.classification);
+			const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+			const result = await gatewayClient.fetchSpecResult(parsed.classification, {
+				kind: 'protocol',
+				defaults,
+			});
+			const spec = result.spec as any;
 			if (spec) {
 				const specItems = buildProtocolSpecCompletionItems(
 					spec,
