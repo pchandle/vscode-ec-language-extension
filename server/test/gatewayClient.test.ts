@@ -45,14 +45,12 @@ function readCache(homeDir: string): any {
 }
 
 function loadGatewayClient(homeDir: string, fetchImpl: FetchFn): LoadedClient {
+  (globalThis as any).fetch = fetchImpl;
   const moduleShim = require("module") as any;
   const originalLoad = moduleShim._load;
   const actualOs = require("os");
 
   moduleShim._load = function (request: string, parent: unknown, isMain: boolean) {
-    if (request === "node-fetch") {
-      return { default: fetchImpl };
-    }
     if (request === "os") {
       return {
         ...actualOs,
