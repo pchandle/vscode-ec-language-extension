@@ -37,7 +37,7 @@ import {
 } from './completionSupport';
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 import { collectDiagnostics } from './diagnostics';
-import { getTypeHoverMarkdown } from './typeHover';
+import { getTypeHoverMarkdown, shouldSuppressTypeHoverAtPosition } from './typeHover';
 import { parseText } from './lang/parser';
 import { ProgramNode, Statement } from './lang/ast';
 import { normalizeContractClassification, normalizeProtocolClassification } from './lang/normalization';
@@ -912,11 +912,28 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		return null;
 	}
 	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
-	const parsed = getClassificationFromDocument(document, params) as any;
-	if (parsed?.classification) {
-		debugLog(`Hover: classification ${parsed.classification} (spec fetch disabled for hover)`);
+	if (shouldSuppressTypeHoverAtPosition(document, params.position)) {
+		traceDuration(traceLevel, 'hover', started, { reason: 'suppressedToken', uri: params.textDocument.uri });
+		return null;
 	}
-	const typeHover = getTypeHoverMarkdown(document, params.position, undefined, defaults);
+	const parsed = getClassificationFromDocument(document, params) as any;
+	let contractSpecs: Record<string, RemoteContractSpec> | undefined;
+	if (parsed?.classification) {
+		debugLog(`Hover: classification ${parsed.classification} (cache-first spec resolution enabled for hover typing)`);
+		const result = await gatewayClient.fetchSpecResult(parsed.classification, {
+			kind: parsed.kind === 'protocol' ? 'protocol' : 'contract',
+			defaults,
+		});
+		const spec = result.spec;
+		if (spec) {
+			const canonical = result.canonical ?? parsed.classification;
+			contractSpecs = { [canonical]: spec as any };
+			if (canonical !== parsed.classification) {
+				contractSpecs[parsed.classification] = spec as any;
+			}
+		}
+	}
+	const typeHover = getTypeHoverMarkdown(document, params.position, contractSpecs, defaults);
 	if (typeHover) {
 		debugLog(`Hover: type hover resolved at ${params.position.line}:${params.position.character} -> ${typeHover}`);
 	}

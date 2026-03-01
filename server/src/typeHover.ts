@@ -49,9 +49,13 @@ function formatTypes(types: TypeAtPosition["types"]): string {
   return `(${types.map(typeToDisplayString).join(", ")})`;
 }
 
-function isSupplierTokenHover(document: TextDocument, position: Position): boolean {
+export function shouldSuppressTypeHoverAtPosition(document: TextDocument, position: Position): boolean {
   const { tokens } = lexText(document.getText());
-  return tokens.some((token) => token.kind === TokenKind.Supplier && rangeContains(token.range, position));
+  return tokens.some(
+    (token) =>
+      (token.kind === TokenKind.Supplier || token.kind === TokenKind.Classification) &&
+      rangeContains(token.range, position)
+  );
 }
 
 export function getTypeHoverMarkdown(
@@ -60,7 +64,7 @@ export function getTypeHoverMarkdown(
   contractSpecs?: Record<string, RemoteContractSpec>,
   defaults?: { layer: string; variation: string; platform: string }
 ): string | null {
-  if (isSupplierTokenHover(document, position)) {
+  if (shouldSuppressTypeHoverAtPosition(document, position)) {
     return null;
   }
   const effectiveDefaults = defaults || getDefaultsFromText(document.getText()) || { layer: "", variation: "", platform: "" };

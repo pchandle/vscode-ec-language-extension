@@ -201,4 +201,18 @@ sub /data/write/constant/inline/linux-x64@aptissio($, "x")
     const hover = getTypeHoverMarkdown(doc, { line, character });
     assert.equal(hover, null, `expected no hover for supplier token, got ${hover}`);
   });
+
+  it("does not show type hover for classification tokens", () => {
+    const text = `
+sub /data/write/constant/inline/linux-x64($, "x")
+`;
+    const classificationStart = text.indexOf("/data/write/constant/inline/linux-x64");
+    const beforeClassification = text.slice(0, classificationStart);
+    const line = (beforeClassification.match(/\n/g) ?? []).length;
+    const lineStart = beforeClassification.lastIndexOf("\n");
+    const character = classificationStart - (lineStart + 1) + 5;
+    const doc = TextDocument.create("file:///test.dla", "emergent", 1, text);
+    const hover = getTypeHoverMarkdown(doc, { line, character });
+    assert.equal(hover, null, `expected no hover for classification token, got ${hover}`);
+  });
 });
