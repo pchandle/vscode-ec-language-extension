@@ -84,6 +84,14 @@ type BulkValidationProgress = {
 	filesWithDiagnostics: number;
 	diagnosticsLoaded: number;
 };
+type DocumentSpecContext = {
+	version: number;
+	defaults: { layer: string; variation: string; platform: string; supplier?: string };
+	specs: Record<string, RemoteContractSpec>;
+	specLookupIssues: Record<string, string>;
+	classifications: string[];
+	builtAt: number;
+};
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -118,6 +126,7 @@ function normalizeStudioInitConfig(raw: any, fallback: StudioConnectionConfig): 
 type TraceLevel = 'off' | 'messages' | 'verbose';
 const validationDebounceMs = 200;
 const pendingValidation: Map<string, NodeJS.Timeout> = new Map();
+const documentSpecContexts: Map<string, DocumentSpecContext> = new Map();
 
 function logTrace(level: TraceLevel | undefined, message: string, data?: Record<string, string | number | boolean | null>) {
 	if (!level || level === 'off') {
@@ -438,6 +447,7 @@ let globalSettings: EmergentSettings = defaultSettings;
 const documentSettings: Map<string, Thenable<EmergentSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
+	invalidateAllDocumentSpecContexts();
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
@@ -519,14 +529,18 @@ function clearScheduledValidation(uri: string) {
 	}
 }
 
-async function collectSpecAwareDiagnosticsForDocument(
-	textDocument: TextDocument,
-	maxNumberOfProblems: number
-): Promise<Diagnostic[]> {
+function invalidateDocumentSpecContext(uri: string) {
+	documentSpecContexts.delete(uri);
+}
+
+function invalidateAllDocumentSpecContexts() {
+	documentSpecContexts.clear();
+}
+
+async function buildDocumentSpecContext(textDocument: TextDocument): Promise<DocumentSpecContext> {
 	const text = textDocument.getText();
 	const defaults = getDefaultsFromText(text) || { layer: '', variation: '', platform: '', supplier: '' };
 
-	// Match live validation behavior: fetch referenced specs before type-checking.
 	const { program } = parseText(text);
 	const { classifications, classificationKinds, rawToNormalized } = collectReferencedClassifications(
 		program as ProgramNode,
@@ -556,7 +570,7 @@ async function collectSpecAwareDiagnosticsForDocument(
 				}
 			}
 		} catch (err: any) {
-			connection.console.warn(`Diagnostics: failed to fetch spec ${cls}: ${err?.message ?? err}`);
+			connection.console.warn(`Spec context: failed to fetch spec ${cls}: ${err?.message ?? err}`);
 			const fallbackReason = err?.message ?? String(err);
 			specLookupIssues[cls] = fallbackReason;
 			for (const [raw, norm] of rawToNormalized.entries()) {
@@ -567,12 +581,38 @@ async function collectSpecAwareDiagnosticsForDocument(
 		}
 	}
 
+	return {
+		version: textDocument.version,
+		defaults,
+		specs,
+		specLookupIssues,
+		classifications: Array.from(classifications),
+		builtAt: Date.now(),
+	};
+}
+
+async function getOrBuildDocumentSpecContext(textDocument: TextDocument): Promise<DocumentSpecContext> {
+	const existing = documentSpecContexts.get(textDocument.uri);
+	if (existing && existing.version === textDocument.version) {
+		return existing;
+	}
+	const built = await buildDocumentSpecContext(textDocument);
+	documentSpecContexts.set(textDocument.uri, built);
+	return built;
+}
+
+async function collectSpecAwareDiagnosticsForDocument(
+	textDocument: TextDocument,
+	maxNumberOfProblems: number
+): Promise<Diagnostic[]> {
+	const context = await getOrBuildDocumentSpecContext(textDocument);
+
 	return collectDiagnostics(
 		textDocument,
 		{ maxNumberOfProblems },
-		specs,
-		defaults,
-		specLookupIssues
+		context.specs,
+		context.defaults,
+		context.specLookupIssues
 	);
 }
 
@@ -612,15 +652,18 @@ function scheduleValidation(textDocument: TextDocument): void {
 // Only keep settings for open documents
 documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
+	invalidateDocumentSpecContext(e.document.uri);
 	clearScheduledValidation(e.document.uri);
 	connection.sendDiagnostics({ uri: e.document.uri, diagnostics: [] });
 });
 
 // Rebuild (validate) on open/change with a deterministic debounce.
 documents.onDidOpen(event => {
+	invalidateDocumentSpecContext(event.document.uri);
 	scheduleValidation(event.document);
 });
 documents.onDidChangeContent(change => {
+	invalidateDocumentSpecContext(change.document.uri);
 	scheduleValidation(change.document);
 });
 
@@ -839,6 +882,7 @@ connection.onRequest(fetchSpecificationRequest, async (params): Promise<FetchSpe
 connection.onRequest(clearSpecCacheRequest, async (): Promise<boolean> => {
 	try {
 		gatewayClient.clearCache();
+		invalidateAllDocumentSpecContexts();
 		return true;
 	} catch (err: any) {
 		connection.console.error(`Failed to clear specification cache: ${err?.message ?? err}`);
@@ -850,6 +894,7 @@ connection.onRequest(getSpecCachePathRequest, (): string => gatewayClient.cacheF
 connection.onRequest(reloadSpecCacheRequest, async (): Promise<boolean> => {
 	try {
 		await gatewayClient.refreshContractCache();
+		invalidateAllDocumentSpecContexts();
 		return true;
 	} catch (err: any) {
 		connection.console.error(`Failed to reload specification cache: ${err?.message ?? err}`);
@@ -916,24 +961,9 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		traceDuration(traceLevel, 'hover', started, { reason: 'suppressedToken', uri: params.textDocument.uri });
 		return null;
 	}
-	const parsed = getClassificationFromDocument(document, params) as any;
-	let contractSpecs: Record<string, RemoteContractSpec> | undefined;
-	if (parsed?.classification) {
-		debugLog(`Hover: classification ${parsed.classification} (cache-first spec resolution enabled for hover typing)`);
-		const result = await gatewayClient.fetchSpecResult(parsed.classification, {
-			kind: parsed.kind === 'protocol' ? 'protocol' : 'contract',
-			defaults,
-		});
-		const spec = result.spec;
-		if (spec) {
-			const canonical = result.canonical ?? parsed.classification;
-			contractSpecs = { [canonical]: spec as any };
-			if (canonical !== parsed.classification) {
-				contractSpecs[parsed.classification] = spec as any;
-			}
-		}
-	}
-	const typeHover = getTypeHoverMarkdown(document, params.position, contractSpecs, defaults);
+	const context = await getOrBuildDocumentSpecContext(document);
+	debugLog(`Hover: using shared context with ${context.classifications.length} classifications`);
+	const typeHover = getTypeHoverMarkdown(document, params.position, context.specs, context.defaults ?? defaults);
 	if (typeHover) {
 		debugLog(`Hover: type hover resolved at ${params.position.line}:${params.position.character} -> ${typeHover}`);
 	}

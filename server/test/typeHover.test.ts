@@ -215,4 +215,32 @@ sub /data/write/constant/inline/linux-x64($, "x")
     const hover = getTypeHoverMarkdown(doc, { line, character });
     assert.equal(hover, null, `expected no hover for classification token, got ${hover}`);
   });
+
+  it("uses job requirement types for hover in nested statements", () => {
+    const text = `
+job /behaviour/add/pos-list-attribute/bitcoin-address/x64(pos_list_attrs, attr_name_const) address, at_id:
+  join pos-list-attributes(len(attr_name_const), 0, pos_list_attrs) -> list_init, a_array, a_name, a_value, a_units, a_id
+end
+`;
+    const spec = {
+      requirements: [
+        { name: "pos_list_attrs", type: "/data/list/default/x64" },
+        { name: "attr_name_const", type: "integer" },
+      ],
+      obligations: [
+        { name: "address", type: "/data/address/default/x64" },
+        { name: "at_id", type: "/data/integer/default/x64" },
+      ],
+    };
+    const hoverDoc = TextDocument.create("file:///test.dla", "emergent", 1, text);
+    const hoverLine = "  join pos-list-attributes(len(attr_name_const), 0, pos_list_attrs) -> list_init, a_array, a_name, a_value, a_units, a_id";
+    const hoverChar = hoverLine.indexOf("pos_list_attrs");
+    const hover = getTypeHoverMarkdown(hoverDoc, { line: 2, character: hoverChar }, {
+      "/behaviour/add/pos-list-attribute/bitcoin-address/x64": spec as any,
+    });
+    assert.ok(
+      hover && hover.includes("/data/list/default/x64"),
+      `expected classification hover from job requirement typing, got ${hover}`
+    );
+  });
 });
