@@ -63,7 +63,7 @@ This guide explains all user-facing configuration keys, their defaults, and when
 |---|---|---|
 | `emergent.maxNumberOfProblems` | `100` | Cap on diagnostics returned by language server. |
 | `emergent.trace.server` | `verbose` | LSP trace level (`off`, `messages`, `verbose`). |
-| `emergent.hoverDebugLogging` | `false` | Extra hover/fetch logging in language-server output. |
+| `emergent.hoverDebugLogging` | `false` | Extra hover classification/type logging in language-server output. |
 
 ## Deprecated Keys
 
@@ -83,4 +83,3 @@ Use `Emergent: Show Configuration Diagnostics` to open a report with:
 - active cache file path
 - diagnostics/hover/bulk-validation settings
 - deprecated `gateway.*` fallback usage status
-

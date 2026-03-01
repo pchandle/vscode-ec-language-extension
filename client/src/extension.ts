@@ -905,18 +905,10 @@ function registerSpecificationLinks(context: vscode.ExtensionContext) {
           const remoteUri = vscode.Uri.parse(
             `command:emergent.openSpecificationAtPosition?${encodeURIComponent(JSON.stringify(args))}`
           );
-          const localUri = vscode.Uri.parse(
-            `command:emergent.openLocalSpecificationAtPosition?${encodeURIComponent(JSON.stringify(args))}`
-          );
           const range = new vscode.Range(start, end);
 
           const remoteLink = new vscode.DocumentLink(range, remoteUri);
-          remoteLink.tooltip = "Show specification";
           links.push(remoteLink);
-
-          const localLink = new vscode.DocumentLink(range, localUri);
-          localLink.tooltip = "Open local specification (Ctrl+Shift+Click)";
-          links.push(localLink);
         };
 
         let match: RegExpExecArray | null;

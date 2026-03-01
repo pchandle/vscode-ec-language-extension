@@ -30,6 +30,8 @@ Bulk Expression Validation lets you recursively scan workspace folders for Emerg
 - `Ctrl+Alt+E Ctrl+P`: Previous diagnostic
 - `Ctrl+Alt+E Ctrl+S`: Skip diagnostic (session-only)
 - `Ctrl+Alt+E Ctrl+R`: Rescan
+- `Ctrl+Alt+S`: Show specification at cursor/classification
+- `Ctrl+Alt+Shift+S`: Open local specification at cursor/classification
 
 ## Configuration
 Key settings are grouped as follows:

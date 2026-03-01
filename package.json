@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.10",
+  "version": "0.11.11",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -28,17 +28,20 @@
           "studio.hostname": {
             "type": "string",
             "default": "localhost",
-            "description": "Specifies the hostname or IPv4 address of the Emergent Coding Studio server."
+            "description": "Specifies the hostname or IPv4 address of the Emergent Coding Studio server.",
+            "order": 10
           },
           "studio.port": {
             "type": "integer",
             "default": 10000,
-            "description": "Specifies the TCP port of the Emergent Coding Studio server."
+            "description": "Specifies the TCP port of the Emergent Coding Studio server.",
+            "order": 20
           },
           "studio.allowInsecure": {
             "type": "boolean",
             "default": true,
-            "description": "Allow insecure connections to the Emergent Coding Studio server."
+            "description": "Allow insecure connections to the Emergent Coding Studio server.",
+            "order": 30
           },
           "studio.network": {
             "type": "string",
@@ -51,7 +54,8 @@
               "34/36/37"
             ],
             "default": "31",
-            "description": "Select the Emergent network for API path prefixes (root/spec fetch)."
+            "description": "Select the Emergent network for API path prefixes (root/spec fetch).",
+            "order": 40
           }
         }
       },
@@ -62,19 +66,22 @@
             "type": "string",
             "default": "localhost",
             "description": "Deprecated legacy key. Use studio.hostname.",
-            "deprecationMessage": "Deprecated. Use studio.hostname."
+            "deprecationMessage": "Deprecated. Use studio.hostname.",
+            "order": 50
           },
           "gateway.port": {
             "type": "integer",
             "default": 10000,
             "description": "Deprecated legacy key. Use studio.port.",
-            "deprecationMessage": "Deprecated. Use studio.port."
+            "deprecationMessage": "Deprecated. Use studio.port.",
+            "order": 60
           },
           "gateway.allowInsecure": {
             "type": "boolean",
             "default": true,
             "description": "Deprecated legacy key. Use studio.allowInsecure.",
-            "deprecationMessage": "Deprecated. Use studio.allowInsecure."
+            "deprecationMessage": "Deprecated. Use studio.allowInsecure.",
+            "order": 70
           },
           "gateway.network": {
             "type": "string",
@@ -88,7 +95,8 @@
             ],
             "default": "31",
             "description": "Deprecated legacy key. Use studio.network.",
-            "deprecationMessage": "Deprecated. Use studio.network."
+            "deprecationMessage": "Deprecated. Use studio.network.",
+            "order": 80
           }
         }
       },
@@ -98,29 +106,34 @@
           "specification.defaultSupplier": {
             "type": "string",
             "default": "",
-            "description": "Default supplier value used when creating a new contract specification."
+            "description": "Default supplier value used when creating a new contract specification.",
+            "order": 90
           },
           "specification.localContractRoot": {
             "type": "string",
             "default": "",
             "markdownDescription": "Local Contract Specification Root Directory. Select a folder to store and edit contract specifications.",
-            "format": "uri"
+            "format": "uri",
+            "order": 100
           },
           "specification.localProtocolRoot": {
             "type": "string",
             "default": "",
             "markdownDescription": "Local Protocol Specification Root Directory. Select a folder to store and edit protocol specifications.",
-            "format": "uri"
+            "format": "uri",
+            "order": 110
           },
           "specification.contractFilenameFormat": {
             "type": "string",
             "default": "{layer}--{verb}--{subject}--{variation}--{platform}",
-            "markdownDescription": "Filename format for new contract specifications (extension is appended automatically: .cspec). Supported tokens: `{layer}`, `{verb}`, `{subject}`, `{variation}`, `{platform}`."
+            "markdownDescription": "Filename format for new contract specifications (extension is appended automatically: .cspec). Supported tokens: `{layer}`, `{verb}`, `{subject}`, `{variation}`, `{platform}`.",
+            "order": 120
           },
           "specification.protocolFilenameFormat": {
             "type": "string",
             "default": "{layer}--{subject}--{variation}--{platform}",
-            "markdownDescription": "Filename format for new protocol specifications (extension is appended automatically: .pspec). Supported tokens: `{layer}`, `{subject}`, `{variation}`, `{platform}`."
+            "markdownDescription": "Filename format for new protocol specifications (extension is appended automatically: .pspec). Supported tokens: `{layer}`, `{subject}`, `{variation}`, `{platform}`.",
+            "order": 130
           }
         }
       },
@@ -131,55 +144,64 @@
             "scope": "window",
             "type": "number",
             "default": 24,
-            "description": "Soft TTL for cached specifications in hours. Stale entries may still be served while refresh is attempted."
+            "description": "Soft TTL for cached specifications in hours. Stale entries may still be served while refresh is attempted.",
+            "order": 140
           },
           "emergent.specCache.fetchConcurrency": {
             "scope": "window",
             "type": "number",
             "default": 6,
-            "description": "Maximum number of concurrent specification fetch requests."
+            "description": "Maximum number of concurrent specification fetch requests.",
+            "order": 150
           },
           "emergent.specCache.retryCount": {
             "scope": "window",
             "type": "number",
             "default": 2,
-            "description": "Number of retry attempts for specification fetches after the initial request."
+            "description": "Number of retry attempts for specification fetches after the initial request.",
+            "order": 160
           },
           "emergent.specCache.retryBaseMs": {
             "scope": "window",
             "type": "number",
             "default": 250,
-            "description": "Base backoff duration in milliseconds between specification fetch retries."
+            "description": "Base backoff duration in milliseconds between specification fetch retries.",
+            "order": 170
           },
           "emergent.specCache.allowStale": {
             "scope": "window",
             "type": "boolean",
             "default": true,
-            "description": "Allow serving stale cached specifications while background refresh runs."
+            "description": "Allow serving stale cached specifications while background refresh runs.",
+            "order": 180
           },
           "emergent.specCache.enableRootDocFallback": {
             "scope": "window",
             "type": "boolean",
             "default": false,
-            "description": "Enable fallback fetches via root document host mapping when direct Studio fetch fails."
+            "description": "Enable fallback fetches via root document host mapping when direct Studio fetch fails.",
+            "order": 190
           },
           "emergent.specCache.requestTimeoutMs": {
             "scope": "window",
             "type": "number",
             "default": 10000,
-            "description": "Per-request timeout in milliseconds for Studio specification fetches."
+            "description": "Per-request timeout in milliseconds for Studio specification fetches.",
+            "order": 200
           },
           "emergent.specCache.failureTtlMs": {
             "scope": "window",
             "type": "number",
             "default": 15000,
-            "description": "Cooldown in milliseconds after failed fetches before retrying the same classification."
+            "description": "Cooldown in milliseconds after failed fetches before retrying the same classification.",
+            "order": 210
           },
           "emergent.specCache.rootRefreshMinutes": {
             "scope": "window",
             "type": "number",
             "default": 30,
-            "description": "Root document refresh interval in minutes when root document fallback is enabled."
+            "description": "Root document refresh interval in minutes when root document fallback is enabled.",
+            "order": 220
           }
         }
       },
@@ -190,7 +212,8 @@
             "scope": "resource",
             "type": "boolean",
             "default": true,
-            "description": "Disable hover popups for Emergent Coding files."
+            "description": "Disable hover popups for Emergent Coding files.",
+            "order": 230
           }
         }
       },
@@ -203,12 +226,14 @@
               "type": "string"
             },
             "default": [],
-            "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder."
+            "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder.",
+            "order": 240
           },
           "protocolDesign.activeDefinition": {
             "type": "string",
             "default": "",
-            "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`."
+            "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`.",
+            "order": 250
           }
         }
       },
@@ -219,13 +244,15 @@
             "scope": "window",
             "type": "string",
             "default": ".dla",
-            "description": "Filename extension used for autopilot expressions in bulk validation scans."
+            "description": "Filename extension used for autopilot expressions in bulk validation scans.",
+            "order": 260
           },
           "emergent.pilotExtension": {
             "scope": "window",
             "type": "string",
             "default": ".dlp",
-            "description": "Filename extension used for pilot expressions in bulk validation scans."
+            "description": "Filename extension used for pilot expressions in bulk validation scans.",
+            "order": 270
           },
           "emergent.bulkValidationMode": {
             "scope": "window",
@@ -236,7 +263,8 @@
               "both"
             ],
             "default": "autopilot",
-            "description": "Controls whether Bulk Expression Validation scans autopilot files, pilot files, or both."
+            "description": "Controls whether Bulk Expression Validation scans autopilot files, pilot files, or both.",
+            "order": 280
           },
           "emergent.bulkValidationFolders": {
             "scope": "window",
@@ -245,7 +273,8 @@
               "type": "string"
             },
             "default": [],
-            "description": "Workspace folder relative paths to include in Bulk Expression Validation. Empty means all workspace folders."
+            "description": "Workspace folder relative paths to include in Bulk Expression Validation. Empty means all workspace folders.",
+            "order": 290
           }
         }
       },
@@ -256,7 +285,8 @@
             "scope": "resource",
             "type": "number",
             "default": 100,
-            "description": "Controls the maximum number of problems produced by the language server."
+            "description": "Controls the maximum number of problems produced by the language server.",
+            "order": 300
           },
           "emergent.trace.server": {
             "scope": "window",
@@ -267,13 +297,15 @@
               "verbose"
             ],
             "default": "verbose",
-            "description": "Traces the communication between VS Code and the language server."
+            "description": "Traces the communication between VS Code and the language server.",
+            "order": 310
           },
           "emergent.hoverDebugLogging": {
             "scope": "window",
             "type": "boolean",
             "default": false,
-            "description": "Emit detailed hover classification and fetch logging to the Language Server output."
+            "description": "Emit detailed hover classification and fetch logging to the Language Server output.",
+            "order": 320
           }
         }
       }
@@ -414,6 +446,12 @@
         "key": "ctrl+alt+s",
         "mac": "cmd+alt+s",
         "when": "editorLangId == emergent"
+      },
+      {
+        "command": "emergent.openLocalSpecificationAtPosition",
+        "key": "ctrl+alt+shift+s",
+        "mac": "cmd+alt+shift+s",
+        "when": "editorTextFocus && editorLangId == emergent"
       },
       {
         "command": "emergent.startBulkExpressionValidation",

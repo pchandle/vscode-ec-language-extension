@@ -909,35 +909,12 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		traceDuration(traceLevel, 'hover', started, { reason: 'missingDocument', uri: params.textDocument.uri });
 		return null;
 	}
-	let contractSpecs: Record<string, RemoteContractSpec> | undefined;
 	const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
 	const parsed = getClassificationFromDocument(document, params) as any;
 	if (parsed?.classification) {
-		debugLog(`Hover: classification ${parsed.classification}, supplier=${parsed.supplier ?? ''}`);
-		const normalized =
-			parsed.kind === 'protocol'
-				? normalizeProtocolClassification(parsed.classification, defaults)
-				: normalizeContractClassification(parsed.classification, defaults);
-		const clsToFetch = normalized ?? parsed.classification;
-		const result = await gatewayClient.fetchSpecResult(clsToFetch, {
-			kind: parsed.kind === 'protocol' ? 'protocol' : 'contract',
-			defaults,
-		});
-		const spec = result.spec;
-		if (!spec) {
-			debugLog(`Hover: no spec returned for ${clsToFetch}`);
-		} else {
-			contractSpecs = { [clsToFetch]: spec as any };
-			if (clsToFetch !== parsed.classification) {
-				contractSpecs[parsed.classification] = spec as any;
-			}
-			debugLog(`Hover: fetched spec for ${clsToFetch} (not rendering spec hover)`);
-		}
-	} else {
-		debugLog('Hover: no classification found for spec fetch');
+		debugLog(`Hover: classification ${parsed.classification} (spec fetch disabled for hover)`);
 	}
-
-	const typeHover = getTypeHoverMarkdown(document, params.position, contractSpecs, defaults);
+	const typeHover = getTypeHoverMarkdown(document, params.position, undefined, defaults);
 	if (typeHover) {
 		debugLog(`Hover: type hover resolved at ${params.position.line}:${params.position.character} -> ${typeHover}`);
 	}
@@ -949,7 +926,7 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	}
 
 	const hoverResult = { contents: { kind: MarkupKind.Markdown, value: parts.join('\n\n---\n\n') } };
-	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri, type: !!typeHover, spec: false });
+	traceDuration(traceLevel, 'hover', started, { uri: params.textDocument.uri, type: !!typeHover });
 	return hoverResult;
 });
 
