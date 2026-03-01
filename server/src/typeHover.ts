@@ -1,6 +1,8 @@
 import { Position, Range } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { lexText } from "./lang/lexer";
 import { parseText } from "./lang/parser";
+import { TokenKind } from "./lang/tokens";
 import { TypeAtPosition, TypeKind, typeCheckProgram, typeToDisplayString } from "./lang/typeChecker";
 import { getDefaultsFromText } from "./completionSupport";
 import { RemoteContractSpec } from "./gatewayClient";
@@ -47,12 +49,20 @@ function formatTypes(types: TypeAtPosition["types"]): string {
   return `(${types.map(typeToDisplayString).join(", ")})`;
 }
 
+function isSupplierTokenHover(document: TextDocument, position: Position): boolean {
+  const { tokens } = lexText(document.getText());
+  return tokens.some((token) => token.kind === TokenKind.Supplier && rangeContains(token.range, position));
+}
+
 export function getTypeHoverMarkdown(
   document: TextDocument,
   position: Position,
   contractSpecs?: Record<string, RemoteContractSpec>,
   defaults?: { layer: string; variation: string; platform: string }
 ): string | null {
+  if (isSupplierTokenHover(document, position)) {
+    return null;
+  }
   const effectiveDefaults = defaults || getDefaultsFromText(document.getText()) || { layer: "", variation: "", platform: "" };
   const { program } = parseText(document.getText());
   const { types } = typeCheckProgram(program, { collectTypes: true, specs: contractSpecs, defaults: effectiveDefaults });

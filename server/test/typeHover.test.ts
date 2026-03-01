@@ -187,4 +187,18 @@ end
     const hover = getTypeHoverMarkdown(doc, { line: 1, character: 5 });
     assert.ok(hover && hover.includes("INTEGER"), `expected INTEGER hover for TX_HASH_LEN, got ${hover}`);
   });
+
+  it("does not show type hover for supplier tokens", () => {
+    const text = `
+sub /data/write/constant/inline/linux-x64@aptissio($, "x")
+`;
+    const supplierStart = text.indexOf("aptissio");
+    const beforeSupplier = text.slice(0, supplierStart);
+    const line = (beforeSupplier.match(/\n/g) ?? []).length;
+    const lineStart = beforeSupplier.lastIndexOf("\n");
+    const character = supplierStart - (lineStart + 1);
+    const doc = TextDocument.create("file:///test.dla", "emergent", 1, text);
+    const hover = getTypeHoverMarkdown(doc, { line, character });
+    assert.equal(hover, null, `expected no hover for supplier token, got ${hover}`);
+  });
 });

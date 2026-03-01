@@ -35,7 +35,9 @@ const DEFAULT_PROTOCOL_FILENAME_FORMAT = "{layer}--{subject}--{variation}--{plat
 const FILENAME_LITERAL_REGEX = /^[a-zA-Z0-9._-]*$/;
 const CONTRACT_FILENAME_TOKENS = ["layer", "verb", "subject", "variation", "platform"];
 const PROTOCOL_FILENAME_TOKENS = ["layer", "subject", "variation", "platform"];
+const SUPPLIER_UNAVAILABLE_DIAGNOSTIC_REGEX = /^Supplier '([^']+)' is not available for '([^']+)'$/;
 type StudioConnectionConfig = { hostname: string; port: number; allowInsecure: boolean; network: string };
+type FetchSpecificationResult = { classification: string; specification: any } | null;
 type SpecCacheDiagnostics = {
   softTtlHours: number;
   fetchConcurrency: number;
@@ -506,6 +508,7 @@ export async function activate(context: ExtensionContext) {
   registerPdesEditor(context);
   registerExportProtocolSpec(context);
   registerBulkExpressionValidation(context, client);
+  registerSupplierQuickFixes(context);
 
   validateFilenameFormats();
 
@@ -542,8 +545,6 @@ function validateFilenameFormats() {
   getFilenameFormat("contract", { silent: false });
   getFilenameFormat("protocol", { silent: false });
 }
-
-type FetchSpecificationResult = { classification: string; specification: any } | null;
 
 async function showSpecificationPanel(
   uri?: vscode.Uri | string,
@@ -802,6 +803,111 @@ function getDefaultsFromText(text: string) {
 type ClassificationInfo =
   | { type: "contract"; classification: string; position: vscode.Position }
   | { type: "protocol"; classification: string; position: vscode.Position };
+
+type SupplierUnavailableDiagnostic = {
+  supplier: string;
+  classification: string;
+};
+
+function parseSupplierUnavailableDiagnostic(message: string): SupplierUnavailableDiagnostic | null {
+  const match = SUPPLIER_UNAVAILABLE_DIAGNOSTIC_REGEX.exec(message);
+  if (!match) {
+    return null;
+  }
+  return { supplier: match[1], classification: match[2] };
+}
+
+function extractSuppliers(specification: any): string[] {
+  if (!specification || !Array.isArray(specification.suppliers)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const supplier of specification.suppliers) {
+    if (typeof supplier !== "string") {
+      continue;
+    }
+    const trimmed = supplier.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+}
+
+async function buildSupplierQuickFixActions(
+  document: vscode.TextDocument,
+  diagnostic: vscode.Diagnostic
+): Promise<vscode.CodeAction[]> {
+  const parsed = parseSupplierUnavailableDiagnostic(diagnostic.message ?? "");
+  if (!parsed || !client) {
+    return [];
+  }
+
+  let fetched: FetchSpecificationResult = null;
+  try {
+    fetched = await client.sendRequest<FetchSpecificationResult>("emergent/fetchSpecification", {
+      textDocument: { uri: document.uri.toString() },
+      position: { line: diagnostic.range.start.line, character: diagnostic.range.start.character },
+    });
+  } catch {
+    return [];
+  }
+
+  const suppliers = extractSuppliers(fetched?.specification);
+  if (!suppliers.length) {
+    return [];
+  }
+
+  const defaultSupplier = (vscode.workspace.getConfiguration("specification").get<string>("defaultSupplier", "") ?? "").trim();
+  const preferred = defaultSupplier && suppliers.includes(defaultSupplier) ? defaultSupplier : suppliers[0];
+  const actions: vscode.CodeAction[] = [];
+
+  const createReplaceAction = (supplier: string, title: string, preferredAction = false): vscode.CodeAction => {
+    const action = new vscode.CodeAction(title, vscode.CodeActionKind.QuickFix);
+    action.isPreferred = preferredAction;
+    action.diagnostics = [diagnostic];
+    const edit = new vscode.WorkspaceEdit();
+    edit.replace(document.uri, diagnostic.range, supplier);
+    action.edit = edit;
+    return action;
+  };
+
+  const preferredTitle =
+    preferred === defaultSupplier ? `Use default supplier '${preferred}'` : `Use supplier '${preferred}'`;
+  actions.push(createReplaceAction(preferred, preferredTitle, true));
+
+  for (const supplier of suppliers) {
+    if (supplier === preferred) {
+      continue;
+    }
+    actions.push(createReplaceAction(supplier, `Use supplier '${supplier}'`));
+  }
+
+  return actions;
+}
+
+function registerSupplierQuickFixes(context: vscode.ExtensionContext) {
+  const selector: vscode.DocumentSelector = { language: "emergent", scheme: "file" };
+  const provider: vscode.CodeActionProvider = {
+    async provideCodeActions(document, _range, context): Promise<(vscode.CodeAction | vscode.Command)[]> {
+      const actions: vscode.CodeAction[] = [];
+      for (const diagnostic of context.diagnostics) {
+        const supplierFixes = await buildSupplierQuickFixActions(document, diagnostic);
+        actions.push(...supplierFixes);
+      }
+      return actions;
+    },
+  };
+
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(selector, provider, {
+      providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
+    })
+  );
+}
 
 function getClassificationAtPosition(document: vscode.TextDocument, position: vscode.Position): ClassificationInfo | null {
   const defaults = getDefaultsFromText(document.getText()) || { layer: "", variation: "", platform: "", supplier: "" };
