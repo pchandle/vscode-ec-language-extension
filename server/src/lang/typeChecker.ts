@@ -85,6 +85,10 @@ export function typeCheckProgram(
   const diagnostics: SyntaxDiagnostic[] = [];
   const types: TypeAtPosition[] | undefined = options?.collectTypes ? [] : undefined;
   const scope = makeScope();
+  const wasUnknown = new Map<string, boolean>();
+  for (const [name, binding] of scope.bindings.entries()) {
+    wasUnknown.set(name, isUnknown(binding.type));
+  }
   for (const stmt of program.statements) {
     typeCheckStatement(
       stmt,
@@ -95,6 +99,15 @@ export function typeCheckProgram(
       options?.defaults,
       options?.specLookupIssues
     );
+    for (const [name, binding] of scope.bindings.entries()) {
+      const prevUnknown = wasUnknown.get(name) ?? true;
+      const nowUnknown = isUnknown(binding.type);
+      if (prevUnknown && !nowUnknown) {
+        clearUnknownDiagnosticsByName(diagnostics, name, program.range);
+        backfillKnownIdentifierTypesInProgram(program, name, binding.type, types);
+      }
+      wasUnknown.set(name, nowUnknown);
+    }
   }
   return { diagnostics, types };
 }
@@ -294,6 +307,9 @@ function forEachIdentifierInExpression(
 function forEachIdentifierInStatement(stmt: Statement, cb: (token: Token) => void) {
   if (stmt.kind === NodeKind.Statement) {
     const s = stmt as any;
+    for (const target of s.targets ?? []) {
+      cb(target as Token);
+    }
     forEachIdentifierInExpression(s.expression as any, cb);
     for (const arg of s.callArgs ?? []) {
       forEachIdentifierInExpression(arg as any, cb);
@@ -311,7 +327,14 @@ function forEachIdentifierInStatement(stmt: Statement, cb: (token: Token) => voi
     return;
   }
   if (stmt.kind === NodeKind.Job || stmt.kind === NodeKind.Def) {
-    forEachIdentifierInBlock((stmt as any).body, cb);
+    const scoped = stmt as any;
+    for (const param of scoped.params ?? []) {
+      cb(param as Token);
+    }
+    for (const target of scoped.targets ?? []) {
+      cb(target as Token);
+    }
+    forEachIdentifierInBlock(scoped.body, cb);
   }
 }
 
@@ -321,9 +344,23 @@ function forEachIdentifierInBlock(block: BlockNode, cb: (token: Token) => void) 
   }
 }
 
+function forEachIdentifierInProgram(program: ProgramNode, cb: (token: Token) => void) {
+  for (const stmt of program.statements) {
+    forEachIdentifierInStatement(stmt, cb);
+  }
+}
+
 function backfillKnownIdentifierTypesInBlock(block: BlockNode, name: string, type: Type, collector?: TypeAtPosition[]) {
   if (!collector || isUnknown(type)) return;
   forEachIdentifierInBlock(block, (token) => {
+    if (token.lexeme !== name) return;
+    recordTypes(token.range, [type], collector);
+  });
+}
+
+function backfillKnownIdentifierTypesInProgram(program: ProgramNode, name: string, type: Type, collector?: TypeAtPosition[]) {
+  if (!collector || isUnknown(type)) return;
+  forEachIdentifierInProgram(program, (token) => {
     if (token.lexeme !== name) return;
     recordTypes(token.range, [type], collector);
   });
@@ -978,6 +1015,15 @@ function typeCheckStatement(
         if (exprTypes.length === 1) return exprTypes[0];
         return exprTypes[idx] ?? UNKNOWN;
       };
+      const shouldKeepUnknownForUnresolvedIdentifierExpr =
+        (stmt.expression as any)?.kind === NodeKind.Identifier && exprTypes.length === 1 && isUnknown(exprTypes[0] ?? UNKNOWN);
+      const computeIncomingType = (specType: Type, exprType: Type): Type => {
+        if (!isUnknown(specType)) return specType;
+        if (!isUnknown(exprType) && (!classification || spec)) return exprType;
+        if (classification && !spec) return UNKNOWN;
+        if (shouldKeepUnknownForUnresolvedIdentifierExpr) return UNKNOWN;
+        return originalScopeType;
+      };
       // Special case: list literal on the left mapping element types to targets 1:1.
       const listExpr = stmt.expression as any;
       const isListLiteral = !!listExpr && listExpr.kind === NodeKind.ListLiteral;
@@ -987,13 +1033,7 @@ function typeCheckStatement(
         const item = orderedItems[i];
         const specType = obligationTypes[i] ?? UNKNOWN;
         const exprType = isListLiteral ? listElementTypes[i] ?? UNKNOWN : getExprTypeForIndex(i);
-        const incomingType = !isUnknown(specType)
-          ? specType
-          : !isUnknown(exprType) && (!classification || spec)
-            ? exprType
-          : classification && !spec
-            ? UNKNOWN
-            : originalScopeType;
+        const incomingType = computeIncomingType(specType, exprType);
         if (process.env.EMERGENT_DEBUG_OBLIG === "1") {
           // Useful for diagnosing obligation typing in tests/hovers.
           // eslint-disable-next-line no-console

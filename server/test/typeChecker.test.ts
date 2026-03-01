@@ -329,6 +329,42 @@ true && logic_label -> ANSWER_BOOL
     );
   });
 
+  it("keeps unresolved identifier assignment targets unknown so later scalar typing can apply", () => {
+    const text = `
+LOGLEVEL_6INFO -> DEFAULT_LOGLEVEL
+[-1, 7, 6, 5, 4, 3, 2, 1, 0] -> LOGLEVEL_NOLOG, LOGLEVEL_7DEBUG, LOGLEVEL_6INFO, LOGLEVEL_5NOTICE, LOGLEVEL_4WARNING, LOGLEVEL_3ERROR, LOGLEVEL_2CRIT, LOGLEVEL_1ALERT, LOGLEVEL_0EMERG
+sub /data/needs/integer/default/x64(DEFAULT_LOGLEVEL) -> _
+`;
+    const specs = {
+      "/data/needs/integer/default/x64": {
+        requirements: [{ name: "lvl", type: "integer" }],
+        obligations: []
+      }
+    };
+    const { program } = parseText(text);
+    const { types, diagnostics } = typeCheckProgram(program, { collectTypes: true, specs: specs as any });
+
+    function typeOf(name: string) {
+      for (const stmt of (program as any).statements) {
+        const tok = stmt.targets?.find((t: any) => t.lexeme === name);
+        if (!tok) continue;
+        const match = types?.find(
+          (t) =>
+            t.range.start.line === tok.range.start.line &&
+            t.range.start.character === tok.range.start.character &&
+            t.range.end.line === tok.range.end.line &&
+            t.range.end.character === tok.range.end.character
+        );
+        if (match) return match.types[0];
+      }
+      return null;
+    }
+
+    const scopeMismatch = diagnostics.find((d) => d.message.includes("Type mismatch: expected INTEGER, got SCOPE"));
+    assert.ok(!scopeMismatch, `did not expect INTEGER/SCOPE mismatch, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.equal((typeOf("DEFAULT_LOGLEVEL") as any)?.kind, TypeKind.Integer, "expected DEFAULT_LOGLEVEL to resolve as INTEGER");
+  });
+
   it("applies job requirement types to parameters", () => {
     const text = `
 job /data/compare/integer/default/x64(a, b, c) -> result:
@@ -804,6 +840,25 @@ end
     const duplicate = diagnostics.find((d) => d.message.includes("Duplicate declaration of 'fetch_api'"));
     const mismatch = diagnostics.find((d) => d.message.includes("Type mismatch"));
     assert.ok(!duplicate, `did not expect duplicate declaration, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.ok(!mismatch, `did not expect flow mismatch, got ${mismatch?.message ?? diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
+  it("preserves declarative endpoint typing after prior unresolved identifier assignment", () => {
+    const text = `
+raw_flow -> timer_expired_cb
+timer_expired_cb -> {
+  sub /sys/consume/default/x64($)
+}
+`;
+    const specs = {
+      "/sys/consume/default/x64": {
+        requirements: [{ type: "/data/flow/default/x64" }],
+        obligations: []
+      }
+    };
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, { specs: specs as any });
+    const mismatch = diagnostics.find((d) => d.message.includes("Type mismatch"));
     assert.ok(!mismatch, `did not expect flow mismatch, got ${mismatch?.message ?? diagnostics.map((d) => d.message).join(", ")}`);
   });
 
