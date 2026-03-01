@@ -64,6 +64,7 @@ This guide explains all user-facing configuration keys, their defaults, and when
 | `emergent.maxNumberOfProblems` | `100` | Cap on diagnostics returned by language server. |
 | `emergent.trace.server` | `verbose` | LSP trace level (`off`, `messages`, `verbose`). |
 | `emergent.hoverDebugLogging` | `false` | Extra hover classification/type logging in language-server output. |
+| `emergent.themeReminder.enabled` | `true` | Show a one-time reminder to switch to the Design Domain Language theme for richer Emergent syntax colors. |
 
 ## Deprecated Keys
 

@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## 0.11.17 - 2026-03-02
+- Add a one-time startup reminder to switch to the `Design Domain Language` theme for richer Emergent syntax coloring.
+- Add quick actions in the reminder toast:
+  - `Select Theme` opens the VS Code theme picker.
+  - `Don't Show Again` suppresses future reminders for that user.
+- Add setting `emergent.themeReminder.enabled` (default `true`) to control whether the reminder is shown.
+- Document the new setting in `docs/configuration.md`.
+
 ## 0.11.15 - 2026-03-01
 - Rename connection settings from `gateway.*` to `studio.*`, keep migration/fallback compatibility for legacy keys, and add deprecated-key warnings plus configuration diagnostics reporting.
 - Rework specification runtime fetch path to be server-centric with improved cache controls:

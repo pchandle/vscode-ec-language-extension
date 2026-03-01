@@ -36,6 +36,9 @@ const FILENAME_LITERAL_REGEX = /^[a-zA-Z0-9._-]*$/;
 const CONTRACT_FILENAME_TOKENS = ["layer", "verb", "subject", "variation", "platform"];
 const PROTOCOL_FILENAME_TOKENS = ["layer", "subject", "variation", "platform"];
 const SUPPLIER_UNAVAILABLE_DIAGNOSTIC_REGEX = /^Supplier '([^']+)' is not available for '([^']+)'$/;
+const DESIGN_DOMAIN_LANGUAGE_THEME_NAME = "Design Domain Language";
+const THEME_REMINDER_DISABLED_KEY = "emergent.themeReminder.disabled";
+const THEME_REMINDER_SHOWN_KEY = "emergent.themeReminder.shown";
 type StudioConnectionConfig = { hostname: string; port: number; allowInsecure: boolean; network: string };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
 type SpecCacheDiagnostics = {
@@ -144,6 +147,41 @@ function getSpecCacheDiagnosticsConfig(): SpecCacheDiagnostics {
     failureTtlMs: cfg.get<number>("specCache.failureTtlMs", 15000) ?? 15000,
     rootRefreshMinutes: cfg.get<number>("specCache.rootRefreshMinutes", 30) ?? 30,
   };
+}
+
+async function maybePromptDesignDomainTheme(context: ExtensionContext): Promise<void> {
+  const emergentCfg = vscode.workspace.getConfiguration("emergent");
+  const reminderEnabled = emergentCfg.get<boolean>("themeReminder.enabled", true) ?? true;
+  if (!reminderEnabled) {
+    return;
+  }
+  const reminderDisabled = context.globalState.get<boolean>(THEME_REMINDER_DISABLED_KEY, false);
+  const reminderShown = context.globalState.get<boolean>(THEME_REMINDER_SHOWN_KEY, false);
+  if (reminderDisabled || reminderShown) {
+    return;
+  }
+  const colorTheme = vscode.workspace.getConfiguration("workbench").get<string>("colorTheme", "");
+  if (colorTheme === DESIGN_DOMAIN_LANGUAGE_THEME_NAME) {
+    await context.globalState.update(THEME_REMINDER_SHOWN_KEY, true);
+    return;
+  }
+
+  const selectThemeOption = "Select Theme";
+  const dontShowOption = "Don't Show Again";
+  const choice = await vscode.window.showInformationMessage(
+    "For richer Emergent syntax coloring, switch to the 'Design Domain Language' theme.",
+    selectThemeOption,
+    dontShowOption
+  );
+
+  await context.globalState.update(THEME_REMINDER_SHOWN_KEY, true);
+  if (choice === selectThemeOption) {
+    await vscode.commands.executeCommand("workbench.action.selectTheme");
+    return;
+  }
+  if (choice === dontShowOption) {
+    await context.globalState.update(THEME_REMINDER_DISABLED_KEY, true);
+  }
 }
 
 async function buildConfigurationDiagnosticsReport(): Promise<string> {
@@ -325,6 +363,7 @@ function buildFilenameFromClassification(
 export async function activate(context: ExtensionContext) {
   extensionContext = context;
   console.debug("Activating 'emergent' language extension.");
+  void maybePromptDesignDomainTheme(context);
   const legacyFallbackKeys = getLegacyGatewayFallbackKeys();
   try {
     const migrated = await migrateGatewaySettingsToStudio();
