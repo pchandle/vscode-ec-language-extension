@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented here.
 
+## 0.11.15 - 2026-03-01
+- Rename connection settings from `gateway.*` to `studio.*`, keep migration/fallback compatibility for legacy keys, and add deprecated-key warnings plus configuration diagnostics reporting.
+- Rework specification runtime fetch path to be server-centric with improved cache controls:
+  - add timeout, failure cooldown, root-fallback toggle (default off), and root-refresh interval settings.
+  - remove duplicate client-side root polling path.
+- Improve VS Code settings UX:
+  - add deterministic `order` metadata for contributed settings.
+  - update network display label (`34/36/37`) while preserving underlying value compatibility.
+- Strengthen hover and typing behavior:
+  - suppress type hover on classification/supplier tokens.
+  - add shared per-document spec context so diagnostics and hover use consistent spec-derived typing.
+  - restore authoritative hover typing for nested/job-requirement-driven tokens.
+- Simplify navigation UX:
+  - keep a single clickable classification link.
+  - move local specification opening to explicit command/keybinding workflow.
+- Add supplier quality-of-life features:
+  - supplier quick fixes with preferred default supplier selection and alternate supplier options.
+  - supplier autocomplete after `@` for `sub` classifications.
+  - enforce `@supplier` as `sub`-only and emit diagnostics for non-`sub` usage.
+- Expand regression coverage for hover typing, supplier behavior, completion triggers, and shared spec-context consistency.
+- Add configuration documentation improvements, including grouped README summary and detailed `docs/configuration.md`.
+
 ## 0.11.5 - 2026-02-27
 - Unify specification caching across diagnostics, hover, and classification navigation to improve lookup consistency.
 - Add centralized stale-safe cache behavior with soft TTL (24h) and refresh-on-demand semantics.
