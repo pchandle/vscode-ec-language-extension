@@ -1,5 +1,4 @@
 import { ExtensionContext } from "vscode";
-import fetch, { RequestInfo, RequestInit, Response } from "node-fetch";
 
 type statusCallback = (status: string, err?: boolean) => void;
 export type contractClassification = { layer: string; verb: string; subject: string; variation: string; platform: string };
@@ -831,13 +830,13 @@ function specObj(layer, verb, subject, variation, platform, supplier) {
   this.supplier = supplier;
 }
 
-async function fetchApiJson(url: RequestInfo): Promise<any> {
-  const init: RequestInit = {
+async function fetchApiJson(url: string | URL): Promise<any> {
+  const init = {
     headers: { "cache-control": "no-cache" },
   };
 
   try {
-    const res = await fetch(url, init);
+    const res = await (globalThis as any).fetch(url, init);
     if (!res.ok) {
       throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${JSON.stringify(url)}`);
     }
@@ -862,9 +861,9 @@ async function fetchApiJson(url: RequestInfo): Promise<any> {
   }
 }
 
-async function fetchApiText(url: RequestInfo): Promise<string> {
+async function fetchApiText(url: string | URL): Promise<string> {
   try {
-    const res = await fetch(url);
+    const res = await (globalThis as any).fetch(url);
     if (!res.ok) {
       throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${JSON.stringify(url)}`);
     }

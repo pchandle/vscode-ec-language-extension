@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
@@ -103,7 +102,7 @@ class GatewayClient {
   #specCache: Record<string, CacheEntry> = {};
   #specAliases: Record<string, string> = {};
   #rootDocument: Record<string, string> = {};
-  #cacheTimer: NodeJS.Timer | undefined;
+  #cacheTimer: NodeJS.Timeout | undefined;
   #connection: Connection | undefined;
   #cacheIntervalMs = 30 * 60 * 1000;
   #cacheFilePath: string;
@@ -479,7 +478,7 @@ class GatewayClient {
 
   private async fetchJson(url: string): Promise<any> {
     try {
-      const res = await fetch(url, {
+      const res = await (globalThis as any).fetch(url, {
         headers: {
           "cache-control": "no-cache",
           pragma: "no-cache",

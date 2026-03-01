@@ -6,7 +6,7 @@
 	"publisher": "aptissio",
 	"license": "MIT",
 	"engines": {
-		"node": "*"
+		"node": ">=18"
 	},
 	"repository": {
 		"type": "git",
