@@ -32,15 +32,24 @@ Bulk Expression Validation lets you recursively scan workspace folders for Emerg
 - `Ctrl+Alt+E Ctrl+R`: Rescan
 
 ## Configuration
-All options are under the `emergent` namespace:
+Key settings are grouped as follows:
 
-- `emergent.autopilotExtension`: Autopilot filename extension to scan (default: `.dla`)
-- `emergent.pilotExtension`: Pilot filename extension to scan (default: `.dlp`)
-- `emergent.bulkValidationMode`: Scan mode (`autopilot`, `pilot`, or `both`; default: `autopilot`)
-- `emergent.bulkValidationFolders`: Workspace folder relative paths to scan (empty means all workspace folders)
+| Group | Key Prefix | Purpose |
+|---|---|---|
+| Studio Connection | `studio.*` | Configure Studio endpoint and network |
+| Specification Fetch & Cache | `emergent.specCache.*` | Runtime fetch/cache behavior (TTL, retry, timeout, fallback) |
+| Specification Authoring | `specification.*` | Local roots, filename templates, default supplier |
+| Hover | `emergent.hover.*` | Enable/disable hover |
+| Bulk Validation | `emergent.autopilotExtension`, `emergent.pilotExtension`, `emergent.bulkValidation*` | Corpus scan behavior |
+| Protocol Design | `protocolDesign.*` | `.pdd` selection and override |
+| Diagnostics & Tracing | `emergent.maxNumberOfProblems`, `emergent.trace.server`, `emergent.hoverDebugLogging` | Diagnostic volume and logging |
 
-Studio connection settings are under the `studio` namespace (`studio.hostname`, `studio.port`, `studio.allowInsecure`, `studio.network`).
-Legacy `gateway.*` settings are deprecated and are auto-migrated to `studio.*` on activation when possible.
+Legacy `gateway.*` settings are deprecated, auto-migrated when possible, and planned for removal in `0.12.0`.
+
+For detailed defaults, behavior notes, and migration guidance, see [Configuration Guide](./docs/configuration.md).
+
+## Additional Commands
+- `Emergent: Show Configuration Diagnostics` (opens a report of effective configuration values and runtime paths)
 
 ## Notes
 - Bulk Expression Validation results coexist with live language-server diagnostics.

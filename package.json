@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.8",
+  "version": "0.11.9",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -85,29 +85,6 @@
         }
       },
       {
-        "title": "Specification Cache",
-        "properties": {
-          "cache.specificationPath": {
-            "type": "string",
-            "enum": [
-              "~/.emergent/contractCache.json"
-            ],
-            "default": "~/.emergent/contractCache.json",
-            "markdownDescription": "Read-only location of the specification cache. Use the command 'Emergent: Clear Specification Cache' to wipe it."
-          }
-        }
-      },
-      {
-        "title": "Formatting",
-        "properties": {
-          "formatting.disabled": {
-            "type": "boolean",
-            "default": false,
-            "description": "Disable the native Emergent Coding formatting."
-          }
-        }
-      },
-      {
         "title": "Specification Defaults",
         "properties": {
           "specification.defaultSupplier": {
@@ -140,60 +117,8 @@
         }
       },
       {
-        "title": "Hover",
+        "title": "Specification Fetch & Cache",
         "properties": {
-          "emergent.hover.disabled": {
-            "scope": "resource",
-            "type": "boolean",
-            "default": true,
-            "description": "Disable hover popups for Emergent Coding files."
-          }
-        }
-      },
-      {
-        "title": "Protocol Design Definitions",
-        "properties": {
-          "protocolDesign.definitionPaths": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "default": [],
-            "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder."
-          },
-          "protocolDesign.activeDefinition": {
-            "type": "string",
-            "default": "",
-            "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`."
-          }
-        }
-      },
-      {
-        "title": "Extension Debugging",
-        "properties": {
-          "emergent.maxNumberOfProblems": {
-            "scope": "resource",
-            "type": "number",
-            "default": 100,
-            "description": "Controls the maximum number of problems produced by the language server."
-          },
-          "emergent.trace.server": {
-            "scope": "window",
-            "type": "string",
-            "enum": [
-              "off",
-              "messages",
-              "verbose"
-            ],
-            "default": "verbose",
-            "description": "Traces the communication between VS Code and the language server."
-          },
-          "emergent.hoverDebugLogging": {
-            "scope": "window",
-            "type": "boolean",
-            "default": false,
-            "description": "Emit detailed hover classification and fetch logging to the Language Server output."
-          },
           "emergent.specCache.softTtlHours": {
             "scope": "window",
             "type": "number",
@@ -247,7 +172,41 @@
             "type": "number",
             "default": 30,
             "description": "Root document refresh interval in minutes when root document fallback is enabled."
+          }
+        }
+      },
+      {
+        "title": "Hover",
+        "properties": {
+          "emergent.hover.disabled": {
+            "scope": "resource",
+            "type": "boolean",
+            "default": true,
+            "description": "Disable hover popups for Emergent Coding files."
+          }
+        }
+      },
+      {
+        "title": "Protocol Design Definitions",
+        "properties": {
+          "protocolDesign.definitionPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "List of protocol design definition (.pdd) files to choose from. Relative paths are resolved from the first workspace folder."
           },
+          "protocolDesign.activeDefinition": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Path to the active .pdd file. If empty, the bundled default is used or the first valid entry from `protocolDesign.definitionPaths`."
+          }
+        }
+      },
+      {
+        "title": "Bulk Validation",
+        "properties": {
           "emergent.autopilotExtension": {
             "scope": "window",
             "type": "string",
@@ -279,6 +238,34 @@
             },
             "default": [],
             "description": "Workspace folder relative paths to include in Bulk Expression Validation. Empty means all workspace folders."
+          }
+        }
+      },
+      {
+        "title": "Diagnostics & Tracing",
+        "properties": {
+          "emergent.maxNumberOfProblems": {
+            "scope": "resource",
+            "type": "number",
+            "default": 100,
+            "description": "Controls the maximum number of problems produced by the language server."
+          },
+          "emergent.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "verbose",
+            "description": "Traces the communication between VS Code and the language server."
+          },
+          "emergent.hoverDebugLogging": {
+            "scope": "window",
+            "type": "boolean",
+            "default": false,
+            "description": "Emit detailed hover classification and fetch logging to the Language Server output."
           }
         }
       }
@@ -364,6 +351,11 @@
       {
         "command": "emergent.clearSpecificationCache",
         "title": "Emergent: Clear Specification Cache",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.showConfigurationDiagnostics",
+        "title": "Emergent: Show Configuration Diagnostics",
         "category": "Emergent"
       },
       {

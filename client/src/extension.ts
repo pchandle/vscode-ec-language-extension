@@ -36,6 +36,17 @@ const FILENAME_LITERAL_REGEX = /^[a-zA-Z0-9._-]*$/;
 const CONTRACT_FILENAME_TOKENS = ["layer", "verb", "subject", "variation", "platform"];
 const PROTOCOL_FILENAME_TOKENS = ["layer", "subject", "variation", "platform"];
 type StudioConnectionConfig = { hostname: string; port: number; allowInsecure: boolean; network: string };
+type SpecCacheDiagnostics = {
+  softTtlHours: number;
+  fetchConcurrency: number;
+  retryCount: number;
+  retryBaseMs: number;
+  allowStale: boolean;
+  enableRootDocFallback: boolean;
+  requestTimeoutMs: number;
+  failureTtlMs: number;
+  rootRefreshMinutes: number;
+};
 
 function getStudioConnectionConfig(): StudioConnectionConfig {
   const studio = workspace.getConfiguration("studio");
@@ -45,6 +56,30 @@ function getStudioConnectionConfig(): StudioConnectionConfig {
   const allowInsecure = studio.get<boolean>("allowInsecure") ?? gateway.get<boolean>("allowInsecure") ?? true;
   const network = studio.get<string>("network") || gateway.get<string>("network") || "31";
   return { hostname, port, allowInsecure, network };
+}
+
+function getLegacyGatewayFallbackKeys(): string[] {
+  const gateway = workspace.getConfiguration("gateway");
+  const studio = workspace.getConfiguration("studio");
+  const keys: Array<keyof StudioConnectionConfig> = ["hostname", "port", "allowInsecure", "network"];
+  const legacyInUse: string[] = [];
+
+  for (const key of keys) {
+    const legacyInspect = gateway.inspect<any>(key);
+    const modernInspect = studio.inspect<any>(key);
+    if (!legacyInspect || !modernInspect) {
+      continue;
+    }
+    const usingLegacyGlobal = legacyInspect.globalValue !== undefined && modernInspect.globalValue === undefined;
+    const usingLegacyWorkspace = legacyInspect.workspaceValue !== undefined && modernInspect.workspaceValue === undefined;
+    const usingLegacyWorkspaceFolder =
+      legacyInspect.workspaceFolderValue !== undefined && modernInspect.workspaceFolderValue === undefined;
+    if (usingLegacyGlobal || usingLegacyWorkspace || usingLegacyWorkspaceFolder) {
+      legacyInUse.push(`gateway.${key}`);
+    }
+  }
+
+  return legacyInUse;
 }
 
 async function migrateGatewaySettingsToStudio(): Promise<boolean> {
@@ -92,6 +127,97 @@ async function migrateGatewaySettingsToStudio(): Promise<boolean> {
     await Promise.all(updates);
   }
   return migrated;
+}
+
+function getSpecCacheDiagnosticsConfig(): SpecCacheDiagnostics {
+  const cfg = vscode.workspace.getConfiguration("emergent");
+  return {
+    softTtlHours: cfg.get<number>("specCache.softTtlHours", 24) ?? 24,
+    fetchConcurrency: cfg.get<number>("specCache.fetchConcurrency", 6) ?? 6,
+    retryCount: cfg.get<number>("specCache.retryCount", 2) ?? 2,
+    retryBaseMs: cfg.get<number>("specCache.retryBaseMs", 250) ?? 250,
+    allowStale: cfg.get<boolean>("specCache.allowStale", true) ?? true,
+    enableRootDocFallback: cfg.get<boolean>("specCache.enableRootDocFallback", false) ?? false,
+    requestTimeoutMs: cfg.get<number>("specCache.requestTimeoutMs", 10000) ?? 10000,
+    failureTtlMs: cfg.get<number>("specCache.failureTtlMs", 15000) ?? 15000,
+    rootRefreshMinutes: cfg.get<number>("specCache.rootRefreshMinutes", 30) ?? 30,
+  };
+}
+
+async function buildConfigurationDiagnosticsReport(): Promise<string> {
+  const studioConfig = getStudioConnectionConfig();
+  const specCache = getSpecCacheDiagnosticsConfig();
+  const emergentCfg = vscode.workspace.getConfiguration("emergent");
+  const specificationCfg = vscode.workspace.getConfiguration("specification");
+  const protocolDesignCfg = vscode.workspace.getConfiguration("protocolDesign");
+  const legacyFallbackKeys = getLegacyGatewayFallbackKeys();
+  let cachePath = "(unavailable)";
+
+  try {
+    cachePath = await client.sendRequest<string>("emergent/getSpecCachePath", null);
+  } catch (error: any) {
+    cachePath = `(failed to resolve: ${error?.message ?? String(error)})`;
+  }
+
+  return [
+    "# Emergent Configuration Diagnostics",
+    "",
+    `Generated: ${new Date().toISOString()}`,
+    "",
+    "## Studio Connection",
+    `- hostname: \`${studioConfig.hostname}\``,
+    `- port: \`${studioConfig.port}\``,
+    `- allowInsecure: \`${studioConfig.allowInsecure}\``,
+    `- network: \`${studioConfig.network}\``,
+    "",
+    "## Specification Fetch & Cache",
+    `- cache path: \`${cachePath}\``,
+    `- softTtlHours: \`${specCache.softTtlHours}\``,
+    `- fetchConcurrency: \`${specCache.fetchConcurrency}\``,
+    `- retryCount: \`${specCache.retryCount}\``,
+    `- retryBaseMs: \`${specCache.retryBaseMs}\``,
+    `- allowStale: \`${specCache.allowStale}\``,
+    `- enableRootDocFallback: \`${specCache.enableRootDocFallback}\``,
+    `- requestTimeoutMs: \`${specCache.requestTimeoutMs}\``,
+    `- failureTtlMs: \`${specCache.failureTtlMs}\``,
+    `- rootRefreshMinutes: \`${specCache.rootRefreshMinutes}\``,
+    "",
+    "## Diagnostics / Hover",
+    `- maxNumberOfProblems: \`${emergentCfg.get<number>("maxNumberOfProblems", 100) ?? 100}\``,
+    `- trace.server: \`${emergentCfg.get<string>("trace.server", "verbose") ?? "verbose"}\``,
+    `- hover.disabled: \`${emergentCfg.get<boolean>("hover.disabled", true) ?? true}\``,
+    `- hoverDebugLogging: \`${emergentCfg.get<boolean>("hoverDebugLogging", false) ?? false}\``,
+    "",
+    "## Bulk Validation",
+    `- autopilotExtension: \`${emergentCfg.get<string>("autopilotExtension", ".dla") ?? ".dla"}\``,
+    `- pilotExtension: \`${emergentCfg.get<string>("pilotExtension", ".dlp") ?? ".dlp"}\``,
+    `- bulkValidationMode: \`${emergentCfg.get<string>("bulkValidationMode", "autopilot") ?? "autopilot"}\``,
+    `- bulkValidationFolders: \`${JSON.stringify(emergentCfg.get<string[]>("bulkValidationFolders", []) ?? [])}\``,
+    "",
+    "## Specification Authoring",
+    `- defaultSupplier: \`${specificationCfg.get<string>("defaultSupplier", "") ?? ""}\``,
+    `- localContractRoot: \`${specificationCfg.get<string>("localContractRoot", "") ?? ""}\``,
+    `- localProtocolRoot: \`${specificationCfg.get<string>("localProtocolRoot", "") ?? ""}\``,
+    `- contractFilenameFormat: \`${specificationCfg.get<string>("contractFilenameFormat", DEFAULT_CONTRACT_FILENAME_FORMAT) ?? DEFAULT_CONTRACT_FILENAME_FORMAT}\``,
+    `- protocolFilenameFormat: \`${specificationCfg.get<string>("protocolFilenameFormat", DEFAULT_PROTOCOL_FILENAME_FORMAT) ?? DEFAULT_PROTOCOL_FILENAME_FORMAT}\``,
+    "",
+    "## Protocol Design",
+    `- definitionPaths: \`${JSON.stringify(protocolDesignCfg.get<string[]>("definitionPaths", []) ?? [])}\``,
+    `- activeDefinition: \`${protocolDesignCfg.get<string>("activeDefinition", "") ?? ""}\``,
+    "",
+    "## Deprecated Gateway Settings",
+    legacyFallbackKeys.length > 0
+      ? `- currently used as fallback: \`${legacyFallbackKeys.join(", ")}\``
+      : "- currently used as fallback: none",
+    "- planned removal version: `0.12.0`",
+    "",
+  ].join("\n");
+}
+
+async function showConfigurationDiagnostics() {
+  const content = await buildConfigurationDiagnosticsReport();
+  const doc = await vscode.workspace.openTextDocument({ language: "markdown", content });
+  await vscode.window.showTextDocument(doc, { preview: false });
 }
 
 function validateFilenameFormat(format: string, requiredTokens: string[]): string | undefined {
@@ -197,12 +323,25 @@ function buildFilenameFromClassification(
 export async function activate(context: ExtensionContext) {
   extensionContext = context;
   console.debug("Activating 'emergent' language extension.");
+  const legacyFallbackKeys = getLegacyGatewayFallbackKeys();
   try {
     const migrated = await migrateGatewaySettingsToStudio();
     if (migrated) {
       void vscode.window.showInformationMessage(
         "Migrated deprecated gateway.* settings to studio.*. You can now remove gateway.* entries from settings."
       );
+    }
+    if (legacyFallbackKeys.length > 0) {
+      void vscode.window.showWarningMessage(
+        `Deprecated gateway.* settings are still being used (${legacyFallbackKeys.join(
+          ", "
+        )}). These keys will be removed in v0.12.0.`,
+        "Open Settings"
+      ).then((selection) => {
+        if (selection === "Open Settings") {
+          void vscode.commands.executeCommand("workbench.action.openSettings", "@ext:aptissio.emergent-coding gateway");
+        }
+      });
     }
   } catch (error: any) {
     console.warn("Failed to migrate gateway settings to studio settings:", error?.message ?? error);
@@ -306,6 +445,11 @@ export async function activate(context: ExtensionContext) {
       }
     })
   );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("emergent.showConfigurationDiagnostics", () => {
+      void showConfigurationDiagnostics();
+    })
+  );
 
   // Code formatting implemented using API
   const emergentDocumentFormattingEditProvider = vscode.languages.registerDocumentFormattingEditProvider(
@@ -363,15 +507,6 @@ export async function activate(context: ExtensionContext) {
   registerExportProtocolSpec(context);
   registerBulkExpressionValidation(context, client);
 
-  vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("formatting")) {
-      updateFormattingCfg();
-    }
-  });
-
-  // Update formatting status from configuration
-  updateFormattingCfg();
-
   validateFilenameFormats();
 
   updateStatusBar(ecStatusBarItem, "$(pass) Studio runtime fetch active", false);
@@ -401,11 +536,6 @@ async function reloadStudioSpecifications() {
       }
     }
   );
-}
-
-function updateFormattingCfg() {
-  const formatting = vscode.workspace.getConfiguration("formatting");
-  console.log("Formatting is now", formatting.disabled ? "disabled" : "enabled");
 }
 
 function validateFilenameFormats() {
