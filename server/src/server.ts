@@ -630,6 +630,7 @@ connection.onDidChangeWatchedFiles(_change => {
 const fetchSpecificationRequest = new RequestType<FetchSpecificationParams, FetchSpecificationResult, void>('emergent/fetchSpecification');
 const clearSpecCacheRequest = new RequestType<null, boolean, void>('emergent/clearSpecCache');
 const getSpecCachePathRequest = new RequestType<null, string, void>('emergent/getSpecCachePath');
+const reloadSpecCacheRequest = new RequestType<null, boolean, void>('emergent/reloadSpecCache');
 const findWorkspaceDiagnosticsRequest = new RequestType<BulkValidationScanParams, BulkValidationScanResult, void>('emergent/findWorkspaceDiagnostics');
 const validateDocumentRequest = new RequestType<{ uri: string; clearOthers?: boolean }, boolean, void>('emergent/validateDocument');
 
@@ -844,6 +845,15 @@ connection.onRequest(clearSpecCacheRequest, async (): Promise<boolean> => {
 });
 
 connection.onRequest(getSpecCachePathRequest, (): string => gatewayClient.cacheFilePath);
+connection.onRequest(reloadSpecCacheRequest, async (): Promise<boolean> => {
+	try {
+		await gatewayClient.refreshContractCache();
+		return true;
+	} catch (err: any) {
+		connection.console.error(`Failed to reload specification cache: ${err?.message ?? err}`);
+		return false;
+	}
+});
 connection.onRequest(findWorkspaceDiagnosticsRequest, async (params): Promise<BulkValidationScanResult> => {
 	try {
 		return await runBulkValidationScan(params);

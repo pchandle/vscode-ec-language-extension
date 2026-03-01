@@ -5,7 +5,6 @@
 
 import * as path from "path";
 import { TextEncoder } from "util";
-import { Valley } from "./valley";
 import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvider";
 import { PdesEditorProvider, loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./formatting";
@@ -26,10 +25,6 @@ let specPanel: vscode.WebviewPanel | undefined;
 
 let lastStatusText = "initialising...";
 // const contractSpecs = [];
-
-const v = new Valley();
-
-const valleyScanIntervalMs = 30 * 60 * 1000;
 
 const CONTRACT_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
 const PROTOCOL_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){3}[a-z0-9-]+$/;
@@ -260,7 +255,7 @@ export async function activate(context: ExtensionContext) {
   );
   context.subscriptions.push(
     vscode.commands.registerCommand("emergent.reloadSpecifications", () => {
-      void reloadValleySpecifications();
+      void reloadStudioSpecifications();
     })
   );
   context.subscriptions.push(
@@ -369,66 +364,36 @@ export async function activate(context: ExtensionContext) {
   registerBulkExpressionValidation(context, client);
 
   vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("studio") || e.affectsConfiguration("gateway")) {
-      updateStudioApiUrl();
-      vscode.window.showInformationMessage("Updated");
-    }
     if (e.affectsConfiguration("formatting")) {
       updateFormattingCfg();
     }
   });
-
-  // Update Studio API URL from configuration at start
-  updateStudioApiUrl();
 
   // Update formatting status from configuration
   updateFormattingCfg();
 
   validateFilenameFormats();
 
-  // Init Valley state from context.
-  try {
-    updateStatusBar(ecStatusBarItem, v.init(context), false);
-  } catch (error) {
-    updateStatusBar(ecStatusBarItem, error.message, false);
-  }
-
-  // Start first Valley indexing
-
-  setTimeout(() => {
-    updateValleySpecs();
-  }, 5000);
-
-  // Schedule future indexing updates
-  setInterval(async () => {
-    updateValleySpecs();
-  }, valleyScanIntervalMs);
+  updateStatusBar(ecStatusBarItem, "$(pass) Studio runtime fetch active", false);
 
   registerSpecificationLinks(context);
 }
 
-function updateValleySpecs() {
-  v.updateSpecifications()
-    .then((status) => {
-      updateStatusBar(ecStatusBarItem, status, false);
-    })
-    .catch((error) => {
-      updateStatusBar(ecStatusBarItem, error.message, false);
-    });
-}
-
-async function reloadValleySpecifications() {
+async function reloadStudioSpecifications() {
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: "Reload Emergent specifications",
     },
     async (progress) => {
-      progress.report({ message: "Fetching specifications from Studio..." });
+      progress.report({ message: "Refreshing specification cache..." });
       try {
-        const status = await v.reloadSpecifications();
-        updateStatusBar(ecStatusBarItem, status, false);
-        vscode.window.showInformationMessage("Specification cache reloaded from Studio.");
+        const reloaded = await client.sendRequest<boolean>("emergent/reloadSpecCache", null);
+        if (!reloaded) {
+          throw new Error("Language server returned an unsuccessful reload response.");
+        }
+        updateStatusBar(ecStatusBarItem, "$(pass) Specification cache reloaded", false);
+        vscode.window.showInformationMessage("Specification cache reloaded.");
       } catch (error: any) {
         const message = error?.message ?? String(error);
         updateStatusBar(ecStatusBarItem, message, true);
@@ -436,12 +401,6 @@ async function reloadValleySpecifications() {
       }
     }
   );
-}
-
-function updateStudioApiUrl() {
-  const studio = getStudioConnectionConfig();
-  v.setApiRootUrl(studio.hostname, studio.port, studio.allowInsecure);
-  console.log("Studio API URL updated:", v.apiRootUrl);
 }
 
 function updateFormattingCfg() {
