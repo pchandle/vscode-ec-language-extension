@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.21",
+  "version": "0.11.22",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -357,7 +357,10 @@
         {
           "id": "emergent.bulkExpressionValidation",
           "name": "Bulk Expression Validation",
-          "icon": "media/ec_icon_256x256.png"
+          "icon": {
+            "light": "media/ec_icon_256x256-light.svg",
+            "dark": "media/ec_icon_256x256-dark.svg"
+          }
         }
       ]
     },
