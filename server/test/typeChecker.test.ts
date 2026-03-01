@@ -119,6 +119,38 @@ describe("typeChecker", () => {
     );
   });
 
+  it("rejects supplier qualifiers on non-sub statements", () => {
+    const text = `
+job /data/new/integer/default/x64@aptissio(flow, 1, 10) OUT:
+end
+host /data/integer/default/x64@aptissio() -> _
+join /data/integer/default/x64@aptissio() -> _
+`;
+    const { program } = parseText(text);
+    const { diagnostics } = typeCheckProgram(program, {
+      specs: {
+        "/data/new/integer/default/x64": {
+          requirements: [{ name: "flow", type: "/data/flow/default/x64" }, { name: "min", type: "integer" }, { name: "max", type: "integer" }],
+          obligations: [{ name: "out", type: "/data/integer/default/x64" }],
+          suppliers: ["aptissio"],
+        } as any,
+        "/data/integer/default/x64": {
+          host: { requirements: [], obligations: [] },
+          join: { requirements: [], obligations: [] },
+          suppliers: ["aptissio"],
+        } as any,
+      },
+    });
+    const messages = diagnostics.map((d) => d.message);
+    const supplierQualifierErrors = messages.filter((m) =>
+      m.includes("Supplier qualifier '@name' is only valid for sub statements.")
+    );
+    assert.ok(
+      supplierQualifierErrors.length >= 2,
+      `expected supplier-qualifier errors for non-sub statements, got: ${messages.join(" | ")}`
+    );
+  });
+
   it("validates requirement and obligation counts against the spec", () => {
     const spec = {
       requirements: [

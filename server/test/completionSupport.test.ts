@@ -5,12 +5,14 @@ import {
   buildCompletionItems,
   buildContractSpecCompletionItems,
   buildProtocolSpecCompletionItems,
+  buildSupplierCompletionItems,
   classifyContractName,
   ContractClassification,
   ProtocolClassification,
   classifyProtocolName,
   shouldTriggerContractSpecCompletion,
   shouldTriggerProtocolSpecCompletion,
+  shouldTriggerSupplierCompletion,
 } from "../src/completionSupport";
 
 function mockDoc(text: string) {
@@ -163,6 +165,51 @@ describe("completionSupport", () => {
     const doc = mockDoc(line);
     const items = buildCompletionItems(contracts, protocols, doc, { line: 0, character: line.length });
     expect(items).to.deep.equal([]);
+  });
+
+  it("triggers supplier completion after '@' with partial supplier", () => {
+    const line = "sub /byte/new/integer/default/x64@co";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerSupplierCompletion(doc, position);
+    expect(context).to.not.equal(null);
+    expect(context?.supplierPrefix).to.equal("co");
+  });
+
+  it("builds supplier completion items that replace current supplier token", () => {
+    const line = "sub /byte/new/integer/default/x64@co";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerSupplierCompletion(doc, position);
+    expect(context).to.not.equal(null);
+
+    const items = buildSupplierCompletionItems(
+      ["codevalley", "aptissio"],
+      position,
+      context!.supplierStartIndex,
+      context!.supplierEndIndex,
+      context!.supplierPrefix
+    );
+    expect(items.map((i) => i.label)).to.deep.equal(["codevalley"]);
+    const edit = items[0].textEdit && "range" in items[0].textEdit ? items[0].textEdit : null;
+    expect(edit?.range.start.character).to.equal(line.indexOf("@") + 1);
+    expect(edit?.range.end.character).to.equal(line.length);
+  });
+
+  it("does not trigger supplier completion for job statements", () => {
+    const line = "job /byte/new/integer/default/x64@co";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerSupplierCompletion(doc, position);
+    expect(context).to.equal(null);
+  });
+
+  it("does not trigger supplier completion for protocol statements", () => {
+    const line = "host /data/integer/default/x64@co";
+    const doc = mockDoc(line);
+    const position = { line: 0, character: line.length };
+    const context = shouldTriggerSupplierCompletion(doc, position);
+    expect(context).to.equal(null);
   });
 
   it("builds contract spec completion after opening parenthesis", () => {

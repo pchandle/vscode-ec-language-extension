@@ -118,6 +118,48 @@ export function shouldTriggerProtocolSpecCompletion(
   return shouldTriggerRoleSpecCompletion(document, position, ["host", "join"] as const);
 }
 
+export function shouldTriggerSupplierCompletion(
+  document: TextDocument,
+  position: Position
+): { lineText: string; supplierStartIndex: number; supplierEndIndex: number; supplierPrefix: string } | null {
+  const lineText = getLineText(document, position.line);
+  const keywordMatch = lineText.match(/^\s*(sub)\s+/i);
+  if (!keywordMatch) {
+    return null;
+  }
+
+  const beforeCursor = lineText.slice(0, position.character);
+  const atIndex = beforeCursor.lastIndexOf("@");
+  if (atIndex === -1) {
+    return null;
+  }
+
+  const classificationText = lineText.slice(keywordMatch[0].length, atIndex).trim();
+  if (!classificationText) {
+    return null;
+  }
+
+  const supplierPrefix = beforeCursor.slice(atIndex + 1);
+  if (/[^A-Za-z0-9_]/.test(supplierPrefix)) {
+    return null;
+  }
+
+  const afterAt = lineText.slice(atIndex + 1);
+  const supplierTokenMatch = afterAt.match(/^([A-Za-z0-9_]*)/);
+  const supplierTokenLength = supplierTokenMatch?.[1]?.length ?? 0;
+  const supplierEndIndex = atIndex + 1 + supplierTokenLength;
+  if (position.character < atIndex + 1 || position.character > supplierEndIndex) {
+    return null;
+  }
+
+  return {
+    lineText,
+    supplierStartIndex: atIndex + 1,
+    supplierEndIndex,
+    supplierPrefix,
+  };
+}
+
 export function buildContractSpecCompletionItems(
   spec: ContractSpecification,
   position: Position,
@@ -193,6 +235,35 @@ export function buildProtocolSpecCompletionItems(
       insertText: newText,
     },
   ];
+}
+
+export function buildSupplierCompletionItems(
+  suppliers: string[],
+  position: Position,
+  supplierStartIndex: number,
+  supplierEndIndex: number,
+  supplierPrefix: string
+): CompletionItem[] {
+  const normalizedPrefix = supplierPrefix || "";
+  const filtered = suppliers
+    .filter((supplier) => typeof supplier === "string")
+    .map((supplier) => supplier.trim())
+    .filter((supplier) => supplier.length > 0)
+    .filter((supplier) => supplier.startsWith(normalizedPrefix));
+  const uniq = Array.from(new Set(filtered));
+  const editRange: Range = {
+    start: { line: position.line, character: supplierStartIndex },
+    end: { line: position.line, character: supplierEndIndex },
+  };
+
+  return uniq.map((supplier, idx) => ({
+    label: supplier,
+    kind: CompletionItemKind.Value,
+    preselect: idx === 0,
+    sortText: `emergent_completion_supplier_${idx}`,
+    textEdit: { range: editRange, newText: supplier },
+    insertText: supplier,
+  }));
 }
 
 function buildContractCompletionItems(

@@ -29,9 +29,11 @@ import {
 	buildCompletionItems,
 	buildContractSpecCompletionItems,
 	buildProtocolSpecCompletionItems,
+	buildSupplierCompletionItems,
 	getDefaultsFromText,
 	shouldTriggerContractSpecCompletion,
-	shouldTriggerProtocolSpecCompletion
+	shouldTriggerProtocolSpecCompletion,
+	shouldTriggerSupplierCompletion
 } from './completionSupport';
 import { gatewayClient, RemoteContractSpec } from './gatewayClient';
 import { collectDiagnostics } from './diagnostics';
@@ -979,8 +981,8 @@ connection.onCompletion(
 		}
 	}
 
-	const protocolSpecContext = shouldTriggerProtocolSpecCompletion(document, params.position);
-	if (protocolSpecContext) {
+		const protocolSpecContext = shouldTriggerProtocolSpecCompletion(document, params.position);
+		if (protocolSpecContext) {
 		const parsed = getClassificationFromDocument(document, params);
 		if (parsed?.classification) {
 			const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
@@ -1011,12 +1013,37 @@ connection.onCompletion(
 					traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri, kind: 'protocolSpec:list' });
 					return specItems;
 				}
+				}
 			}
 		}
-	}
-	const result = buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
-	traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri });
-	return result;
+
+		const supplierContext = shouldTriggerSupplierCompletion(document, params.position);
+		if (supplierContext) {
+			const parsed = getClassificationFromDocument(document, params);
+			if (parsed?.classification) {
+				const defaults = getDefaultsFromText(document.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+				const result = await gatewayClient.fetchSpecResult(parsed.classification, {
+					kind: parsed.kind === 'protocol' ? 'protocol' : 'contract',
+					defaults,
+				});
+				const spec = result.spec as any;
+				const suppliers = Array.isArray(spec?.suppliers) ? spec.suppliers as string[] : [];
+				const supplierItems = buildSupplierCompletionItems(
+					suppliers,
+					params.position,
+					supplierContext.supplierStartIndex,
+					supplierContext.supplierEndIndex,
+					supplierContext.supplierPrefix
+				);
+				if (supplierItems.length) {
+					traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri, kind: 'supplier:list' });
+					return supplierItems;
+				}
+			}
+		}
+		const result = buildCompletionItems(gatewayClient.completionCache, gatewayClient.protocolCache, document, params.position);
+		traceDuration(traceLevel, 'completion', started, { uri: params.textDocument.uri });
+		return result;
 }
 );
 
