@@ -9,6 +9,7 @@ import {
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
+	Diagnostic,
 	Hover,
 	MarkupKind,
 	TextDocumentPositionParams,
@@ -17,6 +18,9 @@ import {
 	InitializeResult
 } from 'vscode-languageserver/node';
 import { performance } from 'perf_hooks';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import {
 	TextDocument
@@ -39,6 +43,45 @@ import { collectReferencedClassifications } from './specReferenceCollector';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
+type BulkValidationMode = 'autopilot' | 'pilot' | 'both';
+type BulkValidationScanParams = {
+	folderUris: string[];
+	autopilotExtension: string;
+	pilotExtension: string;
+	mode: BulkValidationMode;
+	maxFiles?: number;
+	maxDiagnostics?: number;
+	perFileMaxProblems?: number;
+	scanId?: string;
+};
+type BulkValidationDiagnostic = {
+	id: string;
+	uri: string;
+	message: string;
+	source?: string;
+	severity?: number;
+	range: {
+		start: { line: number; character: number };
+		end: { line: number; character: number };
+	};
+	lineText: string;
+};
+type BulkValidationScanResult = {
+	items: BulkValidationDiagnostic[];
+	totalDiagnosticsFound: number;
+	totalFilesWithDiagnostics: number;
+	scannedFiles: number;
+	matchedFiles: number;
+	truncated: boolean;
+	warnings: string[];
+};
+type BulkValidationProgress = {
+	scanId: string;
+	scannedFiles: number;
+	matchedFiles: number;
+	filesWithDiagnostics: number;
+	diagnosticsLoaded: number;
+};
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -71,6 +114,192 @@ function logTrace(level: TraceLevel | undefined, message: string, data?: Record<
 
 function traceDuration(level: TraceLevel | undefined, operation: string, started: number, data?: Record<string, string | number | boolean | null>) {
 	logTrace(level, `${operation} ${Math.round(performance.now() - started)}ms`, data);
+}
+
+const BULK_VALIDATION_MAX_FILES_DEFAULT = 2000;
+const BULK_VALIDATION_MAX_DIAGNOSTICS_DEFAULT = 5000;
+const BULK_VALIDATION_PER_FILE_MAX_DEFAULT = 100;
+const BULK_VALIDATION_IGNORED_DIRS = new Set(['.git', 'node_modules', '.vscode-test', '.ops']);
+const BULK_VALIDATION_PROGRESS_FILE_STEP = 25;
+
+function normalizeExtension(value: string, fallback: string): string {
+	const trimmed = (value || fallback).trim().toLowerCase();
+	if (!trimmed) return fallback;
+	return trimmed.startsWith('.') ? trimmed : `.${trimmed}`;
+}
+
+function getBulkValidationExtensions(mode: BulkValidationMode, autopilotExtension: string, pilotExtension: string): Set<string> {
+	const autoExt = normalizeExtension(autopilotExtension, '.dla');
+	const pilotExt = normalizeExtension(pilotExtension, '.dlp');
+	if (mode === 'pilot') return new Set([pilotExt]);
+	if (mode === 'both') return new Set([autoExt, pilotExt]);
+	return new Set([autoExt]);
+}
+
+function toFsPathFromUri(uri: string): string | null {
+	try {
+		return fileURLToPath(uri);
+	} catch {
+		return null;
+	}
+}
+
+function makeDiagnosticId(uri: string, diagnostic: { message: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } }): string {
+	const range = diagnostic.range;
+	return [
+		uri,
+		range.start.line,
+		range.start.character,
+		range.end.line,
+		range.end.character,
+		String(diagnostic.message || '').trim().toLowerCase(),
+	].join('|');
+}
+
+async function collectMatchingFiles(
+	rootDir: string,
+	extensions: Set<string>,
+	maxFiles: number,
+	scannedCounter: { count: number },
+	matchedCounter: { count: number }
+): Promise<{ files: string[]; truncated: boolean }> {
+	const files: string[] = [];
+	const stack = [rootDir];
+	let truncated = false;
+	while (stack.length > 0 && !truncated) {
+		const current = stack.pop() as string;
+		let entries: fs.Dirent[];
+		try {
+			entries = await fs.promises.readdir(current, { withFileTypes: true });
+		} catch {
+			continue;
+		}
+		entries.sort((a, b) => a.name.localeCompare(b.name));
+		const directories: string[] = [];
+		for (const entry of entries) {
+			const full = path.join(current, entry.name);
+			if (entry.isDirectory()) {
+				if (!BULK_VALIDATION_IGNORED_DIRS.has(entry.name)) {
+					directories.push(full);
+				}
+				continue;
+			}
+			if (!entry.isFile()) {
+				continue;
+			}
+			scannedCounter.count += 1;
+			const ext = path.extname(entry.name).toLowerCase();
+			if (!extensions.has(ext)) {
+				continue;
+			}
+			files.push(full);
+			matchedCounter.count += 1;
+			if (matchedCounter.count >= maxFiles) {
+				truncated = true;
+				break;
+			}
+		}
+		for (let i = directories.length - 1; i >= 0; i--) {
+			stack.push(directories[i]);
+		}
+	}
+	return { files, truncated };
+}
+
+async function runBulkValidationScan(params: BulkValidationScanParams): Promise<BulkValidationScanResult> {
+	const scanId = params.scanId ?? String(Date.now());
+	const maxFiles = Number.isFinite(params.maxFiles) && (params.maxFiles as number) > 0
+		? Number(params.maxFiles)
+		: BULK_VALIDATION_MAX_FILES_DEFAULT;
+	const maxDiagnostics = Number.isFinite(params.maxDiagnostics) && (params.maxDiagnostics as number) > 0
+		? Number(params.maxDiagnostics)
+		: BULK_VALIDATION_MAX_DIAGNOSTICS_DEFAULT;
+	const perFileMaxProblems = Number.isFinite(params.perFileMaxProblems) && (params.perFileMaxProblems as number) > 0
+		? Number(params.perFileMaxProblems)
+		: BULK_VALIDATION_PER_FILE_MAX_DEFAULT;
+	const mode = params.mode ?? 'autopilot';
+	const extensions = getBulkValidationExtensions(mode, params.autopilotExtension, params.pilotExtension);
+	const warnings: string[] = [];
+	const items: BulkValidationDiagnostic[] = [];
+	const scannedCounter = { count: 0 };
+	const matchedCounter = { count: 0 };
+	let totalDiagnosticsFound = 0;
+	let totalFilesWithDiagnostics = 0;
+	let matchedFiles = 0;
+	let truncated = false;
+	let lastProgressMatchedFiles = 0;
+	const maybeEmitProgress = (force = false) => {
+		if (!force && matchedFiles - lastProgressMatchedFiles < BULK_VALIDATION_PROGRESS_FILE_STEP) {
+			return;
+		}
+		lastProgressMatchedFiles = matchedFiles;
+		const progress: BulkValidationProgress = {
+			scanId,
+			scannedFiles: scannedCounter.count,
+			matchedFiles,
+			filesWithDiagnostics: totalFilesWithDiagnostics,
+			diagnosticsLoaded: items.length,
+		};
+		connection.sendNotification('emergent/bulkValidationProgress', progress);
+	};
+
+	for (const folderUri of params.folderUris ?? []) {
+		const folderPath = toFsPathFromUri(folderUri);
+		if (!folderPath) {
+			warnings.push(`Skipped non-file URI: ${folderUri}`);
+			continue;
+		}
+		const { files, truncated: fileTruncated } = await collectMatchingFiles(folderPath, extensions, maxFiles, scannedCounter, matchedCounter);
+		if (fileTruncated) {
+			truncated = true;
+		}
+		for (const filePath of files) {
+			let text: string;
+			try {
+				text = await fs.promises.readFile(filePath, 'utf8');
+			} catch {
+				continue;
+			}
+			matchedFiles += 1;
+			const uri = pathToFileURL(filePath).toString();
+			const doc = TextDocument.create(uri, 'emergent', 1, text);
+			const diagnostics = await collectSpecAwareDiagnosticsForDocument(doc, perFileMaxProblems);
+			if (diagnostics.length === 0) {
+				maybeEmitProgress();
+				continue;
+			}
+			totalFilesWithDiagnostics += 1;
+			totalDiagnosticsFound += diagnostics.length;
+			const lines = text.split(/\r?\n/);
+			for (const diagnostic of diagnostics) {
+				if (items.length < maxDiagnostics) {
+					items.push({
+						id: makeDiagnosticId(uri, diagnostic),
+						uri,
+						message: diagnostic.message,
+						source: diagnostic.source,
+						severity: diagnostic.severity,
+						range: diagnostic.range,
+						lineText: lines[diagnostic.range.start.line] ?? '',
+					});
+				} else {
+					truncated = true;
+				}
+			}
+			maybeEmitProgress();
+		}
+	}
+	maybeEmitProgress(true);
+
+	return {
+		items,
+		totalDiagnosticsFound,
+		totalFilesWithDiagnostics,
+		scannedFiles: scannedCounter.count,
+		matchedFiles,
+		truncated,
+		warnings,
+	};
 }
 
 
@@ -228,22 +457,15 @@ function clearScheduledValidation(uri: string) {
 	}
 }
 
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-	const settings = await getDocumentSettings(textDocument.uri);
-	gatewayClient.setCacheConfig({
-		softTtlHours: settings.specCache?.softTtlHours,
-		fetchConcurrency: settings.specCache?.fetchConcurrency,
-		retryCount: settings.specCache?.retryCount,
-		retryBaseMs: settings.specCache?.retryBaseMs,
-		allowStale: settings.specCache?.allowStale,
-	});
-	const traceLevel = settings.traceServer ?? 'off';
-	const started = performance.now();
-	const defaults = getDefaultsFromText(textDocument.getText()) || { layer: '', variation: '', platform: '', supplier: '' };
+async function collectSpecAwareDiagnosticsForDocument(
+	textDocument: TextDocument,
+	maxNumberOfProblems: number
+): Promise<Diagnostic[]> {
+	const text = textDocument.getText();
+	const defaults = getDefaultsFromText(text) || { layer: '', variation: '', platform: '', supplier: '' };
 
-	// Collect contract specifications referenced in the document so that diagnostics can validate
-	// requirements/obligations.
-	const { program } = parseText(textDocument.getText());
+	// Match live validation behavior: fetch referenced specs before type-checking.
+	const { program } = parseText(text);
 	const { classifications, classificationKinds, rawToNormalized } = collectReferencedClassifications(
 		program as ProgramNode,
 		{ layer: defaults.layer, variation: defaults.variation, platform: defaults.platform }
@@ -283,14 +505,29 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		}
 	}
 
-	const diagnostics = collectDiagnostics(
+	return collectDiagnostics(
 		textDocument,
-		{
-			maxNumberOfProblems: settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
-		},
+		{ maxNumberOfProblems },
 		specs,
 		defaults,
 		specLookupIssues
+	);
+}
+
+async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+	const settings = await getDocumentSettings(textDocument.uri);
+	gatewayClient.setCacheConfig({
+		softTtlHours: settings.specCache?.softTtlHours,
+		fetchConcurrency: settings.specCache?.fetchConcurrency,
+		retryCount: settings.specCache?.retryCount,
+		retryBaseMs: settings.specCache?.retryBaseMs,
+		allowStale: settings.specCache?.allowStale,
+	});
+	const traceLevel = settings.traceServer ?? 'off';
+	const started = performance.now();
+	const diagnostics = await collectSpecAwareDiagnosticsForDocument(
+		textDocument,
+		settings.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems
 	);
 
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
@@ -329,6 +566,8 @@ connection.onDidChangeWatchedFiles(_change => {
 const fetchSpecificationRequest = new RequestType<FetchSpecificationParams, FetchSpecificationResult, void>('emergent/fetchSpecification');
 const clearSpecCacheRequest = new RequestType<null, boolean, void>('emergent/clearSpecCache');
 const getSpecCachePathRequest = new RequestType<null, string, void>('emergent/getSpecCachePath');
+const findWorkspaceDiagnosticsRequest = new RequestType<BulkValidationScanParams, BulkValidationScanResult, void>('emergent/findWorkspaceDiagnostics');
+const validateDocumentRequest = new RequestType<{ uri: string; clearOthers?: boolean }, boolean, void>('emergent/validateDocument');
 
 type ContractTerm = { name?: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number };
 
@@ -541,6 +780,38 @@ connection.onRequest(clearSpecCacheRequest, async (): Promise<boolean> => {
 });
 
 connection.onRequest(getSpecCachePathRequest, (): string => gatewayClient.cacheFilePath);
+connection.onRequest(findWorkspaceDiagnosticsRequest, async (params): Promise<BulkValidationScanResult> => {
+	try {
+		return await runBulkValidationScan(params);
+	} catch (err: any) {
+		connection.console.error(`Bulk validation scan failed: ${err?.message ?? err}`);
+		return {
+			items: [],
+			totalDiagnosticsFound: 0,
+			totalFilesWithDiagnostics: 0,
+			scannedFiles: 0,
+			matchedFiles: 0,
+			truncated: false,
+			warnings: [`Scan failed: ${err?.message ?? String(err)}`],
+		};
+	}
+});
+connection.onRequest(validateDocumentRequest, async (params): Promise<boolean> => {
+	const document = documents.get(params.uri);
+	if (!document) {
+		return false;
+	}
+	if (params.clearOthers) {
+		for (const openDocument of documents.all()) {
+			if (openDocument.uri !== params.uri) {
+				connection.sendDiagnostics({ uri: openDocument.uri, diagnostics: [] });
+			}
+		}
+	}
+	clearScheduledValidation(params.uri);
+	await validateTextDocument(document);
+	return true;
+});
 
 connection.onHover(async (params): Promise<Hover | null> => {
 	const settings = await getDocumentSettings(params.textDocument.uri);

@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.5",
+  "version": "0.11.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -189,6 +189,38 @@
             "type": "boolean",
             "default": true,
             "description": "Allow serving stale cached specifications while background refresh runs."
+          },
+          "emergent.autopilotExtension": {
+            "scope": "window",
+            "type": "string",
+            "default": ".dla",
+            "description": "Filename extension used for autopilot expressions in bulk validation scans."
+          },
+          "emergent.pilotExtension": {
+            "scope": "window",
+            "type": "string",
+            "default": ".dlp",
+            "description": "Filename extension used for pilot expressions in bulk validation scans."
+          },
+          "emergent.bulkValidationMode": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "autopilot",
+              "pilot",
+              "both"
+            ],
+            "default": "autopilot",
+            "description": "Controls whether Bulk Expression Validation scans autopilot files, pilot files, or both."
+          },
+          "emergent.bulkValidationFolders": {
+            "scope": "window",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Workspace folder relative paths to include in Bulk Expression Validation. Empty means all workspace folders."
           }
         }
       }
@@ -228,6 +260,14 @@
         "path": "./conf/emergent.tmSnippets.json"
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "emergent.bulkExpressionValidation",
+          "name": "Bulk Expression Validation"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "emergent.showSpecificationPanel",
@@ -267,6 +307,47 @@
         "command": "emergent.clearSpecificationCache",
         "title": "Emergent: Clear Specification Cache",
         "category": "Emergent"
+      },
+      {
+        "command": "emergent.startBulkExpressionValidation",
+        "title": "Emergent: Start Bulk Expression Validation",
+        "category": "Emergent",
+        "icon": "$(play)"
+      },
+      {
+        "command": "emergent.rescanBulkExpressionValidation",
+        "title": "Emergent: Rescan Bulk Expression Validation",
+        "category": "Emergent",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "emergent.nextBulkExpressionDiagnostic",
+        "title": "Emergent: Next Bulk Expression File",
+        "category": "Emergent",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "emergent.previousBulkExpressionDiagnostic",
+        "title": "Emergent: Previous Bulk Expression File",
+        "category": "Emergent",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "emergent.skipBulkExpressionDiagnostic",
+        "title": "Emergent: Skip Bulk Expression File",
+        "category": "Emergent",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "emergent.clearBulkExpressionValidation",
+        "title": "Emergent: Clear Bulk Expression Validation",
+        "category": "Emergent",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "emergent.focusBulkExpressionValidation",
+        "title": "Emergent: Focus Bulk Expression Validation",
+        "category": "Emergent"
       }
     ],
     "keybindings": [
@@ -275,8 +356,74 @@
         "key": "ctrl+alt+s",
         "mac": "cmd+alt+s",
         "when": "editorLangId == emergent"
+      },
+      {
+        "command": "emergent.startBulkExpressionValidation",
+        "key": "ctrl+alt+e ctrl+f",
+        "mac": "cmd+alt+e cmd+f"
+      },
+      {
+        "command": "emergent.nextBulkExpressionDiagnostic",
+        "key": "ctrl+alt+e ctrl+n",
+        "mac": "cmd+alt+e cmd+n"
+      },
+      {
+        "command": "emergent.previousBulkExpressionDiagnostic",
+        "key": "ctrl+alt+e ctrl+p",
+        "mac": "cmd+alt+e cmd+p"
+      },
+      {
+        "command": "emergent.skipBulkExpressionDiagnostic",
+        "key": "ctrl+alt+e ctrl+s",
+        "mac": "cmd+alt+e cmd+s"
+      },
+      {
+        "command": "emergent.rescanBulkExpressionValidation",
+        "key": "ctrl+alt+e ctrl+r",
+        "mac": "cmd+alt+e cmd+r"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "emergent.startBulkExpressionValidation",
+          "when": "view == emergent.bulkExpressionValidation",
+          "group": "navigation@1"
+        },
+        {
+          "command": "emergent.rescanBulkExpressionValidation",
+          "when": "view == emergent.bulkExpressionValidation",
+          "group": "navigation@2"
+        },
+        {
+          "command": "emergent.nextBulkExpressionDiagnostic",
+          "when": "view == emergent.bulkExpressionValidation",
+          "group": "navigation@3"
+        },
+        {
+          "command": "emergent.previousBulkExpressionDiagnostic",
+          "when": "view == emergent.bulkExpressionValidation",
+          "group": "navigation@4"
+        },
+        {
+          "command": "emergent.skipBulkExpressionDiagnostic",
+          "when": "view == emergent.bulkExpressionValidation",
+          "group": "navigation@5"
+        },
+        {
+          "command": "emergent.clearBulkExpressionValidation",
+          "when": "view == emergent.bulkExpressionValidation",
+          "group": "navigation@6"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "emergent.skipBulkExpressionDiagnostic",
+          "when": "view == emergent.bulkExpressionValidation && viewItem == bulkValidationDiagnostic",
+          "group": "inline@1"
+        }
+      ]
+    },
     "customEditors": [
       {
         "viewType": "contractSpecEditor",

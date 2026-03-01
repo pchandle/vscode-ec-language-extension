@@ -116,4 +116,29 @@ end
     const duplicates = diagnostics.filter((d) => d.message.includes("Duplicate declaration"));
     assert.equal(duplicates.length, 0, `did not expect duplicate declarations, got ${duplicates.map((d) => d.message).join(", ")}`);
   });
+
+  it("does not flag duplicate when endpoint label is later declared by nested obligation target", () => {
+    const text = `
+job /behaviour/add/command-line-menu/default/linux-x64(core, menu, descr, help) appflow_out:
+  init -> {
+    return_to_menu_proc_body -> {
+      sub call/procedure($, refresh_menu)
+      sub set/integer($, return_to_menu_result, 0)
+    }
+    sub /system/new/app-flow/./linux-x64(log_man, cfg_man, task_shed, "appflow", 0) -> {
+      $ -> new_appflow
+      $ -> appflow_out
+      sub /system/register/app-flow($, 0) -> _, _, return_to_menu_result, _, _, return_to_menu_proc_body
+    }
+  }
+end
+`;
+    const { program, diagnostics: syntaxDiagnostics } = parseText(text);
+    const { diagnostics } = resolveProgram(program);
+    assert.equal(syntaxDiagnostics.length, 0, "unexpected syntax diagnostics");
+    assert.ok(
+      !diagnostics.some((d) => d.message.includes("Duplicate declaration of 'return_to_menu_proc_body'")),
+      `did not expect duplicate return_to_menu_proc_body, got ${diagnostics.map((d) => d.message).join(", ")}`
+    );
+  });
 });

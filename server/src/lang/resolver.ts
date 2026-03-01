@@ -1,7 +1,7 @@
 import { SyntaxDiagnostic, Token, TokenKind } from "./tokens";
 import { BlockNode, DefNode, ExpressionNode, IdentifierNode, IfNode, JobNode, NodeKind, ProgramNode, QualifiedNode, ScopeRefNode, Statement } from "./ast";
 
-type BindingKind = "param" | "target" | "def" | "builtin";
+type BindingKind = "param" | "target" | "endpoint" | "def" | "builtin";
 type BindingOrigin = "header" | "body" | "builtin";
 
 interface Binding {
@@ -67,6 +67,10 @@ function declare(
   if (existing) {
     if (existing.origin === "header" && existing.kind === "target" && kind === "target" && origin === "body") {
       // Assigning to a header-declared target; allowed.
+      return;
+    }
+    if (existing.origin === "body" && existing.kind === "endpoint" && kind === "target" && origin === "body") {
+      // Declarative endpoint body can be named by a later target in the same leaking scope.
       return;
     }
     diagnostics.push({ message: `Duplicate declaration of '${name}'`, range: token.range });
@@ -184,7 +188,7 @@ function resolveStatement(stmt: Statement, scope: Scope, diagnostics: SyntaxDiag
       const endpointToken = getDeclarativeEndpointToken(stmt);
       if (endpointToken) {
         if (!isBoundInScopeChain(scope, endpointToken.lexeme)) {
-          declare(scope, endpointToken, "target", diagnostics, "body");
+          declare(scope, endpointToken, "endpoint", diagnostics, "body");
         }
       } else {
         resolveExpression(stmt.expression, scope, diagnostics);

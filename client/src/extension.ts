@@ -13,6 +13,7 @@ import { registerPdesVersionCheck } from "./pdesVersionCheck";
 import { registerExportProtocolSpec } from "./pdesExport";
 import { workspace, ExtensionContext } from "vscode";
 import { loadPddCandidates } from "./pddLoader";
+import { registerBulkExpressionValidation } from "./bulkExpressionValidation";
 
 import * as vscode from "vscode";
 
@@ -296,6 +297,7 @@ export function activate(context: ExtensionContext) {
   registerPdesVersionCheck(context);
   registerPdesEditor(context);
   registerExportProtocolSpec(context);
+  registerBulkExpressionValidation(context, client);
 
   vscode.workspace.onDidChangeConfiguration((e) => {
     if (e.affectsConfiguration("gateway")) {
