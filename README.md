@@ -39,6 +39,9 @@ All options are under the `emergent` namespace:
 - `emergent.bulkValidationMode`: Scan mode (`autopilot`, `pilot`, or `both`; default: `autopilot`)
 - `emergent.bulkValidationFolders`: Workspace folder relative paths to scan (empty means all workspace folders)
 
+Studio connection settings are under the `studio` namespace (`studio.hostname`, `studio.port`, `studio.allowInsecure`, `studio.network`).
+Legacy `gateway.*` settings are deprecated and are auto-migrated to `studio.*` on activation when possible.
+
 ## Notes
 - Bulk Expression Validation results coexist with live language-server diagnostics.
 - `Skip` is temporary and only applies to the current session.

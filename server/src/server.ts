@@ -93,12 +93,25 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
-let gatewayConfig: { hostname: string; port: number; allowInsecure: boolean; network: string } = {
+type StudioConnectionConfig = { hostname: string; port: number; allowInsecure: boolean; network: string };
+let studioConfig: StudioConnectionConfig = {
 	hostname: 'localhost',
 	port: 10000,
 	allowInsecure: true,
 	network: '31'
 };
+
+function normalizeStudioInitConfig(raw: any, fallback: StudioConnectionConfig): StudioConnectionConfig {
+	if (!raw || typeof raw !== 'object') {
+		return fallback;
+	}
+	return {
+		hostname: typeof raw.hostname === 'string' && raw.hostname ? raw.hostname : fallback.hostname,
+		port: typeof raw.port === 'number' && Number.isFinite(raw.port) ? raw.port : fallback.port,
+		allowInsecure: typeof raw.allowInsecure === 'boolean' ? raw.allowInsecure : fallback.allowInsecure,
+		network: typeof raw.network === 'string' && raw.network ? raw.network : fallback.network,
+	};
+}
 
 type TraceLevel = 'off' | 'messages' | 'verbose';
 const validationDebounceMs = 200;
@@ -305,12 +318,14 @@ async function runBulkValidationScan(params: BulkValidationScanParams): Promise<
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
-	gatewayClient.setConfig(gatewayConfig);
-	if (params.initializationOptions && params.initializationOptions.gateway) {
-		gatewayConfig = params.initializationOptions.gateway;
-		gatewayClient.setConfig(gatewayConfig);
+	gatewayClient.setConfig(studioConfig);
+	const initOptions: any = params.initializationOptions ?? {};
+	const incomingStudio = initOptions.studio ?? initOptions.gateway;
+	if (incomingStudio) {
+		studioConfig = normalizeStudioInitConfig(incomingStudio, studioConfig);
+		gatewayClient.setConfig(studioConfig);
 	}
-	gatewayClient.setNetworkPaths(gatewayConfig.network);
+	gatewayClient.setNetworkPaths(studioConfig.network);
 
 	// Does the client support the `workspace/configuration` request?
 	// If not, we fall back using global settings.
@@ -351,6 +366,10 @@ connection.onInitialize((params: InitializeParams) => {
 		retryCount: defaultSettings.specCache?.retryCount,
 		retryBaseMs: defaultSettings.specCache?.retryBaseMs,
 		allowStale: defaultSettings.specCache?.allowStale,
+		enableRootDocFallback: defaultSettings.specCache?.enableRootDocFallback,
+		requestTimeoutMs: defaultSettings.specCache?.requestTimeoutMs,
+		failureTtlMs: defaultSettings.specCache?.failureTtlMs,
+		rootRefreshMinutes: defaultSettings.specCache?.rootRefreshMinutes,
 	});
 	void gatewayClient.refreshContractCache();
 	gatewayClient.startCacheTimer();
@@ -373,7 +392,7 @@ connection.onInitialized(() => {
 interface EmergentSettings {
 	maxNumberOfProblems: number;
 	hoverDebugLogging: boolean;
-	gatewayNetwork: string;
+	studioNetwork: string;
 	hoverDisabled?: boolean;
 	hover?: { disabled?: boolean };
 	traceServer?: TraceLevel;
@@ -383,6 +402,10 @@ interface EmergentSettings {
 		retryCount?: number;
 		retryBaseMs?: number;
 		allowStale?: boolean;
+		enableRootDocFallback?: boolean;
+		requestTimeoutMs?: number;
+		failureTtlMs?: number;
+		rootRefreshMinutes?: number;
 	};
 }
 
@@ -392,7 +415,7 @@ interface EmergentSettings {
 const defaultSettings: EmergentSettings = {
 	maxNumberOfProblems: 100,
 	hoverDebugLogging: false,
-	gatewayNetwork: '31',
+	studioNetwork: '31',
 	hoverDisabled: true,
 	traceServer: 'off',
 	specCache: {
@@ -401,6 +424,10 @@ const defaultSettings: EmergentSettings = {
 		retryCount: 2,
 		retryBaseMs: 250,
 		allowStale: true,
+		enableRootDocFallback: false,
+		requestTimeoutMs: 10000,
+		failureTtlMs: 15000,
+		rootRefreshMinutes: 30,
 	}
 };
 let globalSettings: EmergentSettings = defaultSettings;
@@ -422,12 +449,45 @@ connection.onDidChangeConfiguration(change => {
 			retryCount: globalSettings.specCache?.retryCount,
 			retryBaseMs: globalSettings.specCache?.retryBaseMs,
 			allowStale: globalSettings.specCache?.allowStale,
+			enableRootDocFallback: globalSettings.specCache?.enableRootDocFallback,
+			requestTimeoutMs: globalSettings.specCache?.requestTimeoutMs,
+			failureTtlMs: globalSettings.specCache?.failureTtlMs,
+			rootRefreshMinutes: globalSettings.specCache?.rootRefreshMinutes,
 		});
 	}
 
-	if (change.settings?.gateway?.network && typeof change.settings.gateway.network === 'string') {
-		gatewayConfig.network = change.settings.gateway.network;
-		gatewayClient.setNetworkPaths(gatewayConfig.network);
+	const studioNetwork = typeof change.settings?.studio?.network === 'string'
+		? change.settings.studio.network
+		: typeof change.settings?.gateway?.network === 'string'
+			? change.settings.gateway.network
+			: undefined;
+	const studioHost = typeof change.settings?.studio?.hostname === 'string'
+		? change.settings.studio.hostname
+		: typeof change.settings?.gateway?.hostname === 'string'
+			? change.settings.gateway.hostname
+			: undefined;
+	const studioPort = typeof change.settings?.studio?.port === 'number'
+		? change.settings.studio.port
+		: typeof change.settings?.gateway?.port === 'number'
+			? change.settings.gateway.port
+			: undefined;
+	const studioAllowInsecure = typeof change.settings?.studio?.allowInsecure === 'boolean'
+		? change.settings.studio.allowInsecure
+		: typeof change.settings?.gateway?.allowInsecure === 'boolean'
+			? change.settings.gateway.allowInsecure
+			: undefined;
+	if (studioHost || studioPort !== undefined || studioAllowInsecure !== undefined) {
+		studioConfig = {
+			...studioConfig,
+			...(studioHost ? { hostname: studioHost } : {}),
+			...(studioPort !== undefined ? { port: studioPort } : {}),
+			...(studioAllowInsecure !== undefined ? { allowInsecure: studioAllowInsecure } : {}),
+		};
+		gatewayClient.setConfig(studioConfig);
+	}
+	if (studioNetwork) {
+		studioConfig.network = studioNetwork;
+		gatewayClient.setNetworkPaths(studioConfig.network);
 	}
 
 	// Revalidate all open text documents
@@ -522,6 +582,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		retryCount: settings.specCache?.retryCount,
 		retryBaseMs: settings.specCache?.retryBaseMs,
 		allowStale: settings.specCache?.allowStale,
+		enableRootDocFallback: settings.specCache?.enableRootDocFallback,
+		requestTimeoutMs: settings.specCache?.requestTimeoutMs,
+		failureTtlMs: settings.specCache?.failureTtlMs,
+		rootRefreshMinutes: settings.specCache?.rootRefreshMinutes,
 	});
 	const traceLevel = settings.traceServer ?? 'off';
 	const started = performance.now();

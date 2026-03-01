@@ -40,6 +40,64 @@ const DEFAULT_PROTOCOL_FILENAME_FORMAT = "{layer}--{subject}--{variation}--{plat
 const FILENAME_LITERAL_REGEX = /^[a-zA-Z0-9._-]*$/;
 const CONTRACT_FILENAME_TOKENS = ["layer", "verb", "subject", "variation", "platform"];
 const PROTOCOL_FILENAME_TOKENS = ["layer", "subject", "variation", "platform"];
+type StudioConnectionConfig = { hostname: string; port: number; allowInsecure: boolean; network: string };
+
+function getStudioConnectionConfig(): StudioConnectionConfig {
+  const studio = workspace.getConfiguration("studio");
+  const gateway = workspace.getConfiguration("gateway");
+  const hostname = studio.get<string>("hostname") || gateway.get<string>("hostname") || "localhost";
+  const port = studio.get<number>("port") ?? gateway.get<number>("port") ?? 10000;
+  const allowInsecure = studio.get<boolean>("allowInsecure") ?? gateway.get<boolean>("allowInsecure") ?? true;
+  const network = studio.get<string>("network") || gateway.get<string>("network") || "31";
+  return { hostname, port, allowInsecure, network };
+}
+
+async function migrateGatewaySettingsToStudio(): Promise<boolean> {
+  const gateway = workspace.getConfiguration("gateway");
+  const studio = workspace.getConfiguration("studio");
+  const rootConfig = workspace.getConfiguration();
+  const mappings: Array<{ legacy: keyof StudioConnectionConfig; modern: keyof StudioConnectionConfig }> = [
+    { legacy: "hostname", modern: "hostname" },
+    { legacy: "port", modern: "port" },
+    { legacy: "allowInsecure", modern: "allowInsecure" },
+    { legacy: "network", modern: "network" },
+  ];
+  const updates: Thenable<void>[] = [];
+  let migrated = false;
+
+  for (const mapping of mappings) {
+    const legacyInspect = gateway.inspect<any>(mapping.legacy);
+    const modernInspect = studio.inspect<any>(mapping.modern);
+    if (!legacyInspect || !modernInspect) {
+      continue;
+    }
+    if (legacyInspect.globalValue !== undefined && modernInspect.globalValue === undefined) {
+      updates.push(rootConfig.update(`studio.${mapping.modern}`, legacyInspect.globalValue, vscode.ConfigurationTarget.Global));
+      migrated = true;
+    }
+    if (legacyInspect.workspaceValue !== undefined && modernInspect.workspaceValue === undefined) {
+      updates.push(
+        rootConfig.update(`studio.${mapping.modern}`, legacyInspect.workspaceValue, vscode.ConfigurationTarget.Workspace)
+      );
+      migrated = true;
+    }
+    if (legacyInspect.workspaceFolderValue !== undefined && modernInspect.workspaceFolderValue === undefined) {
+      updates.push(
+        rootConfig.update(
+          `studio.${mapping.modern}`,
+          legacyInspect.workspaceFolderValue,
+          vscode.ConfigurationTarget.WorkspaceFolder
+        )
+      );
+      migrated = true;
+    }
+  }
+
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
+  return migrated;
+}
 
 function validateFilenameFormat(format: string, requiredTokens: string[]): string | undefined {
   if (typeof format !== "string" || !format.trim()) {
@@ -141,9 +199,19 @@ function buildFilenameFromClassification(
   return `${base}${ext}`;
 }
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext) {
   extensionContext = context;
   console.debug("Activating 'emergent' language extension.");
+  try {
+    const migrated = await migrateGatewaySettingsToStudio();
+    if (migrated) {
+      void vscode.window.showInformationMessage(
+        "Migrated deprecated gateway.* settings to studio.*. You can now remove gateway.* entries from settings."
+      );
+    }
+  } catch (error: any) {
+    console.warn("Failed to migrate gateway settings to studio settings:", error?.message ?? error);
+  }
 
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(path.join("server", "dist", "server.js"));
@@ -171,7 +239,8 @@ export function activate(context: ExtensionContext) {
       fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
     },
     initializationOptions: {
-      gateway: workspace.getConfiguration("gateway"),
+      studio: getStudioConnectionConfig(),
+      gateway: getStudioConnectionConfig(),
     },
   };
 
@@ -300,8 +369,8 @@ export function activate(context: ExtensionContext) {
   registerBulkExpressionValidation(context, client);
 
   vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("gateway")) {
-      updateGatewayApiUrl();
+    if (e.affectsConfiguration("studio") || e.affectsConfiguration("gateway")) {
+      updateStudioApiUrl();
       vscode.window.showInformationMessage("Updated");
     }
     if (e.affectsConfiguration("formatting")) {
@@ -309,8 +378,8 @@ export function activate(context: ExtensionContext) {
     }
   });
 
-  // Update Gateway API URL from configuration at start
-  updateGatewayApiUrl();
+  // Update Studio API URL from configuration at start
+  updateStudioApiUrl();
 
   // Update formatting status from configuration
   updateFormattingCfg();
@@ -355,11 +424,11 @@ async function reloadValleySpecifications() {
       title: "Reload Emergent specifications",
     },
     async (progress) => {
-      progress.report({ message: "Fetching specifications from gateway..." });
+      progress.report({ message: "Fetching specifications from Studio..." });
       try {
         const status = await v.reloadSpecifications();
         updateStatusBar(ecStatusBarItem, status, false);
-        vscode.window.showInformationMessage("Specification cache reloaded from gateway.");
+        vscode.window.showInformationMessage("Specification cache reloaded from Studio.");
       } catch (error: any) {
         const message = error?.message ?? String(error);
         updateStatusBar(ecStatusBarItem, message, true);
@@ -369,10 +438,10 @@ async function reloadValleySpecifications() {
   );
 }
 
-function updateGatewayApiUrl() {
-  const gateway = vscode.workspace.getConfiguration("gateway");
-  v.setApiRootUrl(gateway.hostname, gateway.port, gateway.allowInsecure);
-  console.log("Gateway API URL updated:", v.apiRootUrl);
+function updateStudioApiUrl() {
+  const studio = getStudioConnectionConfig();
+  v.setApiRootUrl(studio.hostname, studio.port, studio.allowInsecure);
+  console.log("Studio API URL updated:", v.apiRootUrl);
 }
 
 function updateFormattingCfg() {

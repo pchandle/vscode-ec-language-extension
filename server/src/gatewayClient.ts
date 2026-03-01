@@ -11,7 +11,7 @@ import {
 } from "./completionSupport";
 import { Defaults, normalizeContractClassification, normalizeProtocolClassification } from "./lang/normalization";
 
-type GatewayConfig = { hostname: string; port: number; allowInsecure: boolean };
+type StudioConfig = { hostname: string; port: number; allowInsecure: boolean };
 type NetworkPaths = { rootPrefix: string; specPrefix: string };
 
 type RemoteRequirement = {
@@ -47,6 +47,10 @@ type CacheConfig = {
   retryCount: number;
   retryBaseMs: number;
   allowStale: boolean;
+  enableRootDocFallback: boolean;
+  requestTimeoutMs: number;
+  failureTtlMs: number;
+  rootRefreshMinutes: number;
 };
 
 type CacheEntry = {
@@ -85,17 +89,17 @@ type PersistedCachePayload = {
   specPathPrefix?: string;
 };
 
-class GatewayNotModifiedError extends Error {
+class StudioNotModifiedError extends Error {
   readonly status = 304;
 
   constructor(url: string) {
-    super(`Gateway 304 Not Modified fetching '${url}'`);
-    this.name = "GatewayNotModifiedError";
+    super(`Studio 304 Not Modified fetching '${url}'`);
+    this.name = "StudioNotModifiedError";
   }
 }
 
 class GatewayClient {
-  #config: GatewayConfig = { hostname: "localhost", port: 10000, allowInsecure: true };
+  #config: StudioConfig = { hostname: "localhost", port: 10000, allowInsecure: true };
   #apiRoot = "http://localhost:10000";
   #completionCache: ContractClassification[] = [];
   #protocolCompletionCache: ProtocolClassification[] = [];
@@ -104,7 +108,6 @@ class GatewayClient {
   #rootDocument: Record<string, string> = {};
   #cacheTimer: NodeJS.Timeout | undefined;
   #connection: Connection | undefined;
-  #cacheIntervalMs = 30 * 60 * 1000;
   #cacheFilePath: string;
   #rootPathPrefix = "/fetch/";
   #specPathPrefix = "/fetch/";
@@ -114,10 +117,15 @@ class GatewayClient {
     retryCount: 2,
     retryBaseMs: 250,
     allowStale: true,
+    enableRootDocFallback: false,
+    requestTimeoutMs: 10000,
+    failureTtlMs: 15000,
+    rootRefreshMinutes: 30,
   };
   #inflightFetches = new Map<string, Promise<SpecFetchResult<RemoteSpec>>>();
   #activeFetches = 0;
   #fetchQueue: Array<() => void> = [];
+  #failedFetchCooldown = new Map<string, { until: number; reason: string }>();
 
   constructor() {
     this.#cacheFilePath = path.join(os.homedir(), ".emergent", "contractCache.json");
@@ -128,12 +136,14 @@ class GatewayClient {
     this.#connection = conn;
   }
 
-  setConfig(cfg: GatewayConfig) {
+  setConfig(cfg: StudioConfig) {
     this.#config = cfg;
     this.#apiRoot = `${cfg.allowInsecure ? "http" : "https"}://${cfg.hostname}:${cfg.port}`;
   }
 
   setCacheConfig(config: Partial<CacheConfig>) {
+    const previousRefreshMinutes = this.#cacheConfig.rootRefreshMinutes;
+    const previousRootDocFallback = this.#cacheConfig.enableRootDocFallback;
     this.#cacheConfig = {
       ...this.#cacheConfig,
       ...config,
@@ -142,7 +152,24 @@ class GatewayClient {
       retryCount: Math.max(0, Number(config.retryCount ?? this.#cacheConfig.retryCount) || this.#cacheConfig.retryCount),
       retryBaseMs: Math.max(50, Number(config.retryBaseMs ?? this.#cacheConfig.retryBaseMs) || this.#cacheConfig.retryBaseMs),
       allowStale: typeof config.allowStale === "boolean" ? config.allowStale : this.#cacheConfig.allowStale,
+      enableRootDocFallback:
+        typeof config.enableRootDocFallback === "boolean"
+          ? config.enableRootDocFallback
+          : this.#cacheConfig.enableRootDocFallback,
+      requestTimeoutMs:
+        Math.max(100, Number(config.requestTimeoutMs ?? this.#cacheConfig.requestTimeoutMs) || this.#cacheConfig.requestTimeoutMs),
+      failureTtlMs:
+        Math.max(0, Number(config.failureTtlMs ?? this.#cacheConfig.failureTtlMs) || this.#cacheConfig.failureTtlMs),
+      rootRefreshMinutes:
+        Math.max(1, Number(config.rootRefreshMinutes ?? this.#cacheConfig.rootRefreshMinutes) || this.#cacheConfig.rootRefreshMinutes),
     };
+    if (
+      this.#cacheTimer &&
+      (previousRefreshMinutes !== this.#cacheConfig.rootRefreshMinutes ||
+        previousRootDocFallback !== this.#cacheConfig.enableRootDocFallback)
+    ) {
+      this.startCacheTimer();
+    }
   }
 
   setNetworkPaths(networkLabel: string) {
@@ -151,7 +178,9 @@ class GatewayClient {
       NETWORK_PATHS[normalized] ?? NETWORK_PATHS["31"]; // default to 31 network paths
     this.#rootPathPrefix = paths.rootPrefix;
     this.#specPathPrefix = paths.specPrefix;
-    this.#connection?.console.log(`Gateway network "${normalized || "default"}" using root prefix "${this.#rootPathPrefix}" and spec prefix "${this.#specPathPrefix}"`);
+    this.#connection?.console.log(
+      `Studio network "${normalized || "default"}" using root prefix "${this.#rootPathPrefix}" and spec prefix "${this.#specPathPrefix}"`
+    );
   }
 
   dispose() {
@@ -213,10 +242,13 @@ class GatewayClient {
   }
 
   async refreshContractCache(): Promise<void> {
+    if (!this.#cacheConfig.enableRootDocFallback) {
+      return;
+    }
     const rootPrefixWithTrailingSlash = this.#rootPathPrefix.endsWith("/")
       ? this.#rootPathPrefix
       : `${this.#rootPathPrefix}/`;
-    // Root document requires a trailing slash. For legacy networks this results in a double slash which the Gateway expects.
+    // Root document requires a trailing slash. For legacy networks this results in a double slash which Studio expects.
     const rootUrl = `${this.#apiRoot}${rootPrefixWithTrailingSlash}/`;
     try {
       const rootDoc = await this.fetchJson(rootUrl);
@@ -242,7 +274,7 @@ class GatewayClient {
       this.persistDiskCache();
     } catch (err: any) {
       if (this.isNotModifiedError(err)) {
-        this.#connection?.console.log("Gateway root returned 304 Not Modified; keeping existing contract/protocol cache.");
+        this.#connection?.console.log("Studio root returned 304 Not Modified; keeping existing contract/protocol cache.");
         return;
       }
       this.#connection?.console.error(`Failed to refresh contract cache: ${err.message}`);
@@ -251,9 +283,13 @@ class GatewayClient {
 
   startCacheTimer() {
     this.stopCacheTimer();
+    if (!this.#cacheConfig.enableRootDocFallback) {
+      return;
+    }
+    const cacheIntervalMs = this.#cacheConfig.rootRefreshMinutes * 60 * 1000;
     this.#cacheTimer = setInterval(() => {
       void this.refreshContractCache();
-    }, this.#cacheIntervalMs);
+    }, cacheIntervalMs);
   }
 
   stopCacheTimer() {
@@ -286,6 +322,17 @@ class GatewayClient {
         fromCache: true,
         stale: true,
         reason: "Serving stale cached specification while refreshing in background.",
+      };
+    }
+
+    const throttledFailure = this.getActiveFailureCooldown(canonical);
+    if (throttledFailure && !preferFresh) {
+      return {
+        spec: cached?.spec ?? null,
+        canonical,
+        fromCache: !!cached,
+        stale: !!cached,
+        reason: throttledFailure.reason,
       };
     }
 
@@ -335,6 +382,7 @@ class GatewayClient {
     const task = this.withFetchLimit(async () => {
       const fetched = await this.fetchSpecFromNetwork(canonical, kind, cached);
       if (fetched.spec) {
+        this.#failedFetchCooldown.delete(canonical);
         this.upsertCacheEntry(canonical, kind, fetched.spec);
         this.persistDiskCache();
         return {
@@ -347,6 +395,7 @@ class GatewayClient {
       }
 
       if (cached) {
+        this.recordFailureCooldown(canonical, fetched.reason ?? "Fetch failed; serving cached specification.");
         const now = this.nowIso();
         this.#specCache[canonical] = {
           ...cached,
@@ -364,6 +413,7 @@ class GatewayClient {
         } as SpecFetchResult<RemoteSpec>;
       }
 
+      this.recordFailureCooldown(canonical, fetched.reason ?? "Specification fetch failed.");
       return {
         spec: null,
         canonical,
@@ -391,9 +441,12 @@ class GatewayClient {
       return { spec };
     } catch (err: any) {
       if (this.isNotModifiedError(err) && cached?.spec) {
-        return { spec: cached.spec, reason: "Gateway returned 304 Not Modified; using cached specification." };
+        return { spec: cached.spec, reason: "Studio returned 304 Not Modified; using cached specification." };
       }
-      this.#connection?.console.warn(`Gateway fetch failed for ${classification}: ${err.message}`);
+      this.#connection?.console.warn(`Studio fetch failed for ${classification}: ${err.message}`);
+      if (!this.#cacheConfig.enableRootDocFallback) {
+        return { spec: null, reason: err?.message ?? String(err) };
+      }
     }
 
     const host = await this.ensureHostForClassification(classification);
@@ -423,6 +476,7 @@ class GatewayClient {
     this.#specCache = {};
     this.#specAliases = {};
     this.#rootDocument = {};
+    this.#failedFetchCooldown.clear();
     this.#inflightFetches.clear();
     try {
       if (fs.existsSync(this.#cacheFilePath)) {
@@ -477,18 +531,24 @@ class GatewayClient {
   }
 
   private async fetchJson(url: string): Promise<any> {
+    let timeoutHandle: NodeJS.Timeout | undefined;
     try {
+      const controller = new AbortController();
+      timeoutHandle = setTimeout(() => {
+        controller.abort();
+      }, this.#cacheConfig.requestTimeoutMs);
       const res = await (globalThis as any).fetch(url, {
         headers: {
           "cache-control": "no-cache",
           pragma: "no-cache",
         },
+        signal: controller.signal,
       });
       if (res.status === 304) {
-        throw new GatewayNotModifiedError(url);
+        throw new StudioNotModifiedError(url);
       }
       if (!res.ok) {
-        throw new Error(`Gateway ${res.status} ${res.statusText} fetching ${url}`);
+        throw new Error(`Studio ${res.status} ${res.statusText} fetching ${url}`);
       }
       const text = await res.text();
       try {
@@ -497,6 +557,9 @@ class GatewayClient {
         throw new Error(`Invalid JSON received from ${url}`);
       }
     } catch (error: any) {
+      if (error?.name === "AbortError") {
+        throw new Error(`Connection timed out fetching ${url}`);
+      }
       switch (error?.code) {
         case "ECONNRESET":
         case "ETIMEDOUT":
@@ -506,14 +569,21 @@ class GatewayClient {
         default:
           throw new Error(error?.message ? error.message : `Failed to fetch ${url}`);
       }
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
     }
   }
 
-  private isNotModifiedError(error: unknown): error is GatewayNotModifiedError {
-    return error instanceof GatewayNotModifiedError;
+  private isNotModifiedError(error: unknown): error is StudioNotModifiedError {
+    return error instanceof StudioNotModifiedError;
   }
 
   private async ensureHostForClassification(classification: string): Promise<string | undefined> {
+    if (!this.#cacheConfig.enableRootDocFallback) {
+      return undefined;
+    }
     if (this.#rootDocument[classification]) {
       return this.#rootDocument[classification];
     }
@@ -576,6 +646,28 @@ class GatewayClient {
     } catch (err: any) {
       this.#connection?.console.error(`Failed to persist disk cache: ${err.message}`);
     }
+  }
+
+  private getActiveFailureCooldown(canonical: string): { until: number; reason: string } | null {
+    const current = this.#failedFetchCooldown.get(canonical);
+    if (!current) {
+      return null;
+    }
+    if (Date.now() >= current.until) {
+      this.#failedFetchCooldown.delete(canonical);
+      return null;
+    }
+    return current;
+  }
+
+  private recordFailureCooldown(canonical: string, reason: string) {
+    if (this.#cacheConfig.failureTtlMs <= 0) {
+      return;
+    }
+    this.#failedFetchCooldown.set(canonical, {
+      reason,
+      until: Date.now() + this.#cacheConfig.failureTtlMs,
+    });
   }
 }
 
