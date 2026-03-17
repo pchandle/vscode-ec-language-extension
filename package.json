@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.23",
+  "version": "0.11.24",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -357,10 +357,7 @@
         {
           "id": "emergent.bulkExpressionValidation",
           "name": "Bulk Expression Validation",
-          "icon": {
-            "light": "media/ec_icon_256x256-light.svg",
-            "dark": "media/ec_icon_256x256-dark.svg"
-          }
+          "icon": "media/ec_icon_256x256-dark.svg"
         }
       ]
     },
@@ -478,7 +475,11 @@
       {
         "command": "emergent.focusBulkExpressionValidation",
         "title": "Emergent: Focus Bulk Expression Validation",
-        "category": "Emergent"
+        "category": "Emergent",
+        "icon": {
+          "light": "media/ec_icon_256x256-light.svg",
+          "dark": "media/ec_icon_256x256-dark.svg"
+        }
       }
     ],
     "keybindings": [
