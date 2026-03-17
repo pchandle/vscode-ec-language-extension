@@ -180,6 +180,12 @@ Settings:
 - `protocolDesign.definitionPaths`
 - `protocolDesign.activeDefinition`
 
+Opening a `.pdd` file now uses the **Protocol Design Definition Editor** by default. The editor supports:
+- editing host/join macro wrappers
+- adding, renaming, reordering, and removing mode templates
+- adding, reordering, and removing template topics
+- guided insertion of `$TOPIC_n` tokens and common macro snippets
+
 If no `.pdd` matches `protocolDesignVersion`, extension warns and can open raw text editor.
 
 ### 8.3 Export `.pdes` to `.pspec`

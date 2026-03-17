@@ -14,6 +14,7 @@ import {
 import { HostMessage, WebviewMessage } from "./types";
 import { vscode } from "./vscode";
 import { PdesEditor } from "./pdes/PdesEditor";
+import { PddEditor } from "./pdd/PddEditor";
 import { SafeTextareaWidget } from "./widgets/SafeTextareaWidget";
 import { getValidatorForSchema, validateWithPrecompiledValidator } from "./validation/validatorMap";
 
@@ -51,7 +52,7 @@ export default function App() {
   const [extraErrors, setExtraErrors] = useState<ErrorSchema | undefined>();
   const liveFormDataRef = useRef<FormData>({});
   const [formVersion, setFormVersion] = useState(0);
-  const [editorMode, setEditorMode] = useState<"schema" | "pdes">("schema");
+  const [editorMode, setEditorMode] = useState<"schema" | "pdes" | "pdd">("schema");
 
   useEffect(() => {
     const handler = (event: MessageEvent<HostMessage>) => {
@@ -84,6 +85,21 @@ export default function App() {
         setParseError(message.parseError);
         setFormErrors([]);
         setProtocolCompletions((message as any).protocolCompletions ?? []);
+      } else if (message.type === "pddState") {
+        setEditorMode("pdd");
+        setSchema(undefined);
+        setFormData(undefined);
+        const nextValue = message.value ?? {};
+        setPdesData(null);
+        setPdd(nextValue as any);
+        setPddPath(undefined);
+        setCollapsedState({});
+        liveFormDataRef.current = nextValue;
+        setHostErrors(message.errors ?? []);
+        setParseError(message.parseError);
+        setFormErrors([]);
+        setProtocolCompletions([]);
+        setContractCompletions([]);
       }
     };
 
@@ -375,6 +391,45 @@ const formContext = useMemo(
           onChange={(next) => {
             liveFormDataRef.current = next;
             setPdesData(next);
+            if (pendingUpdate.current) {
+              window.clearTimeout(pendingUpdate.current);
+            }
+            pendingUpdate.current = window.setTimeout(() => {
+              vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current } as WebviewMessage);
+              pendingUpdate.current = undefined;
+            }, 250);
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (editorMode === "pdd") {
+    return (
+      <div style={styles.container}>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            input, select, textarea, button {
+              font-family: var(--vscode-font-family, "Segoe WPC", "Segoe UI", sans-serif);
+              font-size: 13px;
+            }
+          `,
+          }}
+        />
+        <header style={styles.header}>
+          <div style={styles.title}>Protocol Design Definition</div>
+          <div style={styles.headerActions}>
+            {hostErrors.length > 0 ? <div style={styles.errorBadge}>Issues</div> : <div style={styles.okBadge}>Valid</div>}
+          </div>
+        </header>
+        <PddEditor
+          value={pdd}
+          parseError={parseError}
+          hostErrors={hostErrors}
+          onChange={(next) => {
+            liveFormDataRef.current = next;
+            setPdd(next);
             if (pendingUpdate.current) {
               window.clearTimeout(pendingUpdate.current);
             }

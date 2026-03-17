@@ -9,6 +9,22 @@
 - Bundled default at `resources/pdd/default.pdd`.
 - Settings hold a list of `.pdd` definition paths; user selects the active one per workspace. Default falls back to the bundled file.
 - On export/edit, use the selected `.pdd` to interpret templates and macros.
+- `.pdd` files now also open in a dedicated **Protocol Design Definition Editor** custom editor.
+- The `.pdd` editor is the source for authoring macro globals, mode templates, topic definitions, and macro statement lines.
+
+## `.pdd` Editor UI Structure
+- Header: show editable `protocolDesignVersion`.
+- Macro wrapper cards: editable `hostMacroGlobal` and `joinMacroGlobal` `def` / `header` / `footer`.
+- Mode templates list: ordered; allow add/remove/reorder.
+  - Each template edits `name`, ordered `topics`, ordered `hostMacroTemplates`, and ordered `joinMacroTemplates`.
+  - Each topic edits `name`, `role`, `constraint`, `type`, and optional `comment`.
+  - Macro statements remain persisted as strings, but the editor provides insertion helpers for `$TOPIC_n`, common snippets, and reserved placeholders.
+
+## `.pdd` Validation
+- Validate `.pdd` files against the bundled `pdd.schema.json`.
+- Add semantic diagnostics for duplicate mode template names.
+- Warn when global `def` strings omit `$TOPICS`.
+- Warn when macro statement lines reference out-of-range or malformed `$TOPIC_n` tokens.
 
 ## UI Structure
 - Header: show `classification` (4-segment protocol id), `description`, `policy` (editable); `protocolDesignVersion` read-only from file.

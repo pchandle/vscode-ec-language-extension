@@ -1084,7 +1084,7 @@
             }
             return dispatcher.useContext(Context);
           }
-          function useState5(initialState) {
+          function useState6(initialState) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useState(initialState);
           }
@@ -1092,7 +1092,7 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useReducer(reducer, initialArg, init);
           }
-          function useRef3(initialValue) {
+          function useRef4(initialValue) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useRef(initialValue);
           }
@@ -1112,7 +1112,7 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useCallback(callback, deps);
           }
-          function useMemo4(create, deps) {
+          function useMemo5(create, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useMemo(create, deps);
           }
@@ -1884,10 +1884,10 @@
           exports2.useImperativeHandle = useImperativeHandle;
           exports2.useInsertionEffect = useInsertionEffect;
           exports2.useLayoutEffect = useLayoutEffect;
-          exports2.useMemo = useMemo4;
+          exports2.useMemo = useMemo5;
           exports2.useReducer = useReducer2;
-          exports2.useRef = useRef3;
-          exports2.useState = useState5;
+          exports2.useRef = useRef4;
+          exports2.useState = useState6;
           exports2.useSyncExternalStore = useSyncExternalStore;
           exports2.useTransition = useTransition;
           exports2.version = ReactVersion;
@@ -2383,9 +2383,9 @@
           if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
             __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
           }
-          var React3 = require_react();
+          var React4 = require_react();
           var Scheduler = require_scheduler();
-          var ReactSharedInternals = React3.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React4.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           var suppressWarning = false;
           function setSuppressWarning(newSuppressWarning) {
             {
@@ -2434,7 +2434,7 @@
           var HostPortal = 4;
           var HostComponent = 5;
           var HostText = 6;
-          var Fragment2 = 7;
+          var Fragment3 = 7;
           var Mode = 8;
           var ContextConsumer = 9;
           var ContextProvider = 10;
@@ -3591,7 +3591,7 @@
                 return "DehydratedFragment";
               case ForwardRef:
                 return getWrappedName$1(type, type.render, "ForwardRef");
-              case Fragment2:
+              case Fragment3:
                 return "Fragment";
               case HostComponent:
                 return type;
@@ -3992,7 +3992,7 @@
             {
               if (props.value == null) {
                 if (typeof props.children === "object" && props.children !== null) {
-                  React3.Children.forEach(props.children, function(child) {
+                  React4.Children.forEach(props.children, function(child) {
                     if (child == null) {
                       return;
                     }
@@ -4488,15 +4488,15 @@
             };
           }
           var warnValidStyle$1 = warnValidStyle;
-          function createDangerousStringForStyles(styles3) {
+          function createDangerousStringForStyles(styles4) {
             {
               var serialized = "";
               var delimiter = "";
-              for (var styleName in styles3) {
-                if (!styles3.hasOwnProperty(styleName)) {
+              for (var styleName in styles4) {
+                if (!styles4.hasOwnProperty(styleName)) {
                   continue;
                 }
-                var styleValue = styles3[styleName];
+                var styleValue = styles4[styleName];
                 if (styleValue != null) {
                   var isCustomProperty = styleName.indexOf("--") === 0;
                   serialized += delimiter + (isCustomProperty ? styleName : hyphenateStyleName(styleName)) + ":";
@@ -4507,19 +4507,19 @@
               return serialized || null;
             }
           }
-          function setValueForStyles(node, styles3) {
+          function setValueForStyles(node, styles4) {
             var style2 = node.style;
-            for (var styleName in styles3) {
-              if (!styles3.hasOwnProperty(styleName)) {
+            for (var styleName in styles4) {
+              if (!styles4.hasOwnProperty(styleName)) {
                 continue;
               }
               var isCustomProperty = styleName.indexOf("--") === 0;
               {
                 if (!isCustomProperty) {
-                  warnValidStyle$1(styleName, styles3[styleName]);
+                  warnValidStyle$1(styleName, styles4[styleName]);
                 }
               }
-              var styleValue = dangerousStyleValue(styleName, styles3[styleName], isCustomProperty);
+              var styleValue = dangerousStyleValue(styleName, styles4[styleName], isCustomProperty);
               if (styleName === "float") {
                 styleName = "cssFloat";
               }
@@ -4533,9 +4533,9 @@
           function isValueEmpty(value) {
             return value == null || typeof value === "boolean" || value === "";
           }
-          function expandShorthandMap(styles3) {
+          function expandShorthandMap(styles4) {
             var expanded = {};
-            for (var key in styles3) {
+            for (var key in styles4) {
               var longhands = shorthandToLonghand[key] || [key];
               for (var i2 = 0; i2 < longhands.length; i2++) {
                 expanded[longhands[i2]] = key;
@@ -12020,7 +12020,7 @@
               }
             }
             function updateFragment2(returnFiber, current2, fragment, lanes, key) {
-              if (current2 === null || current2.tag !== Fragment2) {
+              if (current2 === null || current2.tag !== Fragment3) {
                 var created = createFiberFromFragment(fragment, returnFiber.mode, lanes, key);
                 created.return = returnFiber;
                 return created;
@@ -12423,7 +12423,7 @@
                 if (child.key === key) {
                   var elementType = element.type;
                   if (elementType === REACT_FRAGMENT_TYPE) {
-                    if (child.tag === Fragment2) {
+                    if (child.tag === Fragment3) {
                       deleteRemainingChildren(returnFiber, child.sibling);
                       var existing = useFiber(child, element.props.children);
                       existing.return = returnFiber;
@@ -17899,7 +17899,7 @@
                 var _resolvedProps2 = workInProgress2.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
                 return updateForwardRef(current2, workInProgress2, type, _resolvedProps2, renderLanes2);
               }
-              case Fragment2:
+              case Fragment3:
                 return updateFragment(current2, workInProgress2, renderLanes2);
               case Mode:
                 return updateMode(current2, workInProgress2, renderLanes2);
@@ -18171,7 +18171,7 @@
               case SimpleMemoComponent:
               case FunctionComponent:
               case ForwardRef:
-              case Fragment2:
+              case Fragment3:
               case Mode:
               case Profiler:
               case ContextConsumer:
@@ -22432,7 +22432,7 @@
             return fiber;
           }
           function createFiberFromFragment(elements, mode, lanes, key) {
-            var fiber = createFiber(Fragment2, elements, key, mode);
+            var fiber = createFiber(Fragment3, elements, key, mode);
             fiber.lanes = lanes;
             return fiber;
           }
@@ -23588,7 +23588,7 @@
       if (true) {
         (function() {
           "use strict";
-          var React3 = require_react();
+          var React4 = require_react();
           var REACT_ELEMENT_TYPE = Symbol.for("react.element");
           var REACT_PORTAL_TYPE = Symbol.for("react.portal");
           var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
@@ -23614,7 +23614,7 @@
             }
             return null;
           }
-          var ReactSharedInternals = React3.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React4.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           function error(format) {
             {
               {
@@ -24464,11 +24464,11 @@
               return jsxWithValidation(type, props, key, false);
             }
           }
-          var jsx5 = jsxWithValidationDynamic;
-          var jsxs3 = jsxWithValidationStatic;
+          var jsx6 = jsxWithValidationDynamic;
+          var jsxs4 = jsxWithValidationStatic;
           exports2.Fragment = REACT_FRAGMENT_TYPE;
-          exports2.jsx = jsx5;
-          exports2.jsxs = jsxs3;
+          exports2.jsx = jsx6;
+          exports2.jsxs = jsxs4;
         })();
       }
     }
@@ -29375,7 +29375,7 @@
           var ContextProvider = REACT_PROVIDER_TYPE;
           var Element = REACT_ELEMENT_TYPE;
           var ForwardRef = REACT_FORWARD_REF_TYPE;
-          var Fragment2 = REACT_FRAGMENT_TYPE;
+          var Fragment3 = REACT_FRAGMENT_TYPE;
           var Lazy = REACT_LAZY_TYPE;
           var Memo = REACT_MEMO_TYPE;
           var Portal = REACT_PORTAL_TYPE;
@@ -29443,7 +29443,7 @@
           exports2.ContextProvider = ContextProvider;
           exports2.Element = Element;
           exports2.ForwardRef = ForwardRef;
-          exports2.Fragment = Fragment2;
+          exports2.Fragment = Fragment3;
           exports2.Lazy = Lazy;
           exports2.Memo = Memo;
           exports2.Portal = Portal;
@@ -36221,7 +36221,7 @@
   var import_client = __toESM(require_client());
 
   // webview-src/App.tsx
-  var import_react21 = __toESM(require_react());
+  var import_react22 = __toESM(require_react());
 
   // node_modules/@rjsf/core/lib/components/Form.js
   var import_jsx_runtime46 = __toESM(require_jsx_runtime());
@@ -45109,8 +45109,796 @@
     }
   };
 
-  // webview-src/widgets/SafeTextareaWidget.tsx
+  // webview-src/pdd/PddEditor.tsx
+  var import_react21 = __toESM(require_react());
   var import_jsx_runtime49 = __toESM(require_jsx_runtime());
+  var ROLE_OPTIONS = ["host", "join"];
+  var CONSTRAINT_OPTIONS = ["requirement", "obligation"];
+  var TYPE_OPTIONS = ["abstraction", "integer", "string", "boolean"];
+  var COMMON_SNIPPETS = ["sub /...(...)", "job /...(...)", "-> {"];
+  var RESERVED_INSERTS = ["$", "trigger", "debug_msg"];
+  var defaultTopic = () => ({
+    name: "",
+    role: "host",
+    constraint: "requirement",
+    type: "abstraction"
+  });
+  var defaultModeTemplate = () => ({
+    name: "",
+    topics: [],
+    hostMacroTemplates: [],
+    joinMacroTemplates: []
+  });
+  function PddEditor({ value, parseError, hostErrors, onChange }) {
+    const pdd = value ?? {
+      protocolDesignVersion: 1,
+      hostMacroGlobal: { def: "", header: "", footer: "" },
+      joinMacroGlobal: { def: "", header: "", footer: "" },
+      modeTemplates: []
+    };
+    const [collapsedTemplates, setCollapsedTemplates] = (0, import_react21.useState)({});
+    const lineRefs = (0, import_react21.useRef)({});
+    const duplicateNames = (0, import_react21.useMemo)(() => {
+      const counts = /* @__PURE__ */ new Map();
+      for (const template of pdd.modeTemplates ?? []) {
+        const name = template.name.trim();
+        if (!name) {
+          continue;
+        }
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+      return counts;
+    }, [pdd.modeTemplates]);
+    const updatePdd = (next) => {
+      onChange({ ...pdd, ...next });
+    };
+    const updateGlobalMacro = (key, field, nextValue) => {
+      updatePdd({
+        [key]: {
+          ...pdd[key],
+          [field]: nextValue
+        }
+      });
+    };
+    const updateTemplate = (index, partial) => {
+      const modeTemplates = [...pdd.modeTemplates ?? []];
+      modeTemplates[index] = {
+        ...modeTemplates[index] ?? defaultModeTemplate(),
+        ...partial
+      };
+      updatePdd({ modeTemplates });
+    };
+    const addTemplate = () => {
+      const modeTemplates = [...pdd.modeTemplates ?? [], defaultModeTemplate()];
+      updatePdd({ modeTemplates });
+      setCollapsedTemplates((prev) => ({ ...prev, [modeTemplates.length - 1]: false }));
+    };
+    const moveTemplate = (index, delta) => {
+      const modeTemplates = [...pdd.modeTemplates ?? []];
+      const target = index + delta;
+      if (target < 0 || target >= modeTemplates.length) {
+        return;
+      }
+      const [item] = modeTemplates.splice(index, 1);
+      modeTemplates.splice(target, 0, item);
+      updatePdd({ modeTemplates });
+    };
+    const removeTemplate = (index) => {
+      updatePdd({ modeTemplates: (pdd.modeTemplates ?? []).filter((_2, i2) => i2 !== index) });
+    };
+    const updateTopic = (templateIndex, topicIndex, partial) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      const topics = [...template.topics ?? []];
+      topics[topicIndex] = {
+        ...topics[topicIndex] ?? defaultTopic(),
+        ...partial
+      };
+      updateTemplate(templateIndex, { topics });
+    };
+    const addTopic = (templateIndex) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      updateTemplate(templateIndex, { topics: [...template.topics ?? [], defaultTopic()] });
+    };
+    const moveTopic = (templateIndex, topicIndex, delta) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      const topics = [...template.topics ?? []];
+      const target = topicIndex + delta;
+      if (target < 0 || target >= topics.length) {
+        return;
+      }
+      const [item] = topics.splice(topicIndex, 1);
+      topics.splice(target, 0, item);
+      updateTemplate(templateIndex, { topics });
+    };
+    const removeTopic = (templateIndex, topicIndex) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      updateTemplate(templateIndex, { topics: (template.topics ?? []).filter((_2, index) => index !== topicIndex) });
+    };
+    const addMacroLine = (templateIndex, key) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      updateTemplate(templateIndex, { [key]: [...template[key] ?? [], ""] });
+    };
+    const updateMacroLine = (templateIndex, key, lineIndex, nextValue) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      const lines = [...template[key] ?? []];
+      lines[lineIndex] = nextValue;
+      updateTemplate(templateIndex, { [key]: lines });
+    };
+    const moveMacroLine = (templateIndex, key, lineIndex, delta) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      const lines = [...template[key] ?? []];
+      const target = lineIndex + delta;
+      if (target < 0 || target >= lines.length) {
+        return;
+      }
+      const [item] = lines.splice(lineIndex, 1);
+      lines.splice(target, 0, item);
+      updateTemplate(templateIndex, { [key]: lines });
+    };
+    const removeMacroLine = (templateIndex, key, lineIndex) => {
+      const template = pdd.modeTemplates?.[templateIndex] ?? defaultModeTemplate();
+      updateTemplate(templateIndex, { [key]: (template[key] ?? []).filter((_2, index) => index !== lineIndex) });
+    };
+    const insertIntoGlobal = (key) => {
+      const current = pdd[key]?.def ?? "";
+      const spacer = current && !current.endsWith(" ") ? " " : "";
+      updateGlobalMacro(key, "def", `${current}${spacer}$TOPICS`);
+    };
+    const insertIntoMacroLine = (templateIndex, key, lineIndex, inserted) => {
+      const refKey = `${templateIndex}:${key}:${lineIndex}`;
+      const textarea = lineRefs.current[refKey];
+      const current = pdd.modeTemplates?.[templateIndex]?.[key]?.[lineIndex] ?? "";
+      const start = textarea?.selectionStart ?? current.length;
+      const end = textarea?.selectionEnd ?? current.length;
+      const nextValue = `${current.slice(0, start)}${inserted}${current.slice(end)}`;
+      updateMacroLine(templateIndex, key, lineIndex, nextValue);
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.shell, children: [
+      parseError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerError, children: [
+        "Unable to parse JSON: ",
+        parseError
+      ] }) : null,
+      hostErrors && hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.bannerWarning, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("li", { children: err }, err)) })
+      ] }) : null,
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("section", { style: styles2.section, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.sectionTitle, children: "Definition" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.fieldGrid, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "Protocol Design Version" }),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            "input",
+            {
+              type: "number",
+              style: styles2.input,
+              value: pdd.protocolDesignVersion ?? 1,
+              onChange: (event) => updatePdd({ protocolDesignVersion: Number(event.target.value) || 1 })
+            }
+          )
+        ] }) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        MacroGlobalCard,
+        {
+          title: "Host Macro Wrapper",
+          value: pdd.hostMacroGlobal,
+          onChange: (field, nextValue) => updateGlobalMacro("hostMacroGlobal", field, nextValue),
+          onInsertTopics: () => insertIntoGlobal("hostMacroGlobal")
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        MacroGlobalCard,
+        {
+          title: "Join Macro Wrapper",
+          value: pdd.joinMacroGlobal,
+          onChange: (field, nextValue) => updateGlobalMacro("joinMacroGlobal", field, nextValue),
+          onInsertTopics: () => insertIntoGlobal("joinMacroGlobal")
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("section", { style: styles2.section, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionHeader, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.sectionTitle, children: "Mode Templates" }),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.primaryButton, onClick: addTemplate, children: "Add Mode Template" })
+        ] }),
+        (pdd.modeTemplates ?? []).map((template, templateIndex) => {
+          const name = (template.name ?? "").trim();
+          const hasDuplicate = name.length > 0 && (duplicateNames.get(name) ?? 0) > 1;
+          const collapsed = collapsedTemplates[templateIndex] ?? false;
+          const topics = template.topics ?? [];
+          const hostLines = template.hostMacroTemplates ?? [];
+          const joinLines = template.joinMacroTemplates ?? [];
+          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("article", { style: styles2.card, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardHeader, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardEyebrow, children: [
+                  "Template ",
+                  templateIndex
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.cardTitle, children: name || "Untitled Mode Template" }),
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardSubtitle, children: [
+                  topics.length,
+                  " topic(s), ",
+                  hostLines.length,
+                  " host statement(s), ",
+                  joinLines.length,
+                  " join statement(s)"
+                ] })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardActions, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallButton, onClick: () => moveTemplate(templateIndex, -1), children: "Up" }),
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallButton, onClick: () => moveTemplate(templateIndex, 1), children: "Down" }),
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  "button",
+                  {
+                    type: "button",
+                    style: styles2.smallButton,
+                    onClick: () => setCollapsedTemplates((prev) => ({ ...prev, [templateIndex]: !collapsed })),
+                    children: collapsed ? "Expand" : "Collapse"
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.dangerButton, onClick: () => removeTemplate(templateIndex), children: "Delete" })
+              ] })
+            ] }),
+            collapsed ? null : /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.fieldGrid, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "Template Name" }),
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  "input",
+                  {
+                    type: "text",
+                    style: styles2.input,
+                    value: template.name,
+                    onChange: (event) => updateTemplate(templateIndex, { name: event.target.value })
+                  }
+                )
+              ] }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.helperText, children: "Renaming this template changes the identifier that `.pdes` files reference." }),
+              hasDuplicate ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.inlineWarning, children: "Template names must be unique within the file." }) : null,
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.subSection, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.subSectionHeader, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.subSectionTitle, children: "Topics" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallPrimaryButton, onClick: () => addTopic(templateIndex), children: "Add Topic" })
+                ] }),
+                topics.map((topic, topicIndex) => /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.topicCard, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.topicHeader, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.topicTitle, children: [
+                      "Topic ",
+                      topicIndex
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardActions, children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                        "button",
+                        {
+                          type: "button",
+                          style: styles2.smallButton,
+                          onClick: () => moveTopic(templateIndex, topicIndex, -1),
+                          children: "Up"
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                        "button",
+                        {
+                          type: "button",
+                          style: styles2.smallButton,
+                          onClick: () => moveTopic(templateIndex, topicIndex, 1),
+                          children: "Down"
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                        "button",
+                        {
+                          type: "button",
+                          style: styles2.smallButton,
+                          onClick: () => removeTopic(templateIndex, topicIndex),
+                          children: "Remove"
+                        }
+                      )
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.topicGrid, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "Name" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                        "input",
+                        {
+                          type: "text",
+                          style: styles2.input,
+                          value: topic.name,
+                          onChange: (event) => updateTopic(templateIndex, topicIndex, { name: event.target.value })
+                        }
+                      )
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                      SelectField,
+                      {
+                        label: "Role",
+                        value: topic.role,
+                        options: ROLE_OPTIONS,
+                        onChange: (nextValue) => updateTopic(templateIndex, topicIndex, { role: nextValue })
+                      }
+                    ),
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                      SelectField,
+                      {
+                        label: "Constraint",
+                        value: topic.constraint,
+                        options: CONSTRAINT_OPTIONS,
+                        onChange: (nextValue) => updateTopic(templateIndex, topicIndex, { constraint: nextValue })
+                      }
+                    ),
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                      SelectField,
+                      {
+                        label: "Type",
+                        value: topic.type,
+                        options: TYPE_OPTIONS,
+                        onChange: (nextValue) => updateTopic(templateIndex, topicIndex, { type: nextValue })
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "Comment" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                      "textarea",
+                      {
+                        style: styles2.textarea,
+                        rows: 2,
+                        value: topic.comment ?? "",
+                        onChange: (event) => updateTopic(templateIndex, topicIndex, { comment: event.target.value })
+                      }
+                    )
+                  ] })
+                ] }, `${templateIndex}:topic:${topicIndex}`)),
+                topics.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.emptyState, children: "No topics yet." }) : null
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.tokenPanel, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.subSectionTitle, children: "Topic Token Reference" }),
+                topics.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.helperText, children: "Add topics to unlock `$TOPIC_n` insertion helpers." }) : topics.map((topic, topicIndex) => /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.tokenRow, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("code", { style: styles2.tokenCode, children: `$TOPIC_${topicIndex}` }),
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { children: topic.name || "Unnamed topic" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("span", { style: styles2.tokenMeta, children: [
+                    topic.role,
+                    " / ",
+                    topic.constraint,
+                    " / ",
+                    topic.type
+                  ] })
+                ] }, `${templateIndex}:ref:${topicIndex}`))
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                MacroStatementsEditor,
+                {
+                  title: "Host Macro Statements",
+                  template,
+                  templateIndex,
+                  macroKey: "hostMacroTemplates",
+                  lineRefs,
+                  onAdd: () => addMacroLine(templateIndex, "hostMacroTemplates"),
+                  onChange: (lineIndex, nextValue) => updateMacroLine(templateIndex, "hostMacroTemplates", lineIndex, nextValue),
+                  onMove: (lineIndex, delta) => moveMacroLine(templateIndex, "hostMacroTemplates", lineIndex, delta),
+                  onRemove: (lineIndex) => removeMacroLine(templateIndex, "hostMacroTemplates", lineIndex),
+                  onInsert: (lineIndex, inserted) => insertIntoMacroLine(templateIndex, "hostMacroTemplates", lineIndex, inserted)
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                MacroStatementsEditor,
+                {
+                  title: "Join Macro Statements",
+                  template,
+                  templateIndex,
+                  macroKey: "joinMacroTemplates",
+                  lineRefs,
+                  onAdd: () => addMacroLine(templateIndex, "joinMacroTemplates"),
+                  onChange: (lineIndex, nextValue) => updateMacroLine(templateIndex, "joinMacroTemplates", lineIndex, nextValue),
+                  onMove: (lineIndex, delta) => moveMacroLine(templateIndex, "joinMacroTemplates", lineIndex, delta),
+                  onRemove: (lineIndex) => removeMacroLine(templateIndex, "joinMacroTemplates", lineIndex),
+                  onInsert: (lineIndex, inserted) => insertIntoMacroLine(templateIndex, "joinMacroTemplates", lineIndex, inserted)
+                }
+              )
+            ] })
+          ] }, `template:${templateIndex}`);
+        }),
+        (pdd.modeTemplates ?? []).length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.emptyState, children: "No mode templates yet." }) : null
+      ] })
+    ] });
+  }
+  function MacroGlobalCard({
+    title,
+    value,
+    onChange,
+    onInsertTopics
+  }) {
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("section", { style: styles2.section, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.sectionHeader, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.sectionTitle, children: title }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallPrimaryButton, onClick: onInsertTopics, children: "Insert $TOPICS" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.helperText, children: "`$TOPICS` expands to all requirement identifiers followed by all obligation identifiers during `.pdes` export." }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "def" }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("textarea", { style: styles2.textarea, rows: 2, value: value?.def ?? "", onChange: (event) => onChange("def", event.target.value) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "header" }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          "textarea",
+          {
+            style: styles2.textarea,
+            rows: 3,
+            value: value?.header ?? "",
+            onChange: (event) => onChange("header", event.target.value)
+          }
+        )
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: "footer" }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          "textarea",
+          {
+            style: styles2.textarea,
+            rows: 3,
+            value: value?.footer ?? "",
+            onChange: (event) => onChange("footer", event.target.value)
+          }
+        )
+      ] })
+    ] });
+  }
+  function MacroStatementsEditor({
+    title,
+    template,
+    templateIndex,
+    macroKey,
+    lineRefs,
+    onAdd,
+    onChange,
+    onMove,
+    onRemove,
+    onInsert
+  }) {
+    const lines = template[macroKey] ?? [];
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.subSection, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.subSectionHeader, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.subSectionTitle, children: title }),
+        /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallPrimaryButton, onClick: onAdd, children: "Add Statement" })
+      ] }),
+      lines.map((line, lineIndex) => {
+        const warnings = getLineWarnings(template, line, macroKey === "hostMacroTemplates" ? "host" : "join");
+        const refKey = `${templateIndex}:${macroKey}:${lineIndex}`;
+        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.macroCard, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.topicHeader, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.topicTitle, children: [
+              "Statement ",
+              lineIndex
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.cardActions, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallButton, onClick: () => onMove(lineIndex, -1), children: "Up" }),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallButton, onClick: () => onMove(lineIndex, 1), children: "Down" }),
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallButton, onClick: () => onRemove(lineIndex), children: "Remove" })
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { style: styles2.insertRow, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("select", { style: styles2.select, defaultValue: "", onChange: (event) => {
+              if (event.target.value) {
+                onInsert(lineIndex, event.target.value);
+                event.target.value = "";
+              }
+            }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", { value: "", children: "Insert Topic Token" }),
+              template.topics.map((topic, topicIndex) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", { value: `$TOPIC_${topicIndex}`, children: `Topic ${topicIndex}: ${topic.name || "Unnamed topic"}` }, `${refKey}:topic:${topicIndex}`))
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("select", { style: styles2.select, defaultValue: "", onChange: (event) => {
+              if (event.target.value) {
+                onInsert(lineIndex, event.target.value);
+                event.target.value = "";
+              }
+            }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", { value: "", children: "Insert Common Snippet" }),
+              COMMON_SNIPPETS.map((snippet) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", { value: snippet, children: snippet }, `${refKey}:snippet:${snippet}`))
+            ] }),
+            RESERVED_INSERTS.map((reserved) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { type: "button", style: styles2.smallButton, onClick: () => onInsert(lineIndex, reserved), children: reserved }, `${refKey}:reserved:${reserved}`))
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            "textarea",
+            {
+              ref: (node) => {
+                lineRefs.current[refKey] = node;
+              },
+              style: styles2.textarea,
+              rows: 3,
+              value: line,
+              onChange: (event) => onChange(lineIndex, event.target.value)
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.helperText, children: describeTokens(template, line) }),
+          warnings.map((warning) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.inlineWarning, children: warning }, `${refKey}:${warning}`))
+        ] }, refKey);
+      }),
+      lines.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { style: styles2.emptyState, children: "No statements yet." }) : null
+    ] });
+  }
+  function SelectField({
+    label,
+    value,
+    options,
+    onChange
+  }) {
+    return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { style: styles2.labelBlock, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { style: styles2.label, children: label }),
+      /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("select", { style: styles2.select, value, onChange: (event) => onChange(event.target.value), children: options.map((option) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", { value: option, children: option }, `${label}:${option}`)) })
+    ] });
+  }
+  function describeTokens(template, line) {
+    const tokens = Array.from(line.matchAll(/\$TOPIC_(\d+)/g));
+    if (tokens.length === 0) {
+      return "No topic tokens referenced in this statement.";
+    }
+    return tokens.map((match) => {
+      const index = Number(match[1]);
+      const topic = template.topics[index];
+      return topic ? `${match[0]} -> ${topic.name || `Topic ${index}`}` : `${match[0]} -> missing topic`;
+    }).join(" | ");
+  }
+  function getLineWarnings(template, line, macroRole) {
+    const warnings = [];
+    for (const match of line.matchAll(/\$TOPIC_(\d+)/g)) {
+      const index = Number(match[1]);
+      const topic = template.topics[index];
+      if (!topic) {
+        warnings.push(`${match[0]} does not exist for this template.`);
+      }
+    }
+    for (const match of line.matchAll(/\$TOPIC_([^\d\s,()]+)/g)) {
+      warnings.push(`Malformed token ${match[0]}. Use $TOPIC_<index>.`);
+    }
+    const topicRefs = Array.from(line.matchAll(/\$TOPIC_(\d+)/g)).map((match) => template.topics[Number(match[1])]).filter(Boolean);
+    if (topicRefs.length > 0 && topicRefs.every((topic) => topic.role !== macroRole)) {
+      warnings.push(`${macroRole} statement only references ${macroRole === "host" ? "join" : "host"} topics.`);
+    }
+    return Array.from(new Set(warnings));
+  }
+  var styles2 = {
+    shell: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 16
+    },
+    section: {
+      border: "1px solid var(--vscode-editorWidget-border, rgba(255,255,255,0.12))",
+      borderRadius: 14,
+      padding: 16,
+      background: "var(--vscode-sideBar-background, rgba(255,255,255,0.03))"
+    },
+    sectionHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 12
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: 700
+    },
+    fieldGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gap: 12
+    },
+    labelBlock: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: 600,
+      color: "var(--vscode-descriptionForeground)",
+      textTransform: "uppercase",
+      letterSpacing: "0.04em"
+    },
+    input: {
+      borderRadius: 8,
+      border: "1px solid var(--vscode-input-border, transparent)",
+      background: "var(--vscode-input-background)",
+      color: "var(--vscode-input-foreground)",
+      padding: "8px 10px"
+    },
+    select: {
+      borderRadius: 8,
+      border: "1px solid var(--vscode-dropdown-border, transparent)",
+      background: "var(--vscode-dropdown-background)",
+      color: "var(--vscode-dropdown-foreground)",
+      padding: "8px 10px"
+    },
+    textarea: {
+      width: "100%",
+      borderRadius: 8,
+      border: "1px solid var(--vscode-input-border, transparent)",
+      background: "var(--vscode-input-background)",
+      color: "var(--vscode-input-foreground)",
+      padding: "8px 10px",
+      resize: "vertical",
+      boxSizing: "border-box"
+    },
+    helperText: {
+      fontSize: 12,
+      color: "var(--vscode-descriptionForeground)",
+      marginTop: 6
+    },
+    primaryButton: {
+      borderRadius: 999,
+      padding: "8px 14px",
+      border: "1px solid transparent",
+      background: "var(--vscode-button-background)",
+      color: "var(--vscode-button-foreground)",
+      cursor: "pointer"
+    },
+    smallPrimaryButton: {
+      borderRadius: 999,
+      padding: "6px 12px",
+      border: "1px solid transparent",
+      background: "var(--vscode-button-secondaryBackground, var(--vscode-button-background))",
+      color: "var(--vscode-button-secondaryForeground, var(--vscode-button-foreground))",
+      cursor: "pointer"
+    },
+    smallButton: {
+      borderRadius: 999,
+      padding: "6px 10px",
+      border: "1px solid var(--vscode-editorWidget-border, rgba(255,255,255,0.12))",
+      background: "transparent",
+      color: "inherit",
+      cursor: "pointer"
+    },
+    dangerButton: {
+      borderRadius: 999,
+      padding: "6px 10px",
+      border: "1px solid rgba(255, 120, 120, 0.4)",
+      background: "rgba(255, 120, 120, 0.12)",
+      color: "var(--vscode-errorForeground)",
+      cursor: "pointer"
+    },
+    card: {
+      border: "1px solid var(--vscode-editorWidget-border, rgba(255,255,255,0.12))",
+      borderRadius: 14,
+      padding: 14,
+      background: "rgba(127,127,127,0.05)",
+      marginBottom: 14
+    },
+    cardHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 12,
+      alignItems: "flex-start",
+      marginBottom: 12
+    },
+    cardEyebrow: {
+      fontSize: 11,
+      textTransform: "uppercase",
+      letterSpacing: "0.06em",
+      color: "var(--vscode-descriptionForeground)"
+    },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: 700
+    },
+    cardSubtitle: {
+      fontSize: 12,
+      color: "var(--vscode-descriptionForeground)",
+      marginTop: 4
+    },
+    cardActions: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap",
+      justifyContent: "flex-end"
+    },
+    subSection: {
+      marginTop: 16,
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    },
+    subSectionHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12
+    },
+    subSectionTitle: {
+      fontSize: 14,
+      fontWeight: 700
+    },
+    topicCard: {
+      border: "1px solid var(--vscode-editorWidget-border, rgba(255,255,255,0.12))",
+      borderRadius: 12,
+      padding: 12,
+      background: "rgba(127,127,127,0.04)"
+    },
+    topicHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 10
+    },
+    topicTitle: {
+      fontSize: 13,
+      fontWeight: 700
+    },
+    topicGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+      gap: 10,
+      marginBottom: 10
+    },
+    tokenPanel: {
+      border: "1px dashed var(--vscode-editorWidget-border, rgba(255,255,255,0.18))",
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 16
+    },
+    tokenRow: {
+      display: "flex",
+      gap: 12,
+      alignItems: "center",
+      flexWrap: "wrap",
+      fontSize: 12,
+      padding: "4px 0"
+    },
+    tokenCode: {
+      padding: "2px 6px",
+      borderRadius: 6,
+      background: "rgba(127,127,127,0.18)"
+    },
+    tokenMeta: {
+      color: "var(--vscode-descriptionForeground)"
+    },
+    macroCard: {
+      border: "1px solid var(--vscode-editorWidget-border, rgba(255,255,255,0.12))",
+      borderRadius: 12,
+      padding: 12
+    },
+    insertRow: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap",
+      marginBottom: 10
+    },
+    emptyState: {
+      fontSize: 13,
+      color: "var(--vscode-descriptionForeground)",
+      padding: "6px 0"
+    },
+    inlineWarning: {
+      fontSize: 12,
+      color: "var(--vscode-editorWarning-foreground, #d7ba7d)",
+      marginTop: 6
+    },
+    bannerError: {
+      borderRadius: 12,
+      padding: 12,
+      background: "rgba(255, 107, 107, 0.12)",
+      color: "var(--vscode-errorForeground)"
+    },
+    bannerWarning: {
+      borderRadius: 12,
+      padding: 12,
+      background: "rgba(215, 186, 125, 0.12)",
+      color: "var(--vscode-editorWarning-foreground, #d7ba7d)"
+    },
+    bannerTitle: {
+      fontWeight: 700,
+      marginBottom: 6
+    },
+    errorList: {
+      margin: 0,
+      paddingLeft: 18
+    }
+  };
+
+  // webview-src/widgets/SafeTextareaWidget.tsx
+  var import_jsx_runtime50 = __toESM(require_jsx_runtime());
   var SafeTextareaWidget = ({
     value = "",
     onChange,
@@ -45127,7 +45915,7 @@
     const handleChange = (event) => {
       onChange(event.target.value);
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
       "textarea",
       {
         id,
@@ -49020,10 +49808,10 @@
   }
 
   // webview-src/App.tsx
-  var import_jsx_runtime50 = __toESM(require_jsx_runtime());
-  var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("path", { d: "M9 4h6m-8 3h10l-1 13H8L7 7Z", stroke: "currentColor", strokeWidth: "2", strokeLinejoin: "round" }),
-    /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("path", { d: "M5 7h14", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" })
+  var import_jsx_runtime51 = __toESM(require_jsx_runtime());
+  var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("path", { d: "M9 4h6m-8 3h10l-1 13H8L7 7Z", stroke: "currentColor", strokeWidth: "2", strokeLinejoin: "round" }),
+    /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("path", { d: "M5 7h14", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" })
   ] });
   var REQUIREMENT_TYPE_OPTIONS = [
     { value: "abstraction", label: "Protocol" },
@@ -49033,24 +49821,24 @@
     { value: "site", label: "Site" }
   ];
   function App() {
-    const [schema, setSchema] = (0, import_react21.useState)();
-    const [formData, setFormData] = (0, import_react21.useState)({});
-    const [pdesData, setPdesData] = (0, import_react21.useState)(null);
-    const [pdd, setPdd] = (0, import_react21.useState)(null);
-    const [pddPath, setPddPath] = (0, import_react21.useState)();
-    const [protocolCompletions, setProtocolCompletions] = (0, import_react21.useState)([]);
-    const [contractCompletions, setContractCompletions] = (0, import_react21.useState)([]);
-    const [hostErrors, setHostErrors] = (0, import_react21.useState)([]);
-    const [parseError, setParseError] = (0, import_react21.useState)();
-    const [formErrors, setFormErrors] = (0, import_react21.useState)([]);
-    const [collapsedState, setCollapsedState] = (0, import_react21.useState)({});
-    const pendingUpdate = (0, import_react21.useRef)(void 0);
-    const validationTimer = (0, import_react21.useRef)(void 0);
-    const [extraErrors, setExtraErrors] = (0, import_react21.useState)();
-    const liveFormDataRef = (0, import_react21.useRef)({});
-    const [formVersion, setFormVersion] = (0, import_react21.useState)(0);
-    const [editorMode, setEditorMode] = (0, import_react21.useState)("schema");
-    (0, import_react21.useEffect)(() => {
+    const [schema, setSchema] = (0, import_react22.useState)();
+    const [formData, setFormData] = (0, import_react22.useState)({});
+    const [pdesData, setPdesData] = (0, import_react22.useState)(null);
+    const [pdd, setPdd] = (0, import_react22.useState)(null);
+    const [pddPath, setPddPath] = (0, import_react22.useState)();
+    const [protocolCompletions, setProtocolCompletions] = (0, import_react22.useState)([]);
+    const [contractCompletions, setContractCompletions] = (0, import_react22.useState)([]);
+    const [hostErrors, setHostErrors] = (0, import_react22.useState)([]);
+    const [parseError, setParseError] = (0, import_react22.useState)();
+    const [formErrors, setFormErrors] = (0, import_react22.useState)([]);
+    const [collapsedState, setCollapsedState] = (0, import_react22.useState)({});
+    const pendingUpdate = (0, import_react22.useRef)(void 0);
+    const validationTimer = (0, import_react22.useRef)(void 0);
+    const [extraErrors, setExtraErrors] = (0, import_react22.useState)();
+    const liveFormDataRef = (0, import_react22.useRef)({});
+    const [formVersion, setFormVersion] = (0, import_react22.useState)(0);
+    const [editorMode, setEditorMode] = (0, import_react22.useState)("schema");
+    (0, import_react22.useEffect)(() => {
       const handler = (event) => {
         const message = event.data;
         if (message.type === "state") {
@@ -49081,6 +49869,21 @@
           setParseError(message.parseError);
           setFormErrors([]);
           setProtocolCompletions(message.protocolCompletions ?? []);
+        } else if (message.type === "pddState") {
+          setEditorMode("pdd");
+          setSchema(void 0);
+          setFormData(void 0);
+          const nextValue = message.value ?? {};
+          setPdesData(null);
+          setPdd(nextValue);
+          setPddPath(void 0);
+          setCollapsedState({});
+          liveFormDataRef.current = nextValue;
+          setHostErrors(message.errors ?? []);
+          setParseError(message.parseError);
+          setFormErrors([]);
+          setProtocolCompletions([]);
+          setContractCompletions([]);
         }
       };
       window.addEventListener("message", handler);
@@ -49089,7 +49892,7 @@
         window.removeEventListener("message", handler);
       };
     }, []);
-    const enhancedSchema = (0, import_react21.useMemo)(() => {
+    const enhancedSchema = (0, import_react22.useMemo)(() => {
       if (!schema) {
         return void 0;
       }
@@ -49141,7 +49944,7 @@
       applyRequirementOptions(clone?.$defs?.obligation);
       return clone;
     }, [schema]);
-    const uiSchema = (0, import_react21.useMemo)(() => {
+    const uiSchema = (0, import_react22.useMemo)(() => {
       const buildRequirementUi = () => ({
         "ui:options": { orderable: true },
         items: {
@@ -49176,7 +49979,7 @@
         }
       };
     }, [contractCompletions]);
-    const templates2 = (0, import_react21.useMemo)(
+    const templates2 = (0, import_react22.useMemo)(
       () => ({
         ArrayFieldTemplate: CardArrayFieldTemplate,
         FieldTemplate: CompactFieldTemplate,
@@ -49185,7 +49988,7 @@
       }),
       []
     );
-    const formValidator = (0, import_react21.useMemo)(() => {
+    const formValidator = (0, import_react22.useMemo)(() => {
       const baseSchema = schema;
       if (!baseSchema) {
         return void 0;
@@ -49204,14 +50007,14 @@
         isValid: (_schema, formData2, _rootSchema) => validator.isValid(baseSchema, formData2, baseSchema)
       };
     }, [enhancedSchema, schema]);
-    const widgets2 = (0, import_react21.useMemo)(
+    const widgets2 = (0, import_react22.useMemo)(
       () => ({
         ContractProtocolInput: ContractProtocolCompletionWidget,
         TextareaWidget: SafeTextareaWidget
       }),
       []
     );
-    const formContext = (0, import_react21.useMemo)(
+    const formContext = (0, import_react22.useMemo)(
       () => ({
         collapsedState,
         formErrors,
@@ -49250,10 +50053,10 @@
       }),
       [collapsedState, formErrors]
     );
-    const hasErrors = (0, import_react21.useMemo)(() => {
+    const hasErrors = (0, import_react22.useMemo)(() => {
       return Boolean(parseError || hostErrors && hostErrors.length > 0);
     }, [parseError, hostErrors]);
-    const [errorsCollapsed, setErrorsCollapsed] = (0, import_react21.useState)(true);
+    const [errorsCollapsed, setErrorsCollapsed] = (0, import_react22.useState)(true);
     const onChange = (data) => {
       liveFormDataRef.current = data.formData;
       setFormData(data.formData);
@@ -49268,14 +50071,14 @@
     const onBlur = () => {
       scheduleValidation(0);
     };
-    (0, import_react21.useEffect)(() => {
+    (0, import_react22.useEffect)(() => {
       return () => {
         if (pendingUpdate.current) {
           window.clearTimeout(pendingUpdate.current);
         }
       };
     }, []);
-    (0, import_react21.useEffect)(() => {
+    (0, import_react22.useEffect)(() => {
       if (!enhancedSchema && !schema) {
         return;
       }
@@ -49307,8 +50110,8 @@
       }, delayMs);
     };
     if (editorMode === "pdes") {
-      return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.container, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.container, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
           "style",
           {
             dangerouslySetInnerHTML: {
@@ -49321,19 +50124,19 @@
             }
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("header", { style: styles2.header, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.title, children: "Protocol Design" }),
-          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.okBadge, children: "Valid" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("header", { style: styles3.header, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.title, children: "Protocol Design" }),
+          /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.okBadge, children: "Valid" }) })
         ] }),
-        parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerError, children: [
+        parseError ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.bannerError, children: [
           "Unable to parse JSON: ",
           parseError
         ] }) : null,
-        hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerWarning, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
-          /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) })
+        hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.bannerWarning, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.bannerTitle, children: "Validation" }),
+          /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("ul", { style: styles3.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("li", { children: err }, err)) })
         ] }) : null,
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
           PdesEditor,
           {
             value: pdesData,
@@ -49355,8 +50158,48 @@
         )
       ] });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.container, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+    if (editorMode === "pdd") {
+      return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.container, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
+          "style",
+          {
+            dangerouslySetInnerHTML: {
+              __html: `
+            input, select, textarea, button {
+              font-family: var(--vscode-font-family, "Segoe WPC", "Segoe UI", sans-serif);
+              font-size: 13px;
+            }
+          `
+            }
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("header", { style: styles3.header, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.title, children: "Protocol Design Definition" }),
+          /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.errorBadge, children: "Issues" }) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.okBadge, children: "Valid" }) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
+          PddEditor,
+          {
+            value: pdd,
+            parseError,
+            hostErrors,
+            onChange: (next) => {
+              liveFormDataRef.current = next;
+              setPdd(next);
+              if (pendingUpdate.current) {
+                window.clearTimeout(pendingUpdate.current);
+              }
+              pendingUpdate.current = window.setTimeout(() => {
+                vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current });
+                pendingUpdate.current = void 0;
+              }, 250);
+            }
+          }
+        )
+      ] });
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.container, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
         "style",
         {
           dangerouslySetInnerHTML: {
@@ -49369,35 +50212,35 @@
           }
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("header", { style: styles2.header, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.title, children: "Contract Specification" }),
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.headerActions, children: [
-          hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("header", { style: styles3.header, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.title, children: "Contract Specification" }),
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.headerActions, children: [
+          hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
             "button",
             {
               type: "button",
-              style: styles2.collapseButton,
+              style: styles3.collapseButton,
               onClick: () => setErrorsCollapsed((v2) => !v2),
               "aria-label": errorsCollapsed ? "Show errors" : "Hide errors",
               children: errorsCollapsed ? "Show errors" : "Hide errors"
             }
           ) : null,
-          hasErrors ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.okBadge, children: "Valid" })
+          hasErrors ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.okBadge, children: "Valid" })
         ] })
       ] }),
-      parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerError, children: [
+      parseError ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.bannerError, children: [
         "Unable to parse JSON: ",
         parseError
       ] }) : null,
-      hostErrors.length > 0 && !errorsCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerWarning, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Schema validation" }),
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) })
+      hostErrors.length > 0 && !errorsCollapsed ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.bannerWarning, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.bannerTitle, children: "Schema validation" }),
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("ul", { style: styles3.errorList, children: hostErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("li", { children: err }, err)) })
       ] }) : null,
-      !schema ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Loading schema\u2026" }) : !formValidator ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.bannerError, children: [
+      !schema ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.bannerInfo, children: "Loading schema\u2026" }) : !formValidator ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.bannerError, children: [
         "Missing validator for schema ",
         schema?.$id ?? "(unknown)",
         "."
-      ] }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+      ] }) : parseError ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.bannerInfo, children: "Fix the JSON syntax to enable the form." }) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
         lib_default,
         {
           schema: enhancedSchema ?? schema,
@@ -49413,7 +50256,7 @@
           noHtml5Validate: true,
           onChange,
           onBlur,
-          children: /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(import_jsx_runtime50.Fragment, {})
+          children: /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(import_jsx_runtime51.Fragment, {})
         }
       )
     ] });
@@ -49422,11 +50265,11 @@
     const { title, items, canAdd, onAddClick, required, formData, errorSchema, idSchema, formContext } = props;
     const path = idSchema.$id;
     const collapsedMap = formContext?.collapsedState?.[path] ?? {};
-    const prevKeysRef = (0, import_react21.useRef)([]);
+    const prevKeysRef = (0, import_react22.useRef)([]);
     const itemHasErrors = (index) => hasErrorsInSchema(errorSchema?.[index]);
     const itemDataAt = (index) => Array.isArray(formData) ? formData[index] : void 0;
     const allKeys = items.map((item) => item.key);
-    (0, import_react21.useEffect)(() => {
+    (0, import_react22.useEffect)(() => {
       const prevKeys = prevKeysRef.current;
       const currentKeys = items.map((item) => item.key);
       const newKeys = currentKeys.filter((k2) => !prevKeys.includes(k2));
@@ -49435,38 +50278,38 @@
       }
       prevKeysRef.current = currentKeys;
     }, [items, formContext, path]);
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.arraySection, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionHeader, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionTitle, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.arraySection, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.sectionHeader, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.sectionTitle, children: [
           title,
-          required ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
+          required ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.requiredMarker, children: "*" }) : null
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionActions, children: [
-          items.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(import_jsx_runtime50.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.sectionActions, children: [
+          items.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)(import_jsx_runtime51.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
               "button",
               {
                 type: "button",
-                style: styles2.smallButton,
+                style: styles3.smallButton,
                 onClick: () => formContext?.setAll?.(path, false, allKeys),
                 children: "Expand all"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
               "button",
               {
                 type: "button",
-                style: styles2.smallButton,
+                style: styles3.smallButton,
                 onClick: () => formContext?.setAll?.(path, true, allKeys),
                 children: "Collapse all"
               }
             )
           ] }) : null,
-          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(
+          canAdd ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)(
             "button",
             {
               type: "button",
-              style: styles2.addButton,
+              style: styles3.addButton,
               onClick: () => {
                 onAddClick();
                 const newKey = (path && items.length !== void 0 ? `${path}_${items.length}` : void 0) ?? void 0;
@@ -49482,7 +50325,7 @@
           ) : null
         ] })
       ] }),
-      items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.emptyState, children: [
+      items.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.emptyState, children: [
         "No ",
         title?.toLowerCase() ?? "items",
         " yet."
@@ -49498,67 +50341,67 @@
         const isFirstItem = items.length === 1 && item.index === 0;
         const collapsed = isFirstItem ? false : collapsedMap[item.key] ?? false;
         const hasAnyErrors = showError || itemErrors && itemErrors.length > 0;
-        return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)(
           "div",
           {
             style: {
-              ...styles2.card,
+              ...styles3.card,
               borderWidth: hasAnyErrors ? "2px" : "1px",
-              borderColor: hasAnyErrors ? "#f0b400" : styles2.card.borderColor,
+              borderColor: hasAnyErrors ? "#f0b400" : styles3.card.borderColor,
               boxShadow: hasAnyErrors ? "0 0 0 1px #f0b400" : void 0
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.cardHeader, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.cardActionsLeft, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.cardHeader, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.cardActionsLeft, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
                     "button",
                     {
                       type: "button",
-                      style: styles2.collapseButton,
+                      style: styles3.collapseButton,
                       "aria-label": collapsed ? "Expand" : "Collapse",
                       onClick: () => formContext?.toggleItem?.(path, item.key),
                       children: collapsed ? "\u25B8" : "\u25BE"
                     }
                   ),
-                  item.hasMoveUp ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+                  item.hasMoveUp ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
                     "button",
                     {
                       type: "button",
-                      style: styles2.iconButton,
+                      style: styles3.iconButton,
                       "aria-label": "Move up",
                       onClick: item.onReorderClick(item.index, item.index - 1),
                       children: "\u2191"
                     }
-                  ) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.placeholderButton }),
-                  item.hasMoveDown ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+                  ) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.placeholderButton }),
+                  item.hasMoveDown ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
                     "button",
                     {
                       type: "button",
-                      style: styles2.iconButton,
+                      style: styles3.iconButton,
                       "aria-label": "Move down",
                       onClick: item.onReorderClick(item.index, item.index + 1),
                       children: "\u2193"
                     }
-                  ) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.placeholderButton })
+                  ) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.placeholderButton })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.cardTitle, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.typeBadge, children: displayType }),
-                  /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.cardName, children: displayName })
+                /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.cardTitle, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.typeBadge, children: displayType }),
+                  /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.cardName, children: displayName })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.cardActionsRight, children: item.hasRemove ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+                /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.cardActionsRight, children: item.hasRemove ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
                   "button",
                   {
                     type: "button",
-                    style: styles2.dangerButton,
+                    style: styles3.dangerButton,
                     "aria-label": "Remove item",
                     title: "Remove",
                     onClick: item.onDropIndexClick(item.index),
                     children: TrashIcon2
                   }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.placeholderButton }) })
+                ) : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.placeholderButton }) })
               ] }),
-              !collapsed ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.cardBody, children: item.children }) : null,
-              showError && itemErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.itemErrorList, children: itemErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: err }, err)) }) : null
+              !collapsed ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.cardBody, children: item.children }) : null,
+              showError && itemErrors.length ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("ul", { style: styles3.itemErrorList, children: itemErrors.map((err) => /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("li", { children: err }, err)) }) : null
             ]
           },
           item.key
@@ -49569,42 +50412,42 @@
   function CompactFieldTemplate(props) {
     const { id, classNames, label, required, description, children, rawErrors, schema, hidden } = props;
     if (hidden) {
-      return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: { display: "none" }, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: { display: "none" }, children });
     }
     const isArrayField = schema?.type === "array";
     const isRoot = id === "root";
     const isArrayItemWrapper = schema?.type === "object" && (id.includes("_requirements_") || id.includes("_obligations_"));
     if (isArrayField || isRoot || isArrayItemWrapper) {
-      return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { className: classNames, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { className: classNames, children });
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { className: classNames, style: styles2.fieldRow, children: [
-      label ? /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("label", { htmlFor: id, style: styles2.fieldLabel, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { className: classNames, style: styles3.fieldRow, children: [
+      label ? /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("label", { htmlFor: id, style: styles3.fieldLabel, children: [
         label,
-        required ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
+        required ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.requiredMarker, children: "*" }) : null
       ] }) : null,
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.fieldControl, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.fieldControl, children: [
         children,
         description,
-        rawErrors && rawErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.inlineErrors, children: rawErrors.map((error) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { children: error }, error)) }) : null
+        rawErrors && rawErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.inlineErrors, children: rawErrors.map((error) => /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { children: error }, error)) }) : null
       ] })
     ] });
   }
   function SectionObjectTemplate(props) {
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.objectSection, children: [
-      props.title ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.sectionTitle, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.objectSection, children: [
+      props.title ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.sectionHeader, children: /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.sectionTitle, children: [
         props.title,
-        props.required ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("span", { style: styles2.requiredMarker, children: "*" }) : null
+        props.required ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("span", { style: styles3.requiredMarker, children: "*" }) : null
       ] }) }) : null,
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectGrid, children: props.properties.map(
-        (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.objectGrid, children: props.properties.map(
+        (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.objectField, children: property2.content }, property2.name)
       ) })
     ] });
   }
   function RequirementObjectTemplate(props) {
     const typeValue = props.formData?.type;
     const allowed = allowedRequirementProps(typeValue);
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectSection, children: /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectGrid, children: props.properties.filter((property2) => allowed.has(property2.name)).map(
-      (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.objectField, children: property2.content }, property2.name)
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.objectSection, children: /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.objectGrid, children: props.properties.filter((property2) => allowed.has(property2.name)).map(
+      (property2) => property2.hidden ? property2.content : /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.objectField, children: property2.content }, property2.name)
     ) }) });
   }
   function allowedRequirementProps(typeValue) {
@@ -49631,9 +50474,9 @@
     if (!errors || errors.length === 0) {
       return null;
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)("div", { style: styles2.formErrorList, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("div", { style: styles2.bannerTitle, children: "Validation" }),
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("ul", { style: styles2.errorList, children: errors.map((error, index) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)("li", { children: error.stack }, index)) })
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)("div", { style: styles3.formErrorList, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("div", { style: styles3.bannerTitle, children: "Validation" }),
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("ul", { style: styles3.errorList, children: errors.map((error, index) => /* @__PURE__ */ (0, import_jsx_runtime51.jsx)("li", { children: error.stack }, index)) })
     ] });
   }
   function requirementLabelFromValue(value) {
@@ -49646,8 +50489,8 @@
   function ContractProtocolCompletionWidget(props) {
     const { value, onChange, id, disabled, readonly, placeholder, formContext } = props;
     const completions = formContext?.contractCompletions ?? [];
-    const inputRef = (0, import_react21.useRef)(null);
-    const [menu, setMenu] = (0, import_react21.useState)(null);
+    const inputRef = (0, import_react22.useRef)(null);
+    const [menu, setMenu] = (0, import_react22.useState)(null);
     const closeMenu = () => setMenu(null);
     const openMenu = (query) => {
       if (!inputRef.current || !completions.length) {
@@ -49683,7 +50526,7 @@
         activeIndex: 0
       });
     };
-    (0, import_react21.useEffect)(() => {
+    (0, import_react22.useEffect)(() => {
       const handler = () => {
         if (menu && inputRef.current) {
           openMenu(inputRef.current.value);
@@ -49701,13 +50544,13 @@
       closeMenu();
       inputRef.current?.focus();
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(import_jsx_runtime50.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)(import_jsx_runtime51.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
         "input",
         {
           id,
           ref: inputRef,
-          style: styles2.input,
+          style: styles3.input,
           type: "text",
           value: value ?? "",
           disabled,
@@ -49758,21 +50601,21 @@
           }
         }
       ),
-      menu ? /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+      menu ? /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
         "div",
         {
           style: {
-            ...styles2.suggestionPanel,
+            ...styles3.suggestionPanel,
             top: menu.top,
             left: menu.left,
             width: menu.width,
             height: menu.height,
             maxHeight: menu.maxHeight
           },
-          children: menu.items.map((item, idx) => /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+          children: menu.items.map((item, idx) => /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
             "button",
             {
-              style: { ...styles2.suggestionItem, ...idx === menu.activeIndex ? styles2.suggestionItemActive : {} },
+              style: { ...styles3.suggestionItem, ...idx === menu.activeIndex ? styles3.suggestionItemActive : {} },
               onMouseDown: (e2) => {
                 e2.preventDefault();
                 e2.stopPropagation();
@@ -49809,7 +50652,7 @@
     }
     return { __errors: matching.map((m2) => m2.message || m2.stack).filter(Boolean) };
   }
-  var styles2 = {
+  var styles3 = {
     container: {
       fontFamily: "var(--vscode-font-family, sans-serif)",
       background: "var(--vscode-editor-background)",
@@ -50093,11 +50936,11 @@
   };
 
   // webview-src/main.tsx
-  var import_jsx_runtime51 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime52 = __toESM(require_jsx_runtime());
   var rootElement = document.getElementById("root");
   if (rootElement) {
     const root2 = (0, import_client.createRoot)(rootElement);
-    root2.render(/* @__PURE__ */ (0, import_jsx_runtime51.jsx)(App, {}));
+    root2.render(/* @__PURE__ */ (0, import_jsx_runtime52.jsx)(App, {}));
   }
 })();
 /*! Bundled license information:

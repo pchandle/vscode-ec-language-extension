@@ -7,6 +7,7 @@ const root = path.join(__dirname, "..");
 const outDir = path.join(root, "media");
 const entryFile = path.join(root, "webview-src", "main.tsx");
 const schemaSource = path.join(root, "docs", "developer", "spec.schema.json");
+const pddSchemaSource = path.join(root, "docs", "developer", "pdd.schema.json");
 const generatedDir = path.join(root, "webview-src", "generated");
 const { compileSchemaValidatorsCode } = require("@rjsf/validator-ajv8/dist/compileSchemaValidators");
 
@@ -14,7 +15,11 @@ function ensureSchemaCopies() {
   if (!fs.existsSync(schemaSource)) {
     throw new Error(`Schema not found at ${schemaSource}`);
   }
+  if (!fs.existsSync(pddSchemaSource)) {
+    throw new Error(`PDD schema not found at ${pddSchemaSource}`);
+  }
   const baseSchema = JSON.parse(fs.readFileSync(schemaSource, "utf8"));
+  const pddSchema = JSON.parse(fs.readFileSync(pddSchemaSource, "utf8"));
   const { $defs } = baseSchema;
   if (!$defs) {
     throw new Error("Base schema missing $defs");
@@ -32,6 +37,7 @@ function ensureSchemaCopies() {
     { name: "spec.schema.json", data: baseSchema },
     { name: "contractSpec.schema.json", data: makeVariant("supplierSpec", "Contract") },
     { name: "protocolSpec.schema.json", data: makeVariant("protocolSpec", "Protocol") },
+    { name: "pdd.schema.json", data: pddSchema },
   ];
 
   fs.mkdirSync(outDir, { recursive: true });
@@ -41,7 +47,7 @@ function ensureSchemaCopies() {
   }
 
   fs.mkdirSync(generatedDir, { recursive: true });
-  for (const target of targets.filter((t) => t.name !== "spec.schema.json")) {
+  for (const target of targets.filter((t) => t.name !== "spec.schema.json" && t.name !== "pdd.schema.json")) {
     const code = compileSchemaValidatorsCode(target.data, {
       ajvOptionsOverrides: { allowUnionTypes: true, strict: false },
     });

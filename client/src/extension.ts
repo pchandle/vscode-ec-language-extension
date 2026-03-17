@@ -7,6 +7,7 @@ import * as path from "path";
 import { TextEncoder } from "util";
 import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvider";
 import { PdesEditorProvider, loadPdesSchema } from "./customEditors/PdesEditorProvider";
+import { PddEditorProvider, loadPddSchema } from "./customEditors/PddEditorProvider";
 import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./formatting";
 import { registerPdesVersionCheck } from "./pdesVersionCheck";
 import { registerExportProtocolSpec } from "./pdesExport";
@@ -545,6 +546,7 @@ export async function activate(context: ExtensionContext) {
   registerSpecificationEditors(context);
   registerPdesVersionCheck(context);
   registerPdesEditor(context);
+  registerPddEditor(context);
   registerExportProtocolSpec(context);
   registerBulkExpressionValidation(context, client);
   registerSupplierQuickFixes(context);
@@ -826,6 +828,43 @@ function registerPdesEditor(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {
       if (doc.uri.fsPath.toLowerCase().endsWith(".pdes")) {
+        diagnostics.delete(doc.uri);
+      }
+    })
+  );
+}
+
+function registerPddEditor(context: vscode.ExtensionContext) {
+  const schema = loadPddSchema(context);
+  if (!schema) {
+    return;
+  }
+
+  const diagnostics = vscode.languages.createDiagnosticCollection("pdd-schema");
+  context.subscriptions.push(diagnostics);
+
+  let provider: PddEditorProvider;
+  try {
+    provider = new PddEditorProvider(context, schema, diagnostics);
+  } catch (err: any) {
+    console.error("Failed to initialize Protocol Design Definition Editor", err);
+    void vscode.window.showErrorMessage(
+      `Failed to initialize Protocol Design Definition Editor: ${err?.message ?? String(err)}`
+    );
+    return;
+  }
+
+  const options = {
+    webviewOptions: { retainContextWhenHidden: true },
+    supportsMultipleEditorsPerDocument: true,
+  };
+  context.subscriptions.push(
+    vscode.window.registerCustomEditorProvider("protocolDesignDefinitionEditor", provider, options)
+  );
+
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument((doc) => {
+      if (doc.uri.fsPath.toLowerCase().endsWith(".pdd")) {
         diagnostics.delete(doc.uri);
       }
     })

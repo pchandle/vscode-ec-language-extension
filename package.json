@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.24",
+  "version": "0.11.25",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -589,6 +589,16 @@
         "selector": [
           {
             "filenamePattern": "*.pdes"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "protocolDesignDefinitionEditor",
+        "displayName": "Protocol Design Definition Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.pdd"
           }
         ],
         "priority": "default"

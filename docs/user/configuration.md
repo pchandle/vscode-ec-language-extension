@@ -55,7 +55,7 @@ This guide explains all user-facing configuration keys, their defaults, and when
 | Key | Default | Notes |
 |---|---|---|
 | `protocolDesign.definitionPaths` | `[]` | Candidate `.pdd` files. Relative paths resolve from first workspace folder. |
-| `protocolDesign.activeDefinition` | `""` | Explicit active `.pdd` override. |
+| `protocolDesign.activeDefinition` | `""` | Explicit active `.pdd` override. `.pdd` files open in the Protocol Design Definition Editor by default. |
 
 ## Diagnostics & Tracing
 

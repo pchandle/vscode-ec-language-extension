@@ -26,6 +26,7 @@ Developer documentation:
 - Syntax highlighting
 - Code snippets
 - IntelliSense for contract specifications, protocol specifications and more
+- Custom editors for `.cspec`, `.pspec`, `.pdes`, and `.pdd` files
 - Bulk Expression Validation for workspace-wide diagnostics triage
 
 # Bulk Expression Validation
@@ -63,7 +64,7 @@ Key settings are grouped as follows:
 | Specification Authoring | `specification.*` | Local roots, filename templates, default supplier |
 | Hover | `emergent.hover.*` | Enable/disable hover |
 | Bulk Validation | `emergent.autopilotExtension`, `emergent.pilotExtension`, `emergent.bulkValidation*` | Corpus scan behavior |
-| Protocol Design | `protocolDesign.*` | `.pdd` selection and override |
+| Protocol Design | `protocolDesign.*` | `.pdd` selection, override, and protocol design definition editing |
 | Diagnostics & Tracing | `emergent.maxNumberOfProblems`, `emergent.trace.server`, `emergent.hoverDebugLogging` | Diagnostic volume and logging |
 
 Legacy `gateway.*` settings are deprecated, auto-migrated when possible, and planned for removal in `0.12.0`.

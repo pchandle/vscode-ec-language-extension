@@ -15,6 +15,12 @@ export type HostMessage =
       errors: string[];
       parseError?: string;
       protocolCompletions?: string[];
+    }
+  | {
+      type: "pddState";
+      value: unknown | null;
+      errors: string[];
+      parseError?: string;
     };
 
 export type WebviewMessage =
@@ -60,6 +66,11 @@ export interface ProtocolDesignDefinition {
   joinMacroGlobal: MacroGlobal;
   modeTemplates: ModeTemplate[];
   [key: string]: unknown;
+}
+
+export interface PddMacroWarning {
+  lineIndex: number;
+  message: string;
 }
 
 export interface ProtocolDesignTopicInstance {
