@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## 0.11.27 - 2026-03-18
+- Add a dedicated **Protocol Design Definition Editor** for `.pdd` files and register it as the default custom editor.
+- Add structured `.pdd` authoring for:
+  - protocol design version
+  - host/join macro wrappers
+  - ordered mode templates
+  - ordered mode-template topics
+  - guided host/join macro statement editing with `$TOPIC_n` insertion helpers
+- Add bundled `.pdd` schema validation plus semantic diagnostics for duplicate template names, missing `$TOPICS`, and malformed or out-of-range topic tokens.
+- Update user and developer documentation to cover the new `.pdd` editor workflow and behavior.
+- Fix `.pdd` template-name focus loss caused by unstable React keys in the editor UI.
+
 ## 0.11.17 - 2026-03-02
 - Add a one-time startup reminder to switch to the `Design Domain Language` theme for richer Emergent syntax coloring.
 - Add quick actions in the reminder toast:
