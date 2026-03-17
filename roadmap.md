@@ -190,7 +190,7 @@ Exit Criteria:
 
 ### 10) Documentation and Contributor Experience Upgrade
 Problem:
-- `docs/development.md` is very sparse for onboarding and architecture comprehension.
+- `docs/developer/development.md` is very sparse for onboarding and architecture comprehension.
 
 Actions:
 - Expand development docs with:

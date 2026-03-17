@@ -2,6 +2,26 @@
 
 This extension provides rich Emergent Coding language support for Visual Studio Code ([VS Code](https://github.com/Microsoft/vscode)). Now you can write and debug Emergent Coding expressions using the excellent IDE-like interface that VS Code provides.
 
+## User Guide
+Start here for day-to-day workflows: [Emergent Coding User Guide](./docs/user/user-guide.md).
+
+## Welcome / Quick Start
+1. Read the [User Guide](./docs/user/user-guide.md).
+2. Configure Studio settings in VS Code (`studio.hostname`, `studio.port`, `studio.network`, `studio.allowInsecure`).
+3. Run `Emergent: Show Configuration Diagnostics` from the Command Palette.
+
+## Docs Map
+User documentation:
+- [User Guide](./docs/user/user-guide.md)
+- [Configuration Guide](./docs/user/configuration.md)
+- [Troubleshooting](./docs/user/troubleshooting.md)
+- [Language Reference](./docs/user/emergent-coding-language.md)
+
+Developer documentation:
+- [Development Guide](./docs/developer/development.md)
+- [Security Reporting](./docs/developer/SECURITY.md)
+- [Diagnostics Validation Playbook](./docs/developer/diagnostics/diagnostics-validation-playbook.md)
+
 # Features
 - Syntax highlighting
 - Code snippets
@@ -48,7 +68,7 @@ Key settings are grouped as follows:
 
 Legacy `gateway.*` settings are deprecated, auto-migrated when possible, and planned for removal in `0.12.0`.
 
-For detailed defaults, behavior notes, and migration guidance, see [Configuration Guide](./docs/configuration.md).
+For detailed defaults, behavior notes, and migration guidance, see [Configuration Guide](./docs/user/configuration.md).
 
 ## Additional Commands
 - `Emergent: Show Configuration Diagnostics` (opens a report of effective configuration values and runtime paths)
@@ -62,10 +82,10 @@ For detailed defaults, behavior notes, and migration guidance, see [Configuratio
 You can install the official release of the Emergent Coding extension by following the steps in the [Visual Studio Code documentation](https://code.visualstudio.com/docs/editor/extension-marketplace). In the Extensions pane, search for "Emergent Coding" extension and install it there. You will get notified automatically about any future extension updates!
 
 # Reporting Problems
-If you experience any problems with the Emergent Coding Extension, see the [troubleshooting docs](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/troubleshooting.md) for information on diagnosing and reporting issues.
+If you experience any problems with the Emergent Coding Extension, see the [troubleshooting docs](./docs/user/troubleshooting.md) for information on diagnosing and reporting issues.
 
 # Contributing to the Code
-Check out the [development documentation](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/development.md) for more details on how to contribute to this extension!
+Check out the [development documentation](./docs/developer/development.md) for more details on how to contribute to this extension!
 
 # License
 This extension is licensed under the [MIT License](https://github.com/aptissio/vscode-ec-language-extension/blob/main/LICENSE). Please see the [third-party notices](https://github.com/aptissio/vscode-ec-language-extension/blob/main/third-party-notices.md) file for details on the third-party binaries that we include with releases of this project.

@@ -13,6 +13,7 @@ contributing.md
 logs/**
 scripts/**
 docs/**
+!docs/user/**
 client/src/**
 server/src/**
 webview-src/**

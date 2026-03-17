@@ -16,7 +16,7 @@ client/server
 # packaged extension artifacts
 /*.vsix
 # fetched specs cache (generated)
-docs/examples/fetched-specs
+docs/developer/diagnostics/examples/fetched-specs
 # generated logs
 logs/schema-validation
 logs/spec-normalisation

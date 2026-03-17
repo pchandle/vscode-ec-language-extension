@@ -4,7 +4,7 @@
   "displayName": "Emergent Coding",
   "author": "Aptissio",
   "license": "MIT",
-  "version": "0.11.22",
+  "version": "0.11.23",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptissio/vscode-ec-language-extension"
@@ -364,6 +364,36 @@
         }
       ]
     },
+    "walkthroughs": [
+      {
+        "id": "emergent.welcome",
+        "title": "Welcome to Emergent Coding",
+        "description": "Get started with Emergent Coding in three quick steps.",
+        "steps": [
+          {
+            "id": "emergent.readUserGuide",
+            "title": "Read the User Guide",
+            "description": "Review day-to-day workflows in the [Emergent Coding User Guide](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/user/user-guide.md)."
+          },
+          {
+            "id": "emergent.configureStudioSettings",
+            "title": "Configure Studio settings",
+            "description": "Configure `studio.hostname`, `studio.port`, `studio.network`, and `studio.allowInsecure`.\n\n[Open Settings](command:workbench.action.openSettings?%5B%22studio.hostname%22%5D)",
+            "completionEvents": [
+              "onCommand:workbench.action.openSettings"
+            ]
+          },
+          {
+            "id": "emergent.showConfigurationDiagnostics",
+            "title": "Run configuration diagnostics",
+            "description": "Run [Emergent: Show Configuration Diagnostics](command:emergent.showConfigurationDiagnostics) to verify effective settings and runtime paths.",
+            "completionEvents": [
+              "onCommand:emergent.showConfigurationDiagnostics"
+            ]
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "emergent.showSpecificationPanel",

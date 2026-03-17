@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 <directory> <filename-pattern>" >&2
-  echo "Example: $0 docs/fetched-specs \"*.json\"" >&2
+  echo "Example: $0 docs/developer/diagnostics/examples/fetched-specs \"*.json\"" >&2
 }
 
 if [[ $# -ne 2 ]]; then
@@ -13,7 +13,7 @@ fi
 
 SEARCH_DIR="$1"
 FILENAME_PATTERN="$2"
-SCHEMA_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/spec.schema.json"
+SCHEMA_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/developer/spec.schema.json"
 LOG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/logs/schema-validation"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 RUN_DIR="$LOG_ROOT/$TIMESTAMP"

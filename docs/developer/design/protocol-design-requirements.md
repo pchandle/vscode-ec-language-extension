@@ -73,7 +73,7 @@
 
 ## Examples
 
-Example `.pdd` (`docs/emergent-pdd-example-v1.json`):
+Example `.pdd` (`docs/developer/diagnostics/examples/emergent-pdd-example-v1.pdd`):
 ```json
 {
   "protocolDesignVersion": 1,
@@ -120,7 +120,7 @@ Example `.pdd` (`docs/emergent-pdd-example-v1.json`):
 }
 ```
 
-Example `.pdes` (`docs/emergent-pdes-example-v1.json`):
+Example `.pdes` (`docs/developer/diagnostics/examples/emergent-pdes-example-v1.pdes`):
 ```json
 {
   "protocolDesignVersion": 1,

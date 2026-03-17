@@ -2,7 +2,7 @@
 ## What are snippets
 Code snippets are templates that make it easier to enter repeating code patterns, such as loops or conditional-statements. The list of snippets below is not integrated into the extension. However, instead, users can add them to their own, custom snippets file. Check out the [VSCode documentation on snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets). It provides an overview and instructions on how to author snippets. It's really simple - just a little bit of JSON.
 
-To contribute, check out our [guide here](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/community_snippets.md#contributing).
+To contribute, check out our [guide here](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/community_snippets.md#contributing).
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@ To optimize snippet usability and discoverability for end users we will only shi
 - Must be broadly applicable to most Emergent Coding extension users
 - Must be substantially different from existing snippets or intellisense
 - Must not violate any intellectual property rights
-If your snippet does not meet these requirements but would still be useful to customers we will include it in our list of [Community Snippets](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/community_snippets.md). Additionally, snippet creators can publish snippet libraries as standalone extensions in the [VSCode Marketplace](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+If your snippet does not meet these requirements but would still be useful to customers we will include it in our list of [Community Snippets](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/community_snippets.md). Additionally, snippet creators can publish snippet libraries as standalone extensions in the [VSCode Marketplace](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
 
 If you'd like a snippet to be considered for addition to the list, [open a pull request](https://opensource.guide/how-to-contribute/#opening-a-pull-request) with the following changes:
 ### Table of contents

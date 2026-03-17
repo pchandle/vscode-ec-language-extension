@@ -6,7 +6,7 @@ const watch = process.argv.includes("--watch");
 const root = path.join(__dirname, "..");
 const outDir = path.join(root, "media");
 const entryFile = path.join(root, "webview-src", "main.tsx");
-const schemaSource = path.join(root, "docs", "spec.schema.json");
+const schemaSource = path.join(root, "docs", "developer", "spec.schema.json");
 const generatedDir = path.join(root, "webview-src", "generated");
 const { compileSchemaValidatorsCode } = require("@rjsf/validator-ajv8/dist/compileSchemaValidators");
 

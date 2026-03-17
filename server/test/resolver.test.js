@@ -7,7 +7,7 @@ const parser_1 = require("../src/lang/parser");
 const resolver_1 = require("../src/lang/resolver");
 describe("resolver", () => {
     it("resolves canonical sample without diagnostics", () => {
-        const sample = fs.readFileSync(path.join(__dirname, "../../docs/canonical-expression-example.dla"), "utf8");
+        const sample = fs.readFileSync(path.join(__dirname, "../../docs/developer/diagnostics/examples/canonical-expression-example.dla"), "utf8");
         const { program, diagnostics: syntaxDiagnostics } = (0, parser_1.parseText)(sample);
         const { diagnostics: resolverDiagnostics } = (0, resolver_1.resolveProgram)(program);
         assert_1.strict.equal(syntaxDiagnostics.length + resolverDiagnostics.length, 0, `Expected no diagnostics, got syntax: ${syntaxDiagnostics

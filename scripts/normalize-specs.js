@@ -21,7 +21,7 @@ if (positional.length !== 2) usage(1);
 const [rootDir, pattern] = positional;
 
 const repoRoot = path.resolve(__dirname, '..');
-const schemaPath = path.join(repoRoot, 'docs', 'spec.schema.json');
+const schemaPath = path.join(repoRoot, 'docs', 'developer', 'spec.schema.json');
 const logDir = path.join(repoRoot, 'logs', 'spec-normalisation');
 function formatTimestamp() {
   const d = new Date();

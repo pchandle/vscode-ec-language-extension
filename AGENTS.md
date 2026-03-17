@@ -13,7 +13,8 @@ Guidance for coding agents working in `vscode-ec-language-extension`.
 - `server/test`: server unit/perf tests.
 - `webview-src`: React webview sources for spec editors.
 - `media`: generated webview bundle + copied schemas.
-- `docs`: specs, examples, security and troubleshooting docs.
+- `docs/user`: user-facing docs (user guide, configuration, troubleshooting, language reference).
+- `docs/developer`: contributor-facing docs (development, security, diagnostics playbook, design notes).
 - `scripts`: build, validation, and test helper scripts.
 
 ## Environment
@@ -49,7 +50,7 @@ Guidance for coding agents working in `vscode-ec-language-extension`.
 - If `.vscode-test/...` is missing, `npm test` may attempt to download VS Code from `update.code.visualstudio.com` and fail in restricted network environments.
 - Current integration baseline is 3 active tests in `client/src/test`: completion, diagnostics, formatting.
 - `npm run test:server` is currently green (58 passing) after fixing test fixture paths and outdated expectations.
-- For repeated corpus-scale diagnostics validation, follow `docs/diagnostics-validation-playbook.md`.
+- For repeated corpus-scale diagnostics validation, follow `docs/developer/diagnostics/diagnostics-validation-playbook.md`.
 - Local-only diagnostics workspace: `/.ops/diagnostics-lab/` (git-excluded via `.git/info/exclude`).
 - Corpus workflow commands:
   - `npm run validate:corpus`
@@ -66,8 +67,14 @@ Guidance for coding agents working in `vscode-ec-language-extension`.
 - Keep diagnostics behavior stable; include tests when changing language semantics.
 
 ## Security and Disclosure
-- Follow `docs/SECURITY.md` for vulnerability reporting.
+- Follow `docs/developer/SECURITY.md` for vulnerability reporting.
 - Do not expose potential vulnerabilities in public issue text; direct reports to the documented security contact.
+
+## Documentation Policy
+- Put user-facing guidance in `docs/user/*`.
+- Put contributor/internal guidance in `docs/developer/*`.
+- Any user-visible feature or UX behavior change must update relevant user docs in the same PR (for example `docs/user/user-guide.md`, `docs/user/configuration.md`, or `docs/user/troubleshooting.md`).
+- Definition of done for extension UX changes includes user documentation updates.
 
 ## High-Value Validation Targets
 - Parser/lexer behavior: `server/test/parser.test.ts`
