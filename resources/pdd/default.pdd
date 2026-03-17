@@ -14,10 +14,34 @@
     {
       "name": "collect-peer-sum-and-issue-offsets",
       "topics": [
-        { "name": "first offset", "role": "host", "constraint": "requirement", "type": "integer", "comment": "first offset as dictated by the host" },
-        { "name": "peer sum", "role": "host", "constraint": "obligation", "type": "integer", "comment": "sum of all peer quantity requests" },
-        { "name": "requested quantity", "role": "join", "constraint": "requirement", "type": "integer", "comment": "quantity required by the peer" },
-        { "name": "issued offset", "role": "join", "constraint": "obligation", "type": "integer", "comment": "offset issued from which the required quantity is available" }
+        {
+          "name": "first offset",
+          "role": "host",
+          "constraint": "requirement",
+          "type": "integer",
+          "comment": "first offset as dictated by the host"
+        },
+        {
+          "name": "peer sum",
+          "role": "host",
+          "constraint": "obligation",
+          "type": "integer",
+          "comment": "sum of all peer quantity requests"
+        },
+        {
+          "name": "requested quantity",
+          "role": "join",
+          "constraint": "requirement",
+          "type": "integer",
+          "comment": "quantity required by the peer"
+        },
+        {
+          "name": "issued offset",
+          "role": "join",
+          "constraint": "obligation",
+          "type": "integer",
+          "comment": "offset issued from which the required quantity is available"
+        }
       ],
       "hostMacroTemplates": [
         "sub /behaviour/collect-and-distribute/agent-integer/default/x64@codevalley(acs, $, $TOPIC_0, $TOPIC_1, trigger, debug_msg)"
@@ -29,14 +53,210 @@
     {
       "name": "group-peers",
       "topics": [
-        { "name": "hosted group", "role": "host", "constraint": "requirement", "type": "abstraction", "comment": "group dictated by host" },
-        { "name": "joined group", "role": "join", "constraint": "obligation", "type": "abstraction", "comment": "group joined by peer" }
+        {
+          "name": "hosted group",
+          "role": "host",
+          "constraint": "requirement",
+          "type": "abstraction",
+          "comment": "group dictated by host"
+        },
+        {
+          "name": "joined group",
+          "role": "join",
+          "constraint": "obligation",
+          "type": "abstraction",
+          "comment": "group joined by peer"
+        }
       ],
       "hostMacroTemplates": [
         "sub /behaviour/collect-and-distribute/agent-group/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
       ],
       "joinMacroTemplates": [
         "sub /behaviour/fold-and-allocate/agent-group/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "collect-peer-sum",
+      "topics": [
+        {
+          "name": "summation term",
+          "role": "join",
+          "constraint": "requirement",
+          "type": "integer"
+        },
+        {
+          "name": "summation result",
+          "role": "host",
+          "constraint": "obligation",
+          "type": "integer"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect/agent-integer/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/fold/agent-integer/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "collect-peer-maximum",
+      "topics": [
+        {
+          "name": "maximum term",
+          "role": "join",
+          "constraint": "requirement",
+          "type": "integer"
+        },
+        {
+          "name": "maximum result",
+          "role": "host",
+          "constraint": "obligation",
+          "type": "integer"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect/agent-integer/maximum/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/fold/agent-integer/maximum/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "collect-peer-minimum",
+      "topics": [
+        {
+          "name": "minimum term",
+          "role": "join",
+          "constraint": "requirement",
+          "type": "integer"
+        },
+        {
+          "name": "minimum result",
+          "role": "host",
+          "constraint": "obligation",
+          "type": "integer"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect/agent-integer/minimum/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/fold/agent-integer/minimum/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "dictate-integer",
+      "topics": [
+        {
+          "name": "hosted integer",
+          "role": "host",
+          "constraint": "requirement",
+          "type": "integer"
+        },
+        {
+          "name": "peered integer",
+          "role": "join",
+          "constraint": "obligation",
+          "type": "integer"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/dictate/agent-integer/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/accept/agent-integer/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "dictate-boolean",
+      "topics": [
+        {
+          "name": "hosted boolean",
+          "role": "host",
+          "constraint": "requirement",
+          "type": "boolean"
+        },
+        {
+          "name": "peered boolean",
+          "role": "join",
+          "constraint": "obligation",
+          "type": "boolean"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/dictate/agent-boolean/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/accept/agent-boolean/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "dictate-string",
+      "topics": [
+        {
+          "name": "hosted string",
+          "role": "host",
+          "constraint": "requirement",
+          "type": "string"
+        },
+        {
+          "name": "peered string",
+          "role": "join",
+          "constraint": "obligation",
+          "type": "string"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/dictate/agent-string/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/accept/agent-string/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "collect-boolean-or",
+      "topics": [
+        {
+          "name": "or term",
+          "role": "join",
+          "constraint": "requirement",
+          "type": "boolean"
+        },
+        {
+          "name": "or result",
+          "role": "host",
+          "constraint": "obligation",
+          "type": "boolean"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect/agent-boolean/default/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/fold/agent-boolean/default/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
+      ]
+    },
+    {
+      "name": "collect-boolean-and",
+      "topics": [
+        {
+          "name": "and term",
+          "role": "join",
+          "constraint": "requirement",
+          "type": "boolean"
+        },
+        {
+          "name": "and result",
+          "role": "host",
+          "constraint": "obligation",
+          "type": "boolean"
+        }
+      ],
+      "hostMacroTemplates": [
+        "sub /behaviour/collect/agent-boolean/conjunctive/x64@codevalley(acs, $, $TOPIC_1, trigger, debug_msg)"
+      ],
+      "joinMacroTemplates": [
+        "sub /behaviour/fold/agent-boolean/conjunctive/x64@codevalley(acs, $, $TOPIC_0, trigger, debug_msg)"
       ]
     }
   ]
