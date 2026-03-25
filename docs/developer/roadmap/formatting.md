@@ -11,6 +11,29 @@ The recommended sequence is:
 2. move formatting onto the server with output intentionally close to the current client-side formatter
 3. build richer formatting capability on top of shared parser/token/AST infrastructure
 
+## Execution Status
+
+### Current Block Status
+- Block 1: Foundation and safety rails: not started
+- Block 2: Server-side formatter parity: not started
+- Block 3: Syntax-aware formatting core: not started
+- Block 4: Block layout and multiline normalization: not started
+- Block 5: Selection formatting and range correctness: not started
+- Block 6: Polish, hardening, and adoption: not started
+
+### Last Completed Step
+- None yet.
+
+### Next Recommended PR
+- Block 1: add fixture coverage for current formatter behavior and idempotence.
+- Include representative `.dla` / `.dlp` cases for spacing cleanup, commas, `->`, trailing whitespace, blank lines, full-line comments, malformed-but-common input, and no-op files.
+- Keep the PR limited to tests and supporting test harness improvements unless a small implementation fix is required to make current behavior testable.
+
+### Roadmap Update Rule
+- Each roadmap PR should update this section.
+- Mark completed work precisely and name the next recommended PR-sized slice.
+- If implementation choices narrow or expand scope, record that decision here before finalizing the PR.
+
 ## Current State
 - Formatting is implemented client-side in [client/src/formatting.ts](/mnt/c/Users/pchandle/Documents/git/vscode-ec-language-extension/client/src/formatting.ts).
 - Current behavior is intentionally small in scope:
