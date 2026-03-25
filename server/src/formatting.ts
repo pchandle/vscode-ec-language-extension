@@ -13,7 +13,13 @@ export interface FormattingLine {
   kind: FormattingLineKind;
   coveredBySyntax: boolean;
   intersectsDiagnostic: boolean;
+  protectedRanges: FormattingCharacterRange[];
   safeToFormat: boolean;
+}
+
+export interface FormattingCharacterRange {
+  startCharacter: number;
+  endCharacter: number;
 }
 
 export interface FormattingInput {
@@ -76,21 +82,117 @@ function collectDiagnosticLines(diagnostics: SyntaxDiagnostic[]): Set<number> {
   return lines;
 }
 
-function collectUnsafeRecoveryLines(lines: FormattingLine[], diagnostics: SyntaxDiagnostic[]): Set<number> {
-  const unsafeLines = collectDiagnosticLines(diagnostics);
+function clampCharacter(value: number, lineLength: number): number {
+  return Math.max(0, Math.min(value, lineLength));
+}
+
+function collectProtectedRanges(
+  document: TextDocument,
+  diagnostics: SyntaxDiagnostic[]
+): Map<number, FormattingCharacterRange[]> {
+  const protectedRanges = new Map<number, FormattingCharacterRange[]>();
 
   for (const diagnostic of diagnostics) {
-    if (diagnostic.range.start.line === 0) {
-      continue;
-    }
-
-    const previousLine = lines[diagnostic.range.start.line - 1];
-    if (previousLine && previousLine.kind === "content") {
-      unsafeLines.add(previousLine.lineIndex);
+    for (let lineIndex = diagnostic.range.start.line; lineIndex <= diagnostic.range.end.line; lineIndex++) {
+      const lineLength = getLineText(document, lineIndex).length;
+      const startCharacter =
+        lineIndex === diagnostic.range.start.line
+          ? clampCharacter(diagnostic.range.start.character, lineLength)
+          : 0;
+      const endCharacter =
+        lineIndex === diagnostic.range.start.line && diagnostic.range.start.line !== diagnostic.range.end.line
+          ? lineLength
+          : lineIndex === diagnostic.range.end.line
+            ? clampCharacter(diagnostic.range.end.character, lineLength)
+            : lineLength;
+      const ranges = protectedRanges.get(lineIndex) ?? [];
+      ranges.push({ startCharacter, endCharacter });
+      protectedRanges.set(lineIndex, ranges);
     }
   }
 
-  return unsafeLines;
+  return protectedRanges;
+}
+
+function mergeCharacterRanges(ranges: FormattingCharacterRange[]): FormattingCharacterRange[] {
+  if (ranges.length <= 1) {
+    return ranges.slice();
+  }
+
+  const sorted = [...ranges].sort((left, right) => left.startCharacter - right.startCharacter || left.endCharacter - right.endCharacter);
+  const merged: FormattingCharacterRange[] = [sorted[0]];
+
+  for (const range of sorted.slice(1)) {
+    const previous = merged[merged.length - 1];
+    if (range.startCharacter <= previous.endCharacter) {
+      previous.endCharacter = Math.max(previous.endCharacter, range.endCharacter);
+      continue;
+    }
+    merged.push({ ...range });
+  }
+
+  return merged;
+}
+
+function formatSegment(
+  text: string,
+  options: {
+    preserveLeadingWhitespace?: boolean;
+    preserveTrailingWhitespace?: boolean;
+  }
+): string {
+  let startIndex = 0;
+  let endIndex = text.length;
+
+  if (options.preserveLeadingWhitespace) {
+    const match = text.match(/^\s+/);
+    if (match) {
+      startIndex = match[0].length;
+    }
+  }
+
+  if (options.preserveTrailingWhitespace) {
+    const match = text.match(/\s+$/);
+    if (match) {
+      endIndex = Math.max(startIndex, text.length - match[0].length);
+    }
+  }
+
+  const leading = text.slice(0, startIndex);
+  const trailing = text.slice(endIndex);
+  const middle = text.slice(startIndex, endIndex);
+
+  return leading + formatLine(middle) + trailing;
+}
+
+function formatLineWithProtectedRanges(text: string, protectedRanges: FormattingCharacterRange[]): string {
+  if (protectedRanges.length === 0) {
+    return formatLine(text);
+  }
+
+  let cursor = 0;
+  let formatted = "";
+  const mergedRanges = mergeCharacterRanges(protectedRanges);
+
+  mergedRanges.forEach((range, index) => {
+    if (cursor < range.startCharacter) {
+      formatted += formatSegment(text.slice(cursor, range.startCharacter), {
+        preserveLeadingWhitespace: index > 0,
+        preserveTrailingWhitespace: true,
+      });
+    }
+    formatted += text.slice(range.startCharacter, range.endCharacter);
+    cursor = range.endCharacter;
+  });
+
+  if (cursor < text.length) {
+    formatted += formatSegment(text.slice(cursor), {
+      preserveLeadingWhitespace: mergedRanges.length > 0,
+      preserveTrailingWhitespace: false,
+    });
+  }
+
+  return formatted;
 }
 
 function collectStatementLines(program: ProgramNode): Set<number> {
@@ -149,6 +251,8 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
   const { program, diagnostics } = parseText(document.getText());
   const coveredLines = collectStatementLines(program);
   const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
+  const diagnosticLines = collectDiagnosticLines(diagnostics);
+  const protectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, diagnostics) : new Map<number, FormattingCharacterRange[]>();
   const lines: FormattingLine[] = [];
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
@@ -158,16 +262,10 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       originalText,
       kind: classifyLine(originalText),
       coveredBySyntax: coveredLines.has(lineIndex),
-      intersectsDiagnostic: false,
-      safeToFormat: parseMode === "parsed",
+      intersectsDiagnostic: diagnosticLines.has(lineIndex),
+      protectedRanges: protectedRanges.get(lineIndex) ?? [],
+      safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex),
     });
-  }
-
-  const unsafeRecoveryLines = parseMode === "recovery" ? collectUnsafeRecoveryLines(lines, diagnostics) : new Set<number>();
-
-  for (const line of lines) {
-    line.intersectsDiagnostic = unsafeRecoveryLines.has(line.lineIndex);
-    line.safeToFormat = parseMode === "parsed" || (line.coveredBySyntax && !line.intersectsDiagnostic);
   }
 
   return {
@@ -187,7 +285,7 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
     decisions.push({
       lineIndex,
       originalText: line.originalText,
-      formattedText: line.safeToFormat ? formatLine(line.originalText) : line.originalText,
+      formattedText: line.safeToFormat ? formatLineWithProtectedRanges(line.originalText, line.protectedRanges) : line.originalText,
       kind: line.kind,
       parseMode: input.parseMode,
       coveredBySyntax: line.coveredBySyntax,

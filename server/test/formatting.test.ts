@@ -29,9 +29,11 @@ describe("formatting", () => {
 
     expect(model.parseMode).to.equal("recovery");
     expect(model.syntaxDiagnostics.some((item) => item.message.includes("Expected ':' after job signature"))).to.equal(true);
-    expect(model.lines[0].intersectsDiagnostic).to.equal(true);
-    expect(model.lines[0].safeToFormat).to.equal(false);
-    expect(model.lines[1].safeToFormat).to.equal(false);
+    expect(model.lines[0].intersectsDiagnostic).to.equal(false);
+    expect(model.lines[0].safeToFormat).to.equal(true);
+    expect(model.lines[1].intersectsDiagnostic).to.equal(true);
+    expect(model.lines[1].protectedRanges).to.deep.equal([{ startCharacter: 2, endCharacter: 7 }]);
+    expect(model.lines[1].safeToFormat).to.equal(true);
   });
 
   it("matches current spacing cleanup behavior", () => {
@@ -111,25 +113,33 @@ describe("formatting", () => {
 
     expect(decisions).to.have.length(1);
     expect(decisions[0].parseMode).to.equal("recovery");
-    expect(decisions[0].safeToFormat).to.equal(false);
-    expect(decisions[0].formattedText).to.equal("  value1  ,value2  ->out2  ");
+    expect(decisions[0].safeToFormat).to.equal(true);
+    expect(decisions[0].formattedText).to.equal("  value1  , value2 -> out2");
   });
 
-  it("preserves diagnostic-overlapping lines in recovery mode", () => {
+  it("formats recovery-safe prefixes while preserving the ambiguous suffix", () => {
     const document = createDocument("job /example/test(a,b)\n  value1  ,value2  ->out2  \nend");
     const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
 
     expect(output).to.equal(
       [
-        "job /example/test(a,b)",
-        "  value1  ,value2  ->out2  ",
+        "job /example/test(a, b)",
+        "  value1  , value2 -> out2",
         "end",
       ].join("\n")
     );
   });
 
-  it("returns no edits for a range fully inside an unsafe recovery span", () => {
+  it("returns edits for the safe portion of a recovery range", () => {
     const document = createDocument("job /example/test(a,b)\n  value1  ,value2  ->out2  \nend");
-    expect(formatDocumentRange(document, 0, 0)).to.deep.equal([]);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 1)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a, b)",
+        "  value1  , value2 -> out2",
+        "end",
+      ].join("\n")
+    );
   });
 });

@@ -90,7 +90,7 @@
     ]
   },
   {
-    "name": "document preserves recovery-heavy spans when syntax diagnostics are present",
+    "name": "document formats recovery-safe prefixes while preserving ambiguous suffixes",
     "file": "test.dla",
     "kind": "document",
     "inputLines": [
@@ -99,10 +99,28 @@
       "end"
     ],
     "expectedLines": [
+      "job /example/test(a, b)",
+      "  value1  , value2 -> out2",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps the ambiguous recovery suffix untouched",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 0,
+      "endLine": 1
+    },
+    "inputLines": [
       "job /example/test(a,b)",
       "  value1  ,value2  ->out2  ",
       "end"
     ],
-    "expectEdits": false
+    "expectedLines": [
+      "job /example/test(a, b)",
+      "  value1  , value2 -> out2",
+      "end"
+    ]
   }
 ]
