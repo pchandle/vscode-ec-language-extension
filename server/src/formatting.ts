@@ -14,10 +14,10 @@ function formatLine(text: string): string {
   return formatted;
 }
 
-export function formatDocument(document: TextDocument): TextEdit[] {
+function buildFormattingEdits(document: TextDocument, startLine: number, endLine: number): TextEdit[] {
   const edits: TextEdit[] = [];
 
-  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
+  for (let lineIndex = startLine; lineIndex <= endLine; lineIndex++) {
     const line = document.getText({
       start: Position.create(lineIndex, 0),
       end: Position.create(lineIndex + 1, 0),
@@ -39,4 +39,12 @@ export function formatDocument(document: TextDocument): TextEdit[] {
   }
 
   return edits;
+}
+
+export function formatDocument(document: TextDocument): TextEdit[] {
+  return buildFormattingEdits(document, 0, document.lineCount - 1);
+}
+
+export function formatDocumentRange(document: TextDocument, startLine: number, endLine: number): TextEdit[] {
+  return buildFormattingEdits(document, startLine, endLine);
 }

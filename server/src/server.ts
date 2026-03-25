@@ -42,7 +42,7 @@ import { parseText } from './lang/parser';
 import { ProgramNode, Statement } from './lang/ast';
 import { normalizeContractClassification, normalizeProtocolClassification } from './lang/normalization';
 import { collectReferencedClassifications } from './specReferenceCollector';
-import { formatDocument } from './formatting';
+import { formatDocument, formatDocumentRange } from './formatting';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -361,7 +361,8 @@ connection.onInitialize((params: InitializeParams) => {
 				resolveProvider: true
 			},
 			hoverProvider: true,
-			documentFormattingProvider: true
+			documentFormattingProvider: true,
+			documentRangeFormattingProvider: true
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -1105,6 +1106,15 @@ connection.onDocumentFormatting((params) => {
 	}
 
 	return formatDocument(document);
+});
+
+connection.onDocumentRangeFormatting((params) => {
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {
+		return [];
+	}
+
+	return formatDocumentRange(document, params.range.start.line, params.range.end.line);
 });
 
 connection.onShutdown(() => {

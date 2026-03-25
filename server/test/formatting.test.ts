@@ -1,7 +1,7 @@
 /// <reference path="./globals.d.ts" />
 import { expect } from "chai";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { formatDocument } from "../src/formatting";
+import { formatDocument, formatDocumentRange } from "../src/formatting";
 
 function createDocument(text: string): TextDocument {
   return TextDocument.create("file:///formatting.dla", "emergent", 1, text);
@@ -57,6 +57,27 @@ describe("formatting", () => {
       [
         "job /broken/test(a, b) ->",
         "  value1, value2 ->",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats only the selected lines for range formatting", () => {
+    const input = [
+      "job /example/test(a,b)->out",
+      "  value1  ,value2  ->out2  ",
+      "// keep   comment spacing",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 1)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a,b)->out",
+        "  value1, value2 -> out2",
+        "// keep   comment spacing",
         "end",
       ].join("\n")
     );

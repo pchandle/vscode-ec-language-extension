@@ -15,20 +15,20 @@ The recommended sequence is:
 
 ### Current Block Status
 - Block 1: Foundation and safety rails: in progress
-- Block 2: Server-side formatter parity: in progress
+- Block 2: Server-side formatter parity: completed
 - Block 3: Syntax-aware formatting core: not started
 - Block 4: Block layout and multiline normalization: not started
 - Block 5: Selection formatting and range correctness: not started
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 2 slice: moved `Format Document` onto the language server with output intentionally matching the current whitespace-only formatter for `.dla` / `.dlp`.
-- Scope decision: kept `Format Selection` on the existing client-side range formatter for this PR so transport migration and range semantics stay separate.
-- Assumption: document-format parity is sufficient for this slice because the current fixture matrix already locks in baseline behavior, while range transport is deferred to the next PR.
+- Block 2 slice: moved both document and range formatting onto the language server with output intentionally matching the current whitespace-only formatter for `.dla` / `.dlp`.
+- Scope decision: this PR retires the remaining client-side formatting transport but still keeps the formatter policy intentionally narrow and regex-parity-oriented.
+- Assumption: parity with the established whitespace cleanup behavior is enough to finish Block 2 transport migration even though the server formatter is not yet syntax-aware.
 
 ### Next Recommended PR
-- Block 2: move range formatting onto the language server and retire the remaining client-side formatter transport.
-- Keep output intentionally close to current behavior and add any parity or intentional-delta fixtures needed to prove the migration.
+- Block 3: define the syntax-aware formatter module boundary and formatter input model on the server.
+- Start with parser/trivia/recovery decisions needed for safe formatting, without introducing broad structural layout rules in the same PR.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
@@ -36,7 +36,7 @@ The recommended sequence is:
 - If implementation choices narrow or expand scope, record that decision here before finalizing the PR.
 
 ## Current State
-- Formatting is implemented client-side in [client/src/formatting.ts](/mnt/c/Users/pchandle/Documents/git/vscode-ec-language-extension/client/src/formatting.ts).
+- Formatting is implemented server-side in [server/src/formatting.ts](/mnt/c/Users/pchandle/Documents/git/vscode-ec-language-extension/server/src/formatting.ts).
 - Current behavior is intentionally small in scope:
   - collapse repeated spaces in many non-comment contexts
   - normalize comma spacing
@@ -44,7 +44,7 @@ The recommended sequence is:
   - trim trailing whitespace
 - Full-line `//` comments are skipped.
 - Formatting is not parse-aware and does not use expression structure to decide indentation, line wrapping, or block layout.
-- `Format Document` and VS Code `formatOnSave` therefore provide only light cleanup rather than layout normalization.
+- `Format Document`, `Format Selection`, and VS Code `formatOnSave` therefore provide only light cleanup rather than layout normalization.
 
 ## Goals
 - Improve editing productivity for `.dla` and `.dlp` files.
