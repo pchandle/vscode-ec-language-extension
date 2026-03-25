@@ -139,6 +139,23 @@
     ]
   },
   {
+    "name": "document keeps adjacent standalone comments untouched on malformed recovery syntax",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x)",
+      "  // keep   nearby comment spacing  ",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  // keep   nearby comment spacing  ",
+      "  value1, value2 -> out2",
+      "end"
+    ]
+  },
+  {
     "name": "document preserves inline block comments while formatting the safe prefix",
     "file": "test.dla",
     "kind": "document",
@@ -188,6 +205,27 @@
     "expectedLines": [
       "job /example/test(x)",
       "  value1, value2 -> out2  // keep   comment spacing",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps adjacent standalone comments on malformed recovery syntax",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 2
+    },
+    "inputLines": [
+      "job /example/test(x)",
+      "  // keep   nearby comment spacing  ",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  // keep   nearby comment spacing  ",
+      "  value1, value2 -> out2",
       "end"
     ]
   },

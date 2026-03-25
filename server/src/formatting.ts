@@ -299,6 +299,37 @@ function collectBlockCommentRanges(document: TextDocument): Map<number, Formatti
   return protectedRanges;
 }
 
+function collectAdjacentStandaloneCommentRanges(
+  document: TextDocument,
+  syntaxProtectedRanges: Map<number, FormattingCharacterRange[]>
+): Map<number, FormattingCharacterRange[]> {
+  const protectedRanges = new Map<number, FormattingCharacterRange[]>();
+  const queue: number[] = [];
+  const seen = new Set<number>();
+
+  for (const lineIndex of syntaxProtectedRanges.keys()) {
+    queue.push(lineIndex - 1, lineIndex + 1);
+  }
+
+  while (queue.length > 0) {
+    const lineIndex = queue.shift()!;
+    if (lineIndex < 0 || lineIndex >= document.lineCount || seen.has(lineIndex)) {
+      continue;
+    }
+    seen.add(lineIndex);
+
+    const text = getLineText(document, lineIndex);
+    if (!/^\s*\/\//.test(text)) {
+      continue;
+    }
+
+    addProtectedRange(protectedRanges, lineIndex, 0, text.length);
+    queue.push(lineIndex - 1, lineIndex + 1);
+  }
+
+  return protectedRanges;
+}
+
 function findAttachedCommentRange(
   text: string,
   protectedRanges: FormattingCharacterRange[]
@@ -445,6 +476,8 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
   const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
   const diagnosticLines = collectDiagnosticLines(diagnostics);
   const syntaxProtectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
+  const adjacentStandaloneCommentRanges =
+    parseMode === "recovery" ? collectAdjacentStandaloneCommentRanges(document, syntaxProtectedRanges) : new Map<number, FormattingCharacterRange[]>();
   const blockCommentRanges = collectBlockCommentRanges(document);
   const lines: FormattingLine[] = [];
 
@@ -452,6 +485,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
     const originalText = getLineText(document, lineIndex);
     const lineProtectedRanges = [
       ...(syntaxProtectedRanges.get(lineIndex) ?? []),
+      ...(adjacentStandaloneCommentRanges.get(lineIndex) ?? []),
       ...(blockCommentRanges.get(lineIndex) ?? []),
     ];
     const attachedCommentRange =
