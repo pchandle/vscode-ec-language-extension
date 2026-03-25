@@ -122,5 +122,39 @@
       "  value1, value2 -> out2",
       "end"
     ]
+  },
+  {
+    "name": "document keeps attached inline comments untouched on malformed recovery lines",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  ->out2  // keep   comment spacing",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> out2  // keep   comment spacing",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps attached inline comments on malformed recovery lines",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 1
+    },
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  ->out2  // keep   comment spacing",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> out2  // keep   comment spacing",
+      "end"
+    ]
   }
 ]

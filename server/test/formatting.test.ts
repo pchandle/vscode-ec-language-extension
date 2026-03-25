@@ -126,6 +126,18 @@ describe("formatting", () => {
     expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2");
   });
 
+  it("preserves attached inline comments on malformed recovery lines", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  // keep   comment spacing\nend");
+    const model = buildFormattingInput(document);
+    const decisions = planFormatting(model, { startLine: 1, endLine: 1 });
+
+    expect(model.lines[1].protectedRanges).to.deep.equal([
+      { startCharacter: 2, endCharacter: 8 },
+      { startCharacter: 25, endCharacter: 52 },
+    ]);
+    expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2  // keep   comment spacing");
+  });
+
   it("formats around ambiguous recovery tokens without preserving separator whitespace", () => {
     const document = createDocument("job /example/test(a,b)\n  value1  ,value2  ->out2  \nend");
     const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
@@ -134,6 +146,32 @@ describe("formatting", () => {
       [
         "job /example/test(a, b)",
         "  value1, value2 -> out2",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps attached inline comments untouched while formatting the safe recovery prefix", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  // keep   comment spacing\nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x)",
+        "  value1, value2 -> out2  // keep   comment spacing",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats recovery lines with attached inline comments correctly under CRLF line endings", () => {
+    const document = createDocument("job /example/test(x)\r\n  value1  ,value2  ->out2  // keep   comment spacing\r\nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x)",
+        "  value1, value2 -> out2  // keep   comment spacing",
         "end",
       ].join("\n")
     );

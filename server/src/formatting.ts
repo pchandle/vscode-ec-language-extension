@@ -195,6 +195,61 @@ function mergeCharacterRanges(ranges: FormattingCharacterRange[]): FormattingCha
   return merged;
 }
 
+function findLineCommentStart(text: string): number | null {
+  let inString = false;
+
+  for (let index = 0; index < text.length; index++) {
+    const ch = text[index];
+    const next = text[index + 1];
+
+    if (ch === '"' && !inString) {
+      inString = true;
+      continue;
+    }
+
+    if (ch === "\\" && inString) {
+      index++;
+      continue;
+    }
+
+    if (ch === '"' && inString) {
+      inString = false;
+      continue;
+    }
+
+    if (!inString && ch === "/" && next === "/") {
+      return index;
+    }
+  }
+
+  return null;
+}
+
+function findAttachedCommentRange(
+  text: string,
+  protectedRanges: FormattingCharacterRange[]
+): FormattingCharacterRange | null {
+  const commentStart = findLineCommentStart(text);
+  if (commentStart === null) {
+    return null;
+  }
+
+  const hasProtectedSyntaxBeforeComment = protectedRanges.some((range) => range.endCharacter <= commentStart);
+  if (!hasProtectedSyntaxBeforeComment) {
+    return null;
+  }
+
+  let attachedStart = commentStart;
+  while (attachedStart > 0 && (text[attachedStart - 1] === " " || text[attachedStart - 1] === "\t")) {
+    attachedStart--;
+  }
+
+  return {
+    startCharacter: attachedStart,
+    endCharacter: text.length,
+  };
+}
+
 function formatSegment(
   text: string,
   options: {
@@ -238,7 +293,7 @@ function formatLineWithProtectedRanges(text: string, protectedRanges: Formatting
   mergedRanges.forEach((range, index) => {
     if (cursor < range.startCharacter) {
       formatted += formatSegment(text.slice(cursor, range.startCharacter), {
-        preserveLeadingWhitespace: index > 0,
+        preserveLeadingWhitespace: false,
         preserveTrailingWhitespace: true,
       });
     }
@@ -305,7 +360,8 @@ function getLineText(document: TextDocument, lineIndex: number): string {
     start: Position.create(lineIndex, 0),
     end: Position.create(lineIndex + 1, 0),
   });
-  return line.endsWith("\n") ? line.slice(0, -1) : line;
+  const withoutNewline = line.endsWith("\n") ? line.slice(0, -1) : line;
+  return withoutNewline.endsWith("\r") ? withoutNewline.slice(0, -1) : withoutNewline;
 }
 
 export function buildFormattingInput(document: TextDocument): FormattingInput {
@@ -319,13 +375,20 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
     const originalText = getLineText(document, lineIndex);
+    const lineProtectedRanges = protectedRanges.get(lineIndex) ?? [];
+    const attachedCommentRange =
+      parseMode === "recovery" && !/^\s*\/\//.test(originalText)
+        ? findAttachedCommentRange(originalText, lineProtectedRanges)
+        : null;
     lines.push({
       lineIndex,
       originalText,
       kind: classifyLine(originalText),
       coveredBySyntax: coveredLines.has(lineIndex),
       intersectsDiagnostic: diagnosticLines.has(lineIndex),
-      protectedRanges: mergeCharacterRanges(protectedRanges.get(lineIndex) ?? []),
+      protectedRanges: mergeCharacterRanges(
+        attachedCommentRange ? [...lineProtectedRanges, attachedCommentRange] : lineProtectedRanges
+      ),
       safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex),
     });
   }
