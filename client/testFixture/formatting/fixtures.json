@@ -156,6 +156,25 @@
     ]
   },
   {
+    "name": "document keeps blank-line-separated comment groups on malformed recovery syntax",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x)",
+      "   ",
+      "  // keep   nearby comment spacing  ",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "   ",
+      "  // keep   nearby comment spacing  ",
+      "  value1, value2 -> out2",
+      "end"
+    ]
+  },
+  {
     "name": "document preserves inline block comments while formatting the safe prefix",
     "file": "test.dla",
     "kind": "document",
@@ -224,6 +243,29 @@
     ],
     "expectedLines": [
       "job /example/test(x)",
+      "  // keep   nearby comment spacing  ",
+      "  value1, value2 -> out2",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps blank-line-separated comment groups on malformed recovery syntax",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 3
+    },
+    "inputLines": [
+      "job /example/test(x)",
+      "   ",
+      "  // keep   nearby comment spacing  ",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "   ",
       "  // keep   nearby comment spacing  ",
       "  value1, value2 -> out2",
       "end"

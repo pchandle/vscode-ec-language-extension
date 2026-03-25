@@ -319,7 +319,9 @@ function collectAdjacentStandaloneCommentRanges(
     seen.add(lineIndex);
 
     const text = getLineText(document, lineIndex);
-    if (!/^\s*\/\//.test(text)) {
+    const isStandaloneComment = /^\s*\/\//.test(text);
+    const isBlankLine = text.trim().length === 0;
+    if (!isStandaloneComment && !isBlankLine) {
       continue;
     }
 
