@@ -225,6 +225,80 @@ function findLineCommentStart(text: string): number | null {
   return null;
 }
 
+function collectBlockCommentRanges(document: TextDocument): Map<number, FormattingCharacterRange[]> {
+  const protectedRanges = new Map<number, FormattingCharacterRange[]>();
+  let inBlockComment = false;
+
+  for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
+    const text = getLineText(document, lineIndex);
+    let index = 0;
+    let inString = false;
+
+    while (index < text.length) {
+      if (inBlockComment) {
+        const closeIndex = text.indexOf("*/", index);
+        if (closeIndex === -1) {
+          addProtectedRange(protectedRanges, lineIndex, 0, text.length);
+          index = text.length;
+          continue;
+        }
+
+        addProtectedRange(protectedRanges, lineIndex, 0, closeIndex + 2);
+        inBlockComment = false;
+        index = closeIndex + 2;
+        continue;
+      }
+
+      const ch = text[index];
+      const next = text[index + 1];
+
+      if (ch === '"' && !inString) {
+        inString = true;
+        index++;
+        continue;
+      }
+
+      if (ch === "\\" && inString) {
+        index += 2;
+        continue;
+      }
+
+      if (ch === '"' && inString) {
+        inString = false;
+        index++;
+        continue;
+      }
+
+      if (!inString && ch === "/" && next === "/") {
+        break;
+      }
+
+      if (!inString && ch === "/" && next === "*") {
+        let startCharacter = index;
+        while (startCharacter > 0 && (text[startCharacter - 1] === " " || text[startCharacter - 1] === "\t")) {
+          startCharacter--;
+        }
+
+        const closeIndex = text.indexOf("*/", index + 2);
+        if (closeIndex === -1) {
+          addProtectedRange(protectedRanges, lineIndex, startCharacter, text.length);
+          inBlockComment = true;
+          index = text.length;
+          continue;
+        }
+
+        addProtectedRange(protectedRanges, lineIndex, startCharacter, closeIndex + 2);
+        index = closeIndex + 2;
+        continue;
+      }
+
+      index++;
+    }
+  }
+
+  return protectedRanges;
+}
+
 function findAttachedCommentRange(
   text: string,
   protectedRanges: FormattingCharacterRange[]
@@ -370,12 +444,16 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
   const coveredLines = collectStatementLines(program);
   const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
   const diagnosticLines = collectDiagnosticLines(diagnostics);
-  const protectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
+  const syntaxProtectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
+  const blockCommentRanges = collectBlockCommentRanges(document);
   const lines: FormattingLine[] = [];
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
     const originalText = getLineText(document, lineIndex);
-    const lineProtectedRanges = protectedRanges.get(lineIndex) ?? [];
+    const lineProtectedRanges = [
+      ...(syntaxProtectedRanges.get(lineIndex) ?? []),
+      ...(blockCommentRanges.get(lineIndex) ?? []),
+    ];
     const attachedCommentRange =
       parseMode === "recovery" && !/^\s*\/\//.test(originalText)
         ? findAttachedCommentRange(originalText, lineProtectedRanges)

@@ -65,6 +65,46 @@ describe("formatting", () => {
     );
   });
 
+  it("preserves inline block comment text while formatting the safe prefix", () => {
+    const input = [
+      "job /example/test(a,b):",
+      "  value1  ,value2  /* keep  , -> spacing */",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a, b):",
+        "  value1, value2  /* keep  , -> spacing */",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("preserves multiline block comments while formatting surrounding syntax", () => {
+    const input = [
+      "job /example/test(a,b):",
+      "  /* keep  , -> spacing",
+      "     and indentation */",
+      "  value1  ,value2  ->out2  ",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a, b):",
+        "  /* keep  , -> spacing",
+        "     and indentation */",
+        "  value1, value2 -> out2",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "host /example/test(a, b) -> out",
@@ -136,6 +176,18 @@ describe("formatting", () => {
       { startCharacter: 25, endCharacter: 52 },
     ]);
     expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2  // keep   comment spacing");
+  });
+
+  it("preserves attached block comments on malformed recovery lines", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  /* keep  , -> spacing */\nend");
+    const model = buildFormattingInput(document);
+    const decisions = planFormatting(model, { startLine: 1, endLine: 1 });
+
+    expect(model.lines[1].protectedRanges).to.deep.equal([
+      { startCharacter: 2, endCharacter: 8 },
+      { startCharacter: 25, endCharacter: 51 },
+    ]);
+    expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2  /* keep  , -> spacing */");
   });
 
   it("formats around ambiguous recovery tokens without preserving separator whitespace", () => {

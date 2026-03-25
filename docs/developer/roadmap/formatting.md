@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: introduced same-line `//` comment ownership for recovery formatting. When a malformed line already has protected syntax spans, the formatter now preserves the attached inline comment and its separating whitespace while still formatting the safe syntax prefix.
-- Scope decision: comment-aware recovery ownership currently applies only to same-line `//` comments attached to syntax-protected recovery lines; standalone comment lines, block comments, and cross-line comment attachment remain deferred.
-- Assumption: attached inline comments should keep both their text and their existing spacing from the preceding malformed syntax, even when the safe syntax earlier on the line is still normalized.
-- Lesson captured for future PRs: token-aware recovery boundaries are not sufficient on their own; attached comment trivia needs explicit ownership rules or comment text and attachment spacing will churn even when malformed tokens are protected.
+- Block 3 slice: introduced block-comment ownership in the formatter, including recovery lines with attached `/* ... */` comments. Block comment text is now preserved while safe syntax outside the comment span still formats.
+- Scope decision: this PR covers inline and multiline `/* ... */` preservation, plus attached block comments on recovery lines; standalone adjacent `//` comment ownership across lines remains deferred.
+- Assumption: block comments should preserve both their text and their existing preceding spacing, even when the syntax before the comment is normalized.
+- Lesson captured for future PRs: once comment text is protected, line-ending handling becomes part of formatter correctness; CRLF-safe line extraction must stay covered by tests so comment-preserving edits do not introduce blank lines.
 - Lesson captured for future PRs: parser/runtime shape and static AST typing do not align perfectly for every statement expression path (notably `if`-shaped expressions), so formatter work should validate runtime node shapes instead of assuming the current types are exhaustive.
-- Lesson captured for future PRs: comment preservation is still partial rather than general comment/trivia attachment, so structural formatting PRs should define ownership for standalone comments and block comments before introducing broader layout changes.
+- Lesson captured for future PRs: comment preservation is still partial rather than general comment/trivia attachment, so structural formatting PRs should define ownership for standalone adjacent `//` comments and cross-line comment attachment before introducing broader layout changes.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend recovery comment/trivia ownership beyond same-line `//` comments, starting with standalone adjacent comments and block comments so malformed regions can preserve nearby non-token trivia intentionally.
+- Block 3: extend recovery comment/trivia ownership to standalone adjacent `//` comment lines so malformed regions can preserve nearby non-token trivia intentionally, not just inline comment suffixes and block-comment spans.
 - Keep broad structural layout rules deferred until recovery-region precision and comment/trivia attachment strategy are explicit.
 
 ### Roadmap Update Rule

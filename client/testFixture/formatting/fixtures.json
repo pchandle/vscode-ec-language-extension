@@ -139,6 +139,40 @@
     ]
   },
   {
+    "name": "document preserves inline block comments while formatting the safe prefix",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(a,b):",
+      "  value1  ,value2  /* keep  , -> spacing */",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a, b):",
+      "  value1, value2  /* keep  , -> spacing */",
+      "end"
+    ]
+  },
+  {
+    "name": "document preserves multiline block comments while formatting surrounding syntax",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(a,b):",
+      "  /* keep  , -> spacing",
+      "     and indentation */",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a, b):",
+      "  /* keep  , -> spacing",
+      "     and indentation */",
+      "  value1, value2 -> out2",
+      "end"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -154,6 +188,25 @@
     "expectedLines": [
       "job /example/test(x)",
       "  value1, value2 -> out2  // keep   comment spacing",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps attached block comments on malformed recovery lines",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 1
+    },
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  ->out2  /* keep  , -> spacing */",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> out2  /* keep  , -> spacing */",
       "end"
     ]
   }
