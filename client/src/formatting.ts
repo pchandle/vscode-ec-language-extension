@@ -27,18 +27,6 @@ function buildSpacingEdits(document: vscode.TextDocument, startLine: number, end
   return edits;
 }
 
-export class EmergentDocumentFormatter implements vscode.DocumentFormattingEditProvider {
-  provideDocumentFormattingEdits(
-    document: vscode.TextDocument,
-    options: vscode.FormattingOptions,
-    token: vscode.CancellationToken
-  ): vscode.ProviderResult<vscode.TextEdit[]> {
-    console.debug("Formatting 'emergent' document.");
-    const edits = buildSpacingEdits(document, 0, document.lineCount - 1);
-    return edits.length > 0 ? edits : undefined;
-  }
-}
-
 export class EmergentDocumentRangeFormatter implements vscode.DocumentRangeFormattingEditProvider {
   provideDocumentRangeFormattingEdits(
     document: vscode.TextDocument,

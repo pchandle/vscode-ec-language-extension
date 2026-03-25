@@ -8,7 +8,7 @@ import { TextEncoder } from "util";
 import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvider";
 import { PdesEditorProvider, loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { PddEditorProvider, loadPddSchema } from "./customEditors/PddEditorProvider";
-import { EmergentDocumentFormatter, EmergentDocumentRangeFormatter } from "./formatting";
+import { EmergentDocumentRangeFormatter } from "./formatting";
 import { registerPdesVersionCheck } from "./pdesVersionCheck";
 import { registerExportProtocolSpec } from "./pdesExport";
 import { workspace, ExtensionContext } from "vscode";
@@ -493,11 +493,7 @@ export async function activate(context: ExtensionContext) {
     })
   );
 
-  // Code formatting implemented using API
-  const emergentDocumentFormattingEditProvider = vscode.languages.registerDocumentFormattingEditProvider(
-    "emergent",
-    new EmergentDocumentFormatter()
-  );
+  // Document formatting is now served by the language server. Keep range formatting local for now.
   const emergentDocumentRangeFormattingEditProvider = vscode.languages.registerDocumentRangeFormattingEditProvider(
     "emergent",
     new EmergentDocumentRangeFormatter()
@@ -540,7 +536,6 @@ export async function activate(context: ExtensionContext) {
   ecStatusBarItem.show();
 
   context.subscriptions.push(ecStatusBarItem);
-  context.subscriptions.push(emergentDocumentFormattingEditProvider);
   context.subscriptions.push(emergentDocumentRangeFormattingEditProvider);
 
   registerSpecificationEditors(context);

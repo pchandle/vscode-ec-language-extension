@@ -15,20 +15,20 @@ The recommended sequence is:
 
 ### Current Block Status
 - Block 1: Foundation and safety rails: in progress
-- Block 2: Server-side formatter parity: not started
+- Block 2: Server-side formatter parity: in progress
 - Block 3: Syntax-aware formatting core: not started
 - Block 4: Block layout and multiline normalization: not started
 - Block 5: Selection formatting and range correctness: not started
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 1 slice: added fixture-backed coverage for current client-side formatter behavior across document and range formatting, including idempotence and no-op cases.
-- Scope decision: kept this PR focused on tests plus one small formatter fix so unchanged lines no longer emit replace-edits.
-- Assumption: preserving current full-line comment behavior includes preserving comment-line trailing spaces because the current formatter skips those lines entirely.
+- Block 2 slice: moved `Format Document` onto the language server with output intentionally matching the current whitespace-only formatter for `.dla` / `.dlp`.
+- Scope decision: kept `Format Selection` on the existing client-side range formatter for this PR so transport migration and range semantics stay separate.
+- Assumption: document-format parity is sufficient for this slice because the current fixture matrix already locks in baseline behavior, while range transport is deferred to the next PR.
 
 ### Next Recommended PR
-- Block 2: start server-side formatter parity by introducing server document-formatting transport that preserves current document-format output for `.dla` / `.dlp`.
-- Keep the client thin and treat this as transport migration only; do not expand formatting policy in the same PR.
+- Block 2: move range formatting onto the language server and retire the remaining client-side formatter transport.
+- Keep output intentionally close to current behavior and add any parity or intentional-delta fixtures needed to prove the migration.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
