@@ -1,0 +1,92 @@
+[
+  {
+    "name": "document spacing cleanup for basic autopilot lines",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(a,b)->out",
+      "  value1  ,value2  ->out2  ",
+      "// keep   comment spacing",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a, b) -> out",
+      "  value1, value2 -> out2",
+      "// keep   comment spacing",
+      "end"
+    ]
+  },
+  {
+    "name": "document keeps blank lines and comment trivia in pilot files",
+    "file": "test.dlp",
+    "kind": "document",
+    "inputLines": [
+      "host /example/test(a,b)->out  ",
+      "   ",
+      "// keep   comment spacing\u0020\u0020",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "host /example/test(a, b) -> out",
+      "",
+      "// keep   comment spacing\u0020\u0020",
+      "  value1, value2 -> out2",
+      "end"
+    ]
+  },
+  {
+    "name": "document preserves malformed structure while applying current whitespace rules",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /broken/test(a,b)->",
+      "  value1  ,value2  ->  ",
+      "end  "
+    ],
+    "expectedLines": [
+      "job /broken/test(a, b) ->",
+      "  value1, value2 ->",
+      "end"
+    ]
+  },
+  {
+    "name": "document formatting is a no-op for already formatted input",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(a, b) -> out",
+      "  value1, value2 -> out2",
+      "// keep   comment spacing",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a, b) -> out",
+      "  value1, value2 -> out2",
+      "// keep   comment spacing",
+      "end"
+    ],
+    "expectEdits": false
+  },
+  {
+    "name": "range formatting only updates the selected lines",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 1
+    },
+    "inputLines": [
+      "job /example/test(a,b)->out",
+      "  value1  ,value2  ->out2  ",
+      "// keep   comment spacing",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a,b)->out",
+      "  value1, value2 -> out2",
+      "// keep   comment spacing",
+      "end"
+    ]
+  }
+]

@@ -4,7 +4,8 @@ function buildSpacingEdits(document: vscode.TextDocument, startLine: number, end
   const edits: vscode.TextEdit[] = [];
 
   for (let i = startLine; i <= endLine; i++) {
-    let text = document.lineAt(i).text;
+    const originalText = document.lineAt(i).text;
+    let text = originalText;
 
     // Ignore comment lines
     if (text.match(/^\s*\/\//)) continue;
@@ -18,7 +19,9 @@ function buildSpacingEdits(document: vscode.TextDocument, startLine: number, end
     // Trim trailing whitespace.
     text = text.replace(/\s+$/g, "");
 
-    edits.push(vscode.TextEdit.replace(document.lineAt(i).range, text));
+    if (text !== originalText) {
+      edits.push(vscode.TextEdit.replace(document.lineAt(i).range, text));
+    }
   }
 
   return edits;

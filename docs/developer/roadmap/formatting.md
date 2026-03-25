@@ -14,7 +14,7 @@ The recommended sequence is:
 ## Execution Status
 
 ### Current Block Status
-- Block 1: Foundation and safety rails: not started
+- Block 1: Foundation and safety rails: in progress
 - Block 2: Server-side formatter parity: not started
 - Block 3: Syntax-aware formatting core: not started
 - Block 4: Block layout and multiline normalization: not started
@@ -22,12 +22,13 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- None yet.
+- Block 1 slice: added fixture-backed coverage for current client-side formatter behavior across document and range formatting, including idempotence and no-op cases.
+- Scope decision: kept this PR focused on tests plus one small formatter fix so unchanged lines no longer emit replace-edits.
+- Assumption: preserving current full-line comment behavior includes preserving comment-line trailing spaces because the current formatter skips those lines entirely.
 
 ### Next Recommended PR
-- Block 1: add fixture coverage for current formatter behavior and idempotence.
-- Include representative `.dla` / `.dlp` cases for spacing cleanup, commas, `->`, trailing whitespace, blank lines, full-line comments, malformed-but-common input, and no-op files.
-- Keep the PR limited to tests and supporting test harness improvements unless a small implementation fix is required to make current behavior testable.
+- Block 2: start server-side formatter parity by introducing server document-formatting transport that preserves current document-format output for `.dla` / `.dlp`.
+- Keep the client thin and treat this as transport migration only; do not expand formatting policy in the same PR.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
