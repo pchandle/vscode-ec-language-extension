@@ -60,13 +60,21 @@ function formatLine(text: string): string {
 }
 
 function classifyLine(text: string): FormattingLineKind {
-  if (/^\s*\/\//.test(text)) {
+  if (isStandaloneLineComment(text)) {
     return "comment";
   }
-  if (text.trim().length === 0) {
+  if (isBlankLine(text)) {
     return "blank";
   }
   return "content";
+}
+
+function isStandaloneLineComment(text: string): boolean {
+  return /^\s*\/\//.test(text);
+}
+
+function isBlankLine(text: string): boolean {
+  return text.trim().length === 0;
 }
 
 function addRangeLines(lines: Set<number>, range: Range): void {
@@ -311,8 +319,8 @@ function collectAdjacentStandaloneCommentRanges(
 
     while (lineIndex >= 0 && lineIndex < document.lineCount) {
       const text = getLineText(document, lineIndex);
-      const isStandaloneComment = /^\s*\/\//.test(text);
-      const isBlankLine = text.trim().length === 0;
+      const isStandaloneComment = isStandaloneLineComment(text);
+      const isTriviaLine = isBlankLine(text);
 
       if (isStandaloneComment) {
         if (!sawComment) {
@@ -326,12 +334,13 @@ function collectAdjacentStandaloneCommentRanges(
         continue;
       }
 
-      if (isBlankLine) {
+      if (isTriviaLine) {
         pendingBlankLines.push(lineIndex);
         lineIndex += direction;
         continue;
       }
 
+      // Non-trivia content remains the current recovery ownership boundary.
       break;
     }
 
@@ -344,7 +353,7 @@ function collectAdjacentStandaloneCommentRanges(
 
   for (const lineIndex of syntaxProtectedRanges.keys()) {
     const text = getLineText(document, lineIndex);
-    const isTriviaLine = /^\s*\/\//.test(text) || text.trim().length === 0;
+    const isTriviaLine = isStandaloneLineComment(text) || isBlankLine(text);
 
     if (isTriviaLine) {
       addOwnedGroup(lineIndex, -1);
@@ -513,14 +522,14 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
     const originalText = getLineText(document, lineIndex);
     const syntaxLineProtectedRanges =
-      originalText.trim().length === 0 ? [] : (syntaxProtectedRanges.get(lineIndex) ?? []);
+      isBlankLine(originalText) ? [] : (syntaxProtectedRanges.get(lineIndex) ?? []);
     const lineProtectedRanges = [
       ...syntaxLineProtectedRanges,
       ...(adjacentStandaloneCommentRanges.get(lineIndex) ?? []),
       ...(blockCommentRanges.get(lineIndex) ?? []),
     ];
     const attachedCommentRange =
-      parseMode === "recovery" && !/^\s*\/\//.test(originalText)
+      parseMode === "recovery" && !isStandaloneLineComment(originalText)
         ? findAttachedCommentRange(originalText, lineProtectedRanges)
         : null;
     lines.push({

@@ -192,6 +192,27 @@
     ]
   },
   {
+    "name": "document keeps non-trivia separators as the hard stop for recovery comment ownership",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  ->out2  ",
+      "  helper  ,value2  ->out3  ",
+      "   ",
+      "  // keep   distant comment spacing  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> out2",
+      "  helper, value2 -> out3",
+      "   ",
+      "  // keep   distant comment spacing  ",
+      "end"
+    ]
+  },
+  {
     "name": "document preserves inline block comments while formatting the safe prefix",
     "file": "test.dla",
     "kind": "document",
@@ -306,6 +327,31 @@
       "job /example/test(x)",
       "",
       "  value1, value2 -> out2",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps non-trivia separators as the hard stop for recovery comment ownership",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 4
+    },
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  ->out2  ",
+      "  helper  ,value2  ->out3  ",
+      "   ",
+      "  // keep   distant comment spacing  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> out2",
+      "  helper, value2 -> out3",
+      "   ",
+      "  // keep   distant comment spacing  ",
       "end"
     ]
   },

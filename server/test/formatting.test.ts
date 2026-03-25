@@ -204,6 +204,16 @@ describe("formatting", () => {
     expect(model.lines[1].safeToFormat).to.equal(true);
   });
 
+  it("does not attach comment groups across a non-trivia separator in recovery mode", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  \n  helper  ,value2  ->out3  \n   \n  // keep   distant comment spacing  \nend");
+    const model = buildFormattingInput(document);
+
+    expect(model.lines[3].protectedRanges).to.deep.equal([]);
+    expect(model.lines[4].protectedRanges).to.deep.equal([]);
+    expect(model.lines[3].safeToFormat).to.equal(false);
+    expect(model.lines[4].safeToFormat).to.equal(false);
+  });
+
   it("preserves attached block comments on malformed recovery lines", () => {
     const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  /* keep  , -> spacing */\nend");
     const model = buildFormattingInput(document);
@@ -280,6 +290,22 @@ describe("formatting", () => {
         "job /example/test(x)",
         "",
         "  value1, value2 -> out2",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps non-trivia separators as the hard stop for recovery comment ownership", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  \n  helper  ,value2  ->out3  \n   \n  // keep   distant comment spacing  \nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x)",
+        "  value1, value2 -> out2",
+        "  helper, value2 -> out3",
+        "   ",
+        "  // keep   distant comment spacing  ",
         "end",
       ].join("\n")
     );
