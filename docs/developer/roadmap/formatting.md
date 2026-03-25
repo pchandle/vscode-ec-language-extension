@@ -22,21 +22,17 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: defined an explicit server-side formatter input model and pipeline phases (`parse -> plan -> emit`) while keeping emitted whitespace cleanup behavior unchanged.
-- Scope decision: parser output and syntax diagnostics now flow through the formatter boundary, but layout decisions still intentionally use the existing low-disruption whitespace policy.
-- Assumption: carrying AST and parse-recovery metadata now is useful even before syntax-aware layout rules start consuming it.
-- Lesson captured for future PRs: current `coveredBySyntax` line metadata is useful as internal context, but it is not yet strong enough to serve as a user-visible formatting boundary contract by itself.
+- Block 3 slice: implemented the first parse-recovery-safe formatting boundary. In recovery mode, the formatter now preserves lines that overlap syntax diagnostics and formats only lines that are both syntax-covered and outside diagnostic spans.
+- Scope decision: the recovery boundary is intentionally line-based and conservative; it does not yet attempt token-precise or comment-attached preservation.
+- Assumption: preserving the entire diagnostic-overlapping line is preferable to partial line cleanup until formatter-safe regions can be defined more precisely from parser/trivia data.
+- Lesson captured for future PRs: current `coveredBySyntax` metadata becomes useful when combined with diagnostic overlap, but neither signal is yet precise enough for token-level safe-region formatting.
 - Lesson captured for future PRs: parser/runtime shape and static AST typing do not align perfectly for every statement expression path (notably `if`-shaped expressions), so formatter work should validate runtime node shapes instead of assuming the current types are exhaustive.
 - Lesson captured for future PRs: comment preservation is currently achieved by conservative line handling, not true comment/trivia attachment, so structural formatting PRs should define comment ownership rules before introducing broader layout changes.
+- Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: choose and implement the first parse-recovery-safe formatting boundary, including what regions are preserved versus formatted when syntax diagnostics are present.
-- Keep structural layout rules deferred until parse-recovery behavior and comment/trivia attachment strategy are explicit.
-- Use the existing formatter pipeline to make that decision in one place:
-  - parse input and diagnostics
-  - determine safe-to-format regions
-  - preserve ambiguous or recovery-heavy spans
-  - emit the narrowest edits for the chosen safe region
+- Block 3: refine recovery-safe regions beyond whole-line preservation, ideally by introducing token- or trivia-aware boundaries that can preserve only the ambiguous span while still formatting surrounding safe syntax.
+- Keep broad structural layout rules deferred until recovery-region precision and comment/trivia attachment strategy are explicit.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.

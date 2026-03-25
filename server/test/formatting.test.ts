@@ -29,11 +29,14 @@ describe("formatting", () => {
 
     expect(model.parseMode).to.equal("recovery");
     expect(model.syntaxDiagnostics.some((item) => item.message.includes("Expected ':' after job signature"))).to.equal(true);
+    expect(model.lines[0].intersectsDiagnostic).to.equal(true);
+    expect(model.lines[0].safeToFormat).to.equal(false);
+    expect(model.lines[1].safeToFormat).to.equal(false);
   });
 
   it("matches current spacing cleanup behavior", () => {
     const input = [
-      "job /example/test(a,b)->out",
+      "job /example/test(a,b):",
       "  value1  ,value2  ->out2  ",
       "// keep   comment spacing",
       "end",
@@ -43,7 +46,7 @@ describe("formatting", () => {
 
     expect(output).to.equal(
       [
-        "job /example/test(a, b) -> out",
+        "job /example/test(a, b):",
         "  value1, value2 -> out2",
         "// keep   comment spacing",
         "end",
@@ -64,7 +67,7 @@ describe("formatting", () => {
 
   it("preserves malformed structure while applying current whitespace rules", () => {
     const input = [
-      "job /broken/test(a,b)->",
+      "sub /broken/test(a,b)->",
       "  value1  ,value2  ->  ",
       "end  ",
     ].join("\n");
@@ -73,7 +76,7 @@ describe("formatting", () => {
 
     expect(output).to.equal(
       [
-        "job /broken/test(a, b) ->",
+        "sub /broken/test(a, b) ->",
         "  value1, value2 ->",
         "end",
       ].join("\n")
@@ -82,7 +85,7 @@ describe("formatting", () => {
 
   it("formats only the selected lines for range formatting", () => {
     const input = [
-      "job /example/test(a,b)->out",
+      "job /example/test(a,b):",
       "  value1  ,value2  ->out2  ",
       "// keep   comment spacing",
       "end",
@@ -93,7 +96,7 @@ describe("formatting", () => {
 
     expect(output).to.equal(
       [
-        "job /example/test(a,b)->out",
+        "job /example/test(a,b):",
         "  value1, value2 -> out2",
         "// keep   comment spacing",
         "end",
@@ -108,6 +111,25 @@ describe("formatting", () => {
 
     expect(decisions).to.have.length(1);
     expect(decisions[0].parseMode).to.equal("recovery");
-    expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2");
+    expect(decisions[0].safeToFormat).to.equal(false);
+    expect(decisions[0].formattedText).to.equal("  value1  ,value2  ->out2  ");
+  });
+
+  it("preserves diagnostic-overlapping lines in recovery mode", () => {
+    const document = createDocument("job /example/test(a,b)\n  value1  ,value2  ->out2  \nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a,b)",
+        "  value1  ,value2  ->out2  ",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("returns no edits for a range fully inside an unsafe recovery span", () => {
+    const document = createDocument("job /example/test(a,b)\n  value1  ,value2  ->out2  \nend");
+    expect(formatDocumentRange(document, 0, 0)).to.deep.equal([]);
   });
 });

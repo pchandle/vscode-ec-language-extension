@@ -12,6 +12,8 @@ export interface FormattingLine {
   originalText: string;
   kind: FormattingLineKind;
   coveredBySyntax: boolean;
+  intersectsDiagnostic: boolean;
+  safeToFormat: boolean;
 }
 
 export interface FormattingInput {
@@ -34,6 +36,7 @@ export interface FormattingDecision {
   kind: FormattingLineKind;
   parseMode: FormattingParseMode;
   coveredBySyntax: boolean;
+  safeToFormat: boolean;
 }
 
 function formatLine(text: string): string {
@@ -63,6 +66,31 @@ function addRangeLines(lines: Set<number>, range: Range): void {
   for (let line = range.start.line; line <= range.end.line; line++) {
     lines.add(line);
   }
+}
+
+function collectDiagnosticLines(diagnostics: SyntaxDiagnostic[]): Set<number> {
+  const lines = new Set<number>();
+  for (const diagnostic of diagnostics) {
+    addRangeLines(lines, diagnostic.range);
+  }
+  return lines;
+}
+
+function collectUnsafeRecoveryLines(lines: FormattingLine[], diagnostics: SyntaxDiagnostic[]): Set<number> {
+  const unsafeLines = collectDiagnosticLines(diagnostics);
+
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.range.start.line === 0) {
+      continue;
+    }
+
+    const previousLine = lines[diagnostic.range.start.line - 1];
+    if (previousLine && previousLine.kind === "content") {
+      unsafeLines.add(previousLine.lineIndex);
+    }
+  }
+
+  return unsafeLines;
 }
 
 function collectStatementLines(program: ProgramNode): Set<number> {
@@ -120,6 +148,7 @@ function getLineText(document: TextDocument, lineIndex: number): string {
 export function buildFormattingInput(document: TextDocument): FormattingInput {
   const { program, diagnostics } = parseText(document.getText());
   const coveredLines = collectStatementLines(program);
+  const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
   const lines: FormattingLine[] = [];
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
@@ -129,14 +158,23 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       originalText,
       kind: classifyLine(originalText),
       coveredBySyntax: coveredLines.has(lineIndex),
+      intersectsDiagnostic: false,
+      safeToFormat: parseMode === "parsed",
     });
+  }
+
+  const unsafeRecoveryLines = parseMode === "recovery" ? collectUnsafeRecoveryLines(lines, diagnostics) : new Set<number>();
+
+  for (const line of lines) {
+    line.intersectsDiagnostic = unsafeRecoveryLines.has(line.lineIndex);
+    line.safeToFormat = parseMode === "parsed" || (line.coveredBySyntax && !line.intersectsDiagnostic);
   }
 
   return {
     document,
     program,
     syntaxDiagnostics: diagnostics,
-    parseMode: diagnostics.length > 0 ? "recovery" : "parsed",
+    parseMode,
     lines,
   };
 }
@@ -149,10 +187,11 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
     decisions.push({
       lineIndex,
       originalText: line.originalText,
-      formattedText: formatLine(line.originalText),
+      formattedText: line.safeToFormat ? formatLine(line.originalText) : line.originalText,
       kind: line.kind,
       parseMode: input.parseMode,
       coveredBySyntax: line.coveredBySyntax,
+      safeToFormat: line.safeToFormat,
     });
   }
 

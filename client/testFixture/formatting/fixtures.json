@@ -4,13 +4,13 @@
     "file": "test.dla",
     "kind": "document",
     "inputLines": [
-      "job /example/test(a,b)->out",
+      "job /example/test(a,b):",
       "  value1  ,value2  ->out2  ",
       "// keep   comment spacing",
       "end"
     ],
     "expectedLines": [
-      "job /example/test(a, b) -> out",
+      "job /example/test(a, b):",
       "  value1, value2 -> out2",
       "// keep   comment spacing",
       "end"
@@ -40,12 +40,12 @@
     "file": "test.dla",
     "kind": "document",
     "inputLines": [
-      "job /broken/test(a,b)->",
+      "sub /broken/test(a,b)->",
       "  value1  ,value2  ->  ",
       "end  "
     ],
     "expectedLines": [
-      "job /broken/test(a, b) ->",
+      "sub /broken/test(a, b) ->",
       "  value1, value2 ->",
       "end"
     ]
@@ -55,13 +55,13 @@
     "file": "test.dla",
     "kind": "document",
     "inputLines": [
-      "job /example/test(a, b) -> out",
+      "job /example/test(a, b):",
       "  value1, value2 -> out2",
       "// keep   comment spacing",
       "end"
     ],
     "expectedLines": [
-      "job /example/test(a, b) -> out",
+      "job /example/test(a, b):",
       "  value1, value2 -> out2",
       "// keep   comment spacing",
       "end"
@@ -77,16 +77,32 @@
       "endLine": 1
     },
     "inputLines": [
-      "job /example/test(a,b)->out",
+      "job /example/test(a,b):",
       "  value1  ,value2  ->out2  ",
       "// keep   comment spacing",
       "end"
     ],
     "expectedLines": [
-      "job /example/test(a,b)->out",
+      "job /example/test(a,b):",
       "  value1, value2 -> out2",
       "// keep   comment spacing",
       "end"
     ]
+  },
+  {
+    "name": "document preserves recovery-heavy spans when syntax diagnostics are present",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(a,b)",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a,b)",
+      "  value1  ,value2  ->out2  ",
+      "end"
+    ],
+    "expectEdits": false
   }
 ]
