@@ -36,6 +36,15 @@ describe("formatting", () => {
     expect(model.lines[1].safeToFormat).to.equal(true);
   });
 
+  it("falls back to diagnostic character spans when no token overlaps the recovery point", () => {
+    const input = createDocument("job /example/test(a,b):\n  value1  ,value2 -> {\n  end");
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("recovery");
+    expect(model.lines[2].intersectsDiagnostic).to.equal(true);
+    expect(model.lines[2].protectedRanges).to.deep.equal([{ startCharacter: 5, endCharacter: 5 }]);
+  });
+
   it("matches current spacing cleanup behavior", () => {
     const input = [
       "job /example/test(a,b):",
@@ -114,17 +123,17 @@ describe("formatting", () => {
     expect(decisions).to.have.length(1);
     expect(decisions[0].parseMode).to.equal("recovery");
     expect(decisions[0].safeToFormat).to.equal(true);
-    expect(decisions[0].formattedText).to.equal("  value1  , value2 -> out2");
+    expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2");
   });
 
-  it("formats recovery-safe prefixes while preserving the ambiguous suffix", () => {
+  it("formats around ambiguous recovery tokens without preserving separator whitespace", () => {
     const document = createDocument("job /example/test(a,b)\n  value1  ,value2  ->out2  \nend");
     const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
 
     expect(output).to.equal(
       [
         "job /example/test(a, b)",
-        "  value1  , value2 -> out2",
+        "  value1, value2 -> out2",
         "end",
       ].join("\n")
     );
@@ -137,7 +146,7 @@ describe("formatting", () => {
     expect(output).to.equal(
       [
         "job /example/test(a, b)",
-        "  value1  , value2 -> out2",
+        "  value1, value2 -> out2",
         "end",
       ].join("\n")
     );

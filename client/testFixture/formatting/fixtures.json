@@ -90,7 +90,7 @@
     ]
   },
   {
-    "name": "document formats recovery-safe prefixes while preserving ambiguous suffixes",
+    "name": "document formats around ambiguous recovery tokens without preserving separator whitespace",
     "file": "test.dla",
     "kind": "document",
     "inputLines": [
@@ -100,12 +100,12 @@
     ],
     "expectedLines": [
       "job /example/test(a, b)",
-      "  value1  , value2 -> out2",
+      "  value1, value2 -> out2",
       "end"
     ]
   },
   {
-    "name": "range formatting keeps the ambiguous recovery suffix untouched",
+    "name": "range formatting keeps only ambiguous recovery tokens untouched",
     "file": "test.dla",
     "kind": "range",
     "range": {
@@ -119,7 +119,7 @@
     ],
     "expectedLines": [
       "job /example/test(a, b)",
-      "  value1  , value2 -> out2",
+      "  value1, value2 -> out2",
       "end"
     ]
   }

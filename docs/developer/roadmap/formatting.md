@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: refined parse-recovery-safe formatting from whole-line preservation to diagnostic-character-range preservation. In recovery mode, syntax-covered lines now format around protected diagnostic spans instead of being skipped wholesale.
-- Scope decision: the recovery boundary is now character-range based, derived from syntax diagnostic locations; it still does not attach comments/trivia or rebuild spacing from token ownership.
-- Assumption: whitespace immediately adjacent to a protected diagnostic span should be preserved rather than normalized across that boundary, so malformed regions keep their local context while surrounding safe text can still clean up.
-- Lesson captured for future PRs: current `coveredBySyntax` metadata is sufficient to unlock smaller recovery-safe edits when combined with diagnostic character ranges, but true token/trivia ownership is still needed before structural formatting rules land safely.
+- Block 3 slice: replaced diagnostic-character-range recovery protection with token-aware recovery protection. In recovery mode, the formatter now preserves overlapping tokens when diagnostics point at malformed syntax, while still formatting surrounding separator whitespace on syntax-covered lines.
+- Scope decision: recovery-safe regions are now token-first with a diagnostic-character fallback for zero-width or tokenless diagnostics; comment/trivia ownership is still undefined.
+- Assumption: preserving malformed tokens themselves is sufficient for this stage, and whitespace around those tokens can now be normalized unless a diagnostic has no overlapping token span.
+- Lesson captured for future PRs: token-aware recovery boundaries materially reduce malformed-file churn without structural rewrites, but comments and unattached trivia still need an ownership model before broader syntax-driven layout changes are safe.
 - Lesson captured for future PRs: parser/runtime shape and static AST typing do not align perfectly for every statement expression path (notably `if`-shaped expressions), so formatter work should validate runtime node shapes instead of assuming the current types are exhaustive.
 - Lesson captured for future PRs: comment preservation is still achieved by conservative line handling rather than true comment/trivia attachment, so structural formatting PRs should define comment ownership rules before introducing broader layout changes.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: replace diagnostic-character-range preservation with token- or trivia-aware safe regions so malformed statements can preserve only the truly ambiguous tokens instead of nearby separator whitespace.
+- Block 3: introduce trivia/comment-aware recovery ownership so malformed statements can preserve attached comments and ambiguous whitespace intentionally rather than only protecting token spans.
 - Keep broad structural layout rules deferred until recovery-region precision and comment/trivia attachment strategy are explicit.
 
 ### Roadmap Update Rule

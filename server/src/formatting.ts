@@ -1,8 +1,9 @@
 import { Position, Range, TextEdit } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { NodeKind, ProgramNode, Statement } from "./lang/ast";
+import { lexText } from "./lang/lexer";
 import { parseText } from "./lang/parser";
-import { SyntaxDiagnostic } from "./lang/tokens";
+import { SyntaxDiagnostic, Token, TokenKind } from "./lang/tokens";
 
 export type FormattingParseMode = "parsed" | "recovery";
 export type FormattingLineKind = "blank" | "comment" | "content";
@@ -86,29 +87,89 @@ function clampCharacter(value: number, lineLength: number): number {
   return Math.max(0, Math.min(value, lineLength));
 }
 
+function collectDiagnosticCharacterRangesForDiagnostic(
+  document: TextDocument,
+  diagnostic: SyntaxDiagnostic
+): FormattingCharacterRange[] {
+  const ranges: FormattingCharacterRange[] = [];
+
+  for (let lineIndex = diagnostic.range.start.line; lineIndex <= diagnostic.range.end.line; lineIndex++) {
+    const lineLength = getLineText(document, lineIndex).length;
+    const startCharacter =
+      lineIndex === diagnostic.range.start.line
+        ? clampCharacter(diagnostic.range.start.character, lineLength)
+        : 0;
+    const endCharacter =
+      lineIndex === diagnostic.range.start.line && diagnostic.range.start.line !== diagnostic.range.end.line
+        ? lineLength
+        : lineIndex === diagnostic.range.end.line
+          ? clampCharacter(diagnostic.range.end.character, lineLength)
+          : lineLength;
+    ranges.push({ startCharacter, endCharacter });
+  }
+
+  return ranges;
+}
+
+function tokenIntersectsDiagnostic(token: Token, diagnostic: SyntaxDiagnostic): boolean {
+  if (token.kind === TokenKind.Newline || token.kind === TokenKind.EOF) {
+    return false;
+  }
+
+  const startsBeforeDiagnosticEnds =
+    token.range.start.line < diagnostic.range.end.line ||
+    (token.range.start.line === diagnostic.range.end.line &&
+      token.range.start.character < diagnostic.range.end.character);
+  const endsAfterDiagnosticStarts =
+    token.range.end.line > diagnostic.range.start.line ||
+    (token.range.end.line === diagnostic.range.start.line &&
+      token.range.end.character > diagnostic.range.start.character);
+
+  return startsBeforeDiagnosticEnds && endsAfterDiagnosticStarts;
+}
+
+function addProtectedRange(
+  protectedRanges: Map<number, FormattingCharacterRange[]>,
+  lineIndex: number,
+  startCharacter: number,
+  endCharacter: number
+): void {
+  const ranges = protectedRanges.get(lineIndex) ?? [];
+  ranges.push({ startCharacter, endCharacter });
+  protectedRanges.set(lineIndex, ranges);
+}
+
 function collectProtectedRanges(
   document: TextDocument,
+  tokens: Token[],
   diagnostics: SyntaxDiagnostic[]
 ): Map<number, FormattingCharacterRange[]> {
   const protectedRanges = new Map<number, FormattingCharacterRange[]>();
 
   for (const diagnostic of diagnostics) {
-    for (let lineIndex = diagnostic.range.start.line; lineIndex <= diagnostic.range.end.line; lineIndex++) {
-      const lineLength = getLineText(document, lineIndex).length;
-      const startCharacter =
-        lineIndex === diagnostic.range.start.line
-          ? clampCharacter(diagnostic.range.start.character, lineLength)
-          : 0;
-      const endCharacter =
-        lineIndex === diagnostic.range.start.line && diagnostic.range.start.line !== diagnostic.range.end.line
-          ? lineLength
-          : lineIndex === diagnostic.range.end.line
-            ? clampCharacter(diagnostic.range.end.character, lineLength)
-            : lineLength;
-      const ranges = protectedRanges.get(lineIndex) ?? [];
-      ranges.push({ startCharacter, endCharacter });
-      protectedRanges.set(lineIndex, ranges);
+    const overlappingTokens = tokens.filter((token) => tokenIntersectsDiagnostic(token, diagnostic));
+
+    if (overlappingTokens.length > 0) {
+      for (const token of overlappingTokens) {
+        for (let lineIndex = token.range.start.line; lineIndex <= token.range.end.line; lineIndex++) {
+          const lineLength = getLineText(document, lineIndex).length;
+          const startCharacter = lineIndex === token.range.start.line ? clampCharacter(token.range.start.character, lineLength) : 0;
+          const endCharacter = lineIndex === token.range.end.line ? clampCharacter(token.range.end.character, lineLength) : lineLength;
+          addProtectedRange(protectedRanges, lineIndex, startCharacter, endCharacter);
+        }
+      }
+      continue;
     }
+
+    const fallbackRanges = collectDiagnosticCharacterRangesForDiagnostic(document, diagnostic);
+    fallbackRanges.forEach((range, index) => {
+      addProtectedRange(
+        protectedRanges,
+        diagnostic.range.start.line + index,
+        range.startCharacter,
+        range.endCharacter
+      );
+    });
   }
 
   return protectedRanges;
@@ -187,7 +248,7 @@ function formatLineWithProtectedRanges(text: string, protectedRanges: Formatting
 
   if (cursor < text.length) {
     formatted += formatSegment(text.slice(cursor), {
-      preserveLeadingWhitespace: mergedRanges.length > 0,
+      preserveLeadingWhitespace: false,
       preserveTrailingWhitespace: false,
     });
   }
@@ -248,11 +309,12 @@ function getLineText(document: TextDocument, lineIndex: number): string {
 }
 
 export function buildFormattingInput(document: TextDocument): FormattingInput {
+  const { tokens } = lexText(document.getText());
   const { program, diagnostics } = parseText(document.getText());
   const coveredLines = collectStatementLines(program);
   const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
   const diagnosticLines = collectDiagnosticLines(diagnostics);
-  const protectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, diagnostics) : new Map<number, FormattingCharacterRange[]>();
+  const protectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
   const lines: FormattingLine[] = [];
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
@@ -263,7 +325,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       kind: classifyLine(originalText),
       coveredBySyntax: coveredLines.has(lineIndex),
       intersectsDiagnostic: diagnosticLines.has(lineIndex),
-      protectedRanges: protectedRanges.get(lineIndex) ?? [],
+      protectedRanges: mergeCharacterRanges(protectedRanges.get(lineIndex) ?? []),
       safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex),
     });
   }
