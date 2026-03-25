@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: kept non-trivia content lines as the explicit hard stop for recovery comment/trivia ownership. Standalone `//` comment groups remain owned only when connected to malformed syntax by comment/blank-line trivia alone.
-- Scope decision: recovery ownership still spans contiguous full-line `//` comments plus intervening blank lines, but it does not cross intervening content lines, even when a human reader might still interpret the later comment as related.
-- Assumption: without a broader comment-attachment model, crossing a non-trivia line would be a guess rather than a safe formatting rule, so the formatter should normalize intervening whitespace instead of preserving the distant comment group as owned trivia.
-- Lesson captured for future PRs: the remaining expansion path should be a deliberately named attachment rule for a very small class of non-trivia separators, not a generic “keep scanning” heuristic, otherwise recovery preservation will become difficult to reason about.
+- Block 3 slice: added one explicit non-trivia recovery ownership bridge for a standalone closing-brace line `}`. A single `}` line can now keep an immediately following standalone `//` comment group attached to a malformed `-> {` region without reopening generic content-line scanning.
+- Scope decision: this bridge is limited to one standalone `}` line and still requires the owned group itself to be comment/blank-line trivia; other content lines, including `end`, `else`, and general expression statements, remain hard stops.
+- Assumption: a lone closing brace is narrowly enough tied to an unterminated or malformed block opener that preserving its spacing together with the attached comment group is lower risk than treating it as unrelated content.
+- Lesson captured for future PRs: once ownership can cross a named separator, protected recovery lines may need to remain format-safe even when parser coverage has already stopped, otherwise the ownership metadata becomes internally correct but externally inert.
 - Lesson captured for future PRs: parser/runtime shape and static AST typing do not align perfectly for every statement expression path (notably `if`-shaped expressions), so formatter work should validate runtime node shapes instead of assuming the current types are exhaustive.
 - Lesson captured for future PRs: comment preservation is still partial rather than general comment/trivia attachment, so structural formatting PRs should define ownership across non-trivia separators and broader cross-line comment attachment before introducing broader layout changes.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: if recovery comment/trivia ownership should expand further, do it for one narrowly defined non-trivia separator with an explicit attachment rule and dedicated tests; otherwise keep the current hard stop and begin isolating parse-success layout policy work from recovery-only ownership heuristics.
+- Block 3: either add one more explicitly named recovery ownership bridge for a different delimiter-like separator if it is truly unambiguous, or stop expanding recovery heuristics here and begin a parse-success-only layout policy slice that does not depend on malformed-region ownership rules.
 - Keep broad structural layout rules deferred until recovery-region precision and comment/trivia attachment strategy are explicit.
 
 ### Roadmap Update Rule

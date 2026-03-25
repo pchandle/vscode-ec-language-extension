@@ -214,6 +214,16 @@ describe("formatting", () => {
     expect(model.lines[4].safeToFormat).to.equal(false);
   });
 
+  it("marks closing-brace-separated comment groups near malformed recovery syntax as protected trivia", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  -> {\n  }  \n  // keep   nearby comment spacing  \nend");
+    const model = buildFormattingInput(document);
+
+    expect(model.lines[2].protectedRanges).to.deep.equal([{ startCharacter: 0, endCharacter: 5 }]);
+    expect(model.lines[3].protectedRanges).to.deep.equal([{ startCharacter: 0, endCharacter: 36 }]);
+    expect(model.lines[2].safeToFormat).to.equal(true);
+    expect(model.lines[3].safeToFormat).to.equal(true);
+  });
+
   it("preserves attached block comments on malformed recovery lines", () => {
     const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  /* keep  , -> spacing */\nend");
     const model = buildFormattingInput(document);
@@ -306,6 +316,21 @@ describe("formatting", () => {
         "  helper, value2 -> out3",
         "   ",
         "  // keep   distant comment spacing  ",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps closing-brace-separated comment groups untouched while formatting malformed recovery syntax", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  -> {\n  }  \n  // keep   nearby comment spacing  \nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x)",
+        "  value1, value2 -> {",
+        "  }  ",
+        "  // keep   nearby comment spacing  ",
         "end",
       ].join("\n")
     );

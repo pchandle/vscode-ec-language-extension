@@ -77,6 +77,10 @@ function isBlankLine(text: string): boolean {
   return text.trim().length === 0;
 }
 
+function isRecoveryCommentOwnershipSeparatorLine(text: string): boolean {
+  return text.trim() === "}";
+}
+
 function addRangeLines(lines: Set<number>, range: Range): void {
   for (let line = range.start.line; line <= range.end.line; line++) {
     lines.add(line);
@@ -314,18 +318,24 @@ function collectAdjacentStandaloneCommentRanges(
   const protectedRanges = new Map<number, FormattingCharacterRange[]>();
   const addOwnedGroup = (startLine: number, direction: -1 | 1): void => {
     const pendingBlankLines: number[] = [];
+    const pendingSeparatorLines: number[] = [];
     let lineIndex = startLine;
     let sawComment = false;
+    let usedSeparator = false;
 
     while (lineIndex >= 0 && lineIndex < document.lineCount) {
       const text = getLineText(document, lineIndex);
       const isStandaloneComment = isStandaloneLineComment(text);
       const isTriviaLine = isBlankLine(text);
+      const isSeparatorLine = isRecoveryCommentOwnershipSeparatorLine(text);
 
       if (isStandaloneComment) {
         if (!sawComment) {
           for (const blankLine of pendingBlankLines) {
             addProtectedRange(protectedRanges, blankLine, 0, getLineText(document, blankLine).length);
+          }
+          for (const separatorLine of pendingSeparatorLines) {
+            addProtectedRange(protectedRanges, separatorLine, 0, getLineText(document, separatorLine).length);
           }
           sawComment = true;
         }
@@ -340,6 +350,13 @@ function collectAdjacentStandaloneCommentRanges(
         continue;
       }
 
+      if (!sawComment && !usedSeparator && isSeparatorLine) {
+        pendingSeparatorLines.push(lineIndex);
+        usedSeparator = true;
+        lineIndex += direction;
+        continue;
+      }
+
       // Non-trivia content remains the current recovery ownership boundary.
       break;
     }
@@ -347,6 +364,9 @@ function collectAdjacentStandaloneCommentRanges(
     if (sawComment) {
       for (const blankLine of pendingBlankLines) {
         addProtectedRange(protectedRanges, blankLine, 0, getLineText(document, blankLine).length);
+      }
+      for (const separatorLine of pendingSeparatorLines) {
+        addProtectedRange(protectedRanges, separatorLine, 0, getLineText(document, separatorLine).length);
       }
     }
   };
@@ -541,7 +561,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       protectedRanges: mergeCharacterRanges(
         attachedCommentRange ? [...lineProtectedRanges, attachedCommentRange] : lineProtectedRanges
       ),
-      safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex),
+      safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex) || lineProtectedRanges.length > 0 || attachedCommentRange !== null,
     });
   }
 

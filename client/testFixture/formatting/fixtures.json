@@ -213,6 +213,25 @@
     ]
   },
   {
+    "name": "document keeps closing-brace-separated comment groups on malformed recovery syntax",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  -> {",
+      "  }  ",
+      "  // keep   nearby comment spacing  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> {",
+      "  }  ",
+      "  // keep   nearby comment spacing  ",
+      "end"
+    ]
+  },
+  {
     "name": "document preserves inline block comments while formatting the safe prefix",
     "file": "test.dla",
     "kind": "document",
@@ -352,6 +371,29 @@
       "  helper, value2 -> out3",
       "   ",
       "  // keep   distant comment spacing  ",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting keeps closing-brace-separated comment groups on malformed recovery syntax",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 3
+    },
+    "inputLines": [
+      "job /example/test(x)",
+      "  value1  ,value2  -> {",
+      "  }  ",
+      "  // keep   nearby comment spacing  ",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x)",
+      "  value1, value2 -> {",
+      "  }  ",
+      "  // keep   nearby comment spacing  ",
       "end"
     ]
   },
