@@ -304,29 +304,56 @@ function collectAdjacentStandaloneCommentRanges(
   syntaxProtectedRanges: Map<number, FormattingCharacterRange[]>
 ): Map<number, FormattingCharacterRange[]> {
   const protectedRanges = new Map<number, FormattingCharacterRange[]>();
-  const queue: number[] = [];
-  const seen = new Set<number>();
+  const addOwnedGroup = (startLine: number, direction: -1 | 1): void => {
+    const pendingBlankLines: number[] = [];
+    let lineIndex = startLine;
+    let sawComment = false;
+
+    while (lineIndex >= 0 && lineIndex < document.lineCount) {
+      const text = getLineText(document, lineIndex);
+      const isStandaloneComment = /^\s*\/\//.test(text);
+      const isBlankLine = text.trim().length === 0;
+
+      if (isStandaloneComment) {
+        if (!sawComment) {
+          for (const blankLine of pendingBlankLines) {
+            addProtectedRange(protectedRanges, blankLine, 0, getLineText(document, blankLine).length);
+          }
+          sawComment = true;
+        }
+        addProtectedRange(protectedRanges, lineIndex, 0, text.length);
+        lineIndex += direction;
+        continue;
+      }
+
+      if (isBlankLine) {
+        pendingBlankLines.push(lineIndex);
+        lineIndex += direction;
+        continue;
+      }
+
+      break;
+    }
+
+    if (sawComment) {
+      for (const blankLine of pendingBlankLines) {
+        addProtectedRange(protectedRanges, blankLine, 0, getLineText(document, blankLine).length);
+      }
+    }
+  };
 
   for (const lineIndex of syntaxProtectedRanges.keys()) {
-    queue.push(lineIndex - 1, lineIndex + 1);
-  }
-
-  while (queue.length > 0) {
-    const lineIndex = queue.shift()!;
-    if (lineIndex < 0 || lineIndex >= document.lineCount || seen.has(lineIndex)) {
-      continue;
-    }
-    seen.add(lineIndex);
-
     const text = getLineText(document, lineIndex);
-    const isStandaloneComment = /^\s*\/\//.test(text);
-    const isBlankLine = text.trim().length === 0;
-    if (!isStandaloneComment && !isBlankLine) {
+    const isTriviaLine = /^\s*\/\//.test(text) || text.trim().length === 0;
+
+    if (isTriviaLine) {
+      addOwnedGroup(lineIndex, -1);
+      addOwnedGroup(lineIndex, 1);
       continue;
     }
 
-    addProtectedRange(protectedRanges, lineIndex, 0, text.length);
-    queue.push(lineIndex - 1, lineIndex + 1);
+    addOwnedGroup(lineIndex - 1, -1);
+    addOwnedGroup(lineIndex + 1, 1);
   }
 
   return protectedRanges;
@@ -485,8 +512,10 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
     const originalText = getLineText(document, lineIndex);
+    const syntaxLineProtectedRanges =
+      originalText.trim().length === 0 ? [] : (syntaxProtectedRanges.get(lineIndex) ?? []);
     const lineProtectedRanges = [
-      ...(syntaxProtectedRanges.get(lineIndex) ?? []),
+      ...syntaxLineProtectedRanges,
       ...(adjacentStandaloneCommentRanges.get(lineIndex) ?? []),
       ...(blockCommentRanges.get(lineIndex) ?? []),
     ];
