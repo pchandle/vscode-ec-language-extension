@@ -16,19 +16,27 @@ The recommended sequence is:
 ### Current Block Status
 - Block 1: Foundation and safety rails: in progress
 - Block 2: Server-side formatter parity: completed
-- Block 3: Syntax-aware formatting core: not started
+- Block 3: Syntax-aware formatting core: in progress
 - Block 4: Block layout and multiline normalization: not started
 - Block 5: Selection formatting and range correctness: not started
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 2 slice: moved both document and range formatting onto the language server with output intentionally matching the current whitespace-only formatter for `.dla` / `.dlp`.
-- Scope decision: this PR retires the remaining client-side formatting transport but still keeps the formatter policy intentionally narrow and regex-parity-oriented.
-- Assumption: parity with the established whitespace cleanup behavior is enough to finish Block 2 transport migration even though the server formatter is not yet syntax-aware.
+- Block 3 slice: defined an explicit server-side formatter input model and pipeline phases (`parse -> plan -> emit`) while keeping emitted whitespace cleanup behavior unchanged.
+- Scope decision: parser output and syntax diagnostics now flow through the formatter boundary, but layout decisions still intentionally use the existing low-disruption whitespace policy.
+- Assumption: carrying AST and parse-recovery metadata now is useful even before syntax-aware layout rules start consuming it.
+- Lesson captured for future PRs: current `coveredBySyntax` line metadata is useful as internal context, but it is not yet strong enough to serve as a user-visible formatting boundary contract by itself.
+- Lesson captured for future PRs: parser/runtime shape and static AST typing do not align perfectly for every statement expression path (notably `if`-shaped expressions), so formatter work should validate runtime node shapes instead of assuming the current types are exhaustive.
+- Lesson captured for future PRs: comment preservation is currently achieved by conservative line handling, not true comment/trivia attachment, so structural formatting PRs should define comment ownership rules before introducing broader layout changes.
 
 ### Next Recommended PR
-- Block 3: define the syntax-aware formatter module boundary and formatter input model on the server.
-- Start with parser/trivia/recovery decisions needed for safe formatting, without introducing broad structural layout rules in the same PR.
+- Block 3: choose and implement the first parse-recovery-safe formatting boundary, including what regions are preserved versus formatted when syntax diagnostics are present.
+- Keep structural layout rules deferred until parse-recovery behavior and comment/trivia attachment strategy are explicit.
+- Use the existing formatter pipeline to make that decision in one place:
+  - parse input and diagnostics
+  - determine safe-to-format regions
+  - preserve ambiguous or recovery-heavy spans
+  - emit the narrowest edits for the chosen safe region
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.

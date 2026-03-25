@@ -1,7 +1,7 @@
 /// <reference path="./globals.d.ts" />
 import { expect } from "chai";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { formatDocument, formatDocumentRange } from "../src/formatting";
+import { buildFormattingInput, formatDocument, formatDocumentRange, planFormatting } from "../src/formatting";
 
 function createDocument(text: string): TextDocument {
   return TextDocument.create("file:///formatting.dla", "emergent", 1, text);
@@ -13,6 +13,24 @@ function applyEdits(document: TextDocument, text: string): string {
 }
 
 describe("formatting", () => {
+  it("builds a parsed formatter input model for valid syntax", () => {
+    const input = createDocument("job /example/foo(x):\n  sub /data/new($) -> out\nend");
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.syntaxDiagnostics).to.deep.equal([]);
+    expect(model.lines[0].coveredBySyntax).to.equal(true);
+    expect(model.lines[1].coveredBySyntax).to.equal(true);
+  });
+
+  it("records recovery mode when syntax diagnostics are present", () => {
+    const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("recovery");
+    expect(model.syntaxDiagnostics.some((item) => item.message.includes("Expected ':' after job signature"))).to.equal(true);
+  });
+
   it("matches current spacing cleanup behavior", () => {
     const input = [
       "job /example/test(a,b)->out",
@@ -81,5 +99,15 @@ describe("formatting", () => {
         "end",
       ].join("\n")
     );
+  });
+
+  it("plans decisions with parse-mode metadata without changing parity behavior", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2  \nend");
+    const model = buildFormattingInput(document);
+    const decisions = planFormatting(model, { startLine: 1, endLine: 1 });
+
+    expect(decisions).to.have.length(1);
+    expect(decisions[0].parseMode).to.equal("recovery");
+    expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2");
   });
 });
