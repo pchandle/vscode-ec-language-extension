@@ -105,6 +105,58 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed brace blocks without changing malformed recovery behavior", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value  -> {",
+      "sub /data/new($)->out",
+      "  join /data/flow($) -> {",
+      "$  ->inner",
+      " }",
+      "}",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    sub /data/new($) -> out",
+        "    join /data/flow($) -> {",
+        "      $ -> inner",
+        "    }",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("indents standalone comments inside parsed brace blocks to the block depth", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "// keep   comment spacing",
+      "  sub /data/new($)->out",
+      "}",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    // keep   comment spacing",
+        "    sub /data/new($) -> out",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "host /example/test(a, b) -> out",
@@ -150,6 +202,29 @@ describe("formatting", () => {
         "job /example/test(a,b):",
         "  value1, value2 -> out2",
         "// keep   comment spacing",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats the selected portion of a parsed brace block using structural indentation", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "sub /data/new($)->out",
+      "}",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 2, 3)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    sub /data/new($) -> out",
+        "  }",
         "end",
       ].join("\n")
     );

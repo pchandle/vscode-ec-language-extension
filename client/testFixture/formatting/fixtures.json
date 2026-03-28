@@ -266,6 +266,52 @@
     ]
   },
   {
+    "name": "document canonically indents parsed brace blocks",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "  value  -> {",
+      "sub /data/new($)->out",
+      "  join /data/flow($) -> {",
+      "$  ->inner",
+      " }",
+      "}",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "    sub /data/new($) -> out",
+      "    join /data/flow($) -> {",
+      "      $ -> inner",
+      "    }",
+      "  }",
+      "end"
+    ]
+  },
+  {
+    "name": "document indents standalone comments inside parsed brace blocks",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "// keep   comment spacing",
+      "  sub /data/new($)->out",
+      "}",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "    // keep   comment spacing",
+      "    sub /data/new($) -> out",
+      "  }",
+      "end"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -413,6 +459,29 @@
     "expectedLines": [
       "job /example/test(x)",
       "  value1, value2 -> out2  /* keep  , -> spacing */",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting uses structural indentation inside parsed brace blocks",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 2,
+      "endLine": 3
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "sub /data/new($)->out",
+      "}",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "    sub /data/new($) -> out",
+      "  }",
       "end"
     ]
   }

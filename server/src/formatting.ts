@@ -1,6 +1,6 @@
 import { Position, Range, TextEdit } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { NodeKind, ProgramNode, Statement } from "./lang/ast";
+import { BlockNode, NodeKind, ProgramNode, Statement } from "./lang/ast";
 import { lexText } from "./lang/lexer";
 import { parseText } from "./lang/parser";
 import { SyntaxDiagnostic, Token, TokenKind } from "./lang/tokens";
@@ -16,6 +16,7 @@ export interface FormattingLine {
   intersectsDiagnostic: boolean;
   protectedRanges: FormattingCharacterRange[];
   safeToFormat: boolean;
+  desiredIndentColumns?: number;
 }
 
 export interface FormattingCharacterRange {
@@ -46,6 +47,8 @@ export interface FormattingDecision {
   safeToFormat: boolean;
 }
 
+const INDENT_SIZE = 2;
+
 function formatLine(text: string): string {
   if (text.match(/^\s*\/\//)) {
     return text;
@@ -75,6 +78,11 @@ function isStandaloneLineComment(text: string): boolean {
 
 function isBlankLine(text: string): boolean {
   return text.trim().length === 0;
+}
+
+function leadingWhitespaceWidth(text: string): number {
+  const match = text.match(/^[ \t]*/);
+  return match ? match[0].length : 0;
 }
 
 function isRecoveryCommentOwnershipSeparatorLine(text: string): boolean {
@@ -518,6 +526,101 @@ function collectStatementLines(program: ProgramNode): Set<number> {
   return lines;
 }
 
+function isBraceBlock(document: TextDocument, block: BlockNode): boolean {
+  const lineText = getLineText(document, block.range.start.line);
+  return lineText[block.range.start.character] === "{";
+}
+
+function setDesiredIndent(desiredIndentColumns: Map<number, number>, lineIndex: number, indentColumns: number): void {
+  desiredIndentColumns.set(lineIndex, Math.max(0, indentColumns));
+}
+
+function collectBraceBlocks(statement: Statement): BlockNode[] {
+  const braceBlocks: BlockNode[] = [];
+  const seen = new Set<string>();
+  const addBlock = (block: BlockNode | undefined): void => {
+    if (!block) {
+      return;
+    }
+    const key = `${block.range.start.line}:${block.range.start.character}-${block.range.end.line}:${block.range.end.character}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    braceBlocks.push(block);
+  };
+
+  if (statement.kind === NodeKind.Statement) {
+    addBlock(statement.block);
+    statement.obligationOrder?.forEach((item: BlockNode | Token) => {
+      if ((item as BlockNode).kind === NodeKind.Block) {
+        addBlock(item as BlockNode);
+      }
+    });
+  }
+
+  return braceBlocks;
+}
+
+function collectParsedIndentation(document: TextDocument, program: ProgramNode): Map<number, number> {
+  const desiredIndentColumns = new Map<number, number>();
+
+  const visitStatement = (statement: Statement, desiredIndentColumnsForStatement?: number): void => {
+    const statementLineIndex = statement.range.start.line;
+    const statementIndentColumns =
+      desiredIndentColumnsForStatement ?? leadingWhitespaceWidth(getLineText(document, statementLineIndex));
+
+    if (desiredIndentColumnsForStatement !== undefined) {
+      setDesiredIndent(desiredIndentColumns, statementLineIndex, desiredIndentColumnsForStatement);
+    }
+
+    for (const block of collectBraceBlocks(statement)) {
+      if (!isBraceBlock(document, block)) {
+        continue;
+      }
+
+      const blockContentIndentColumns = statementIndentColumns + INDENT_SIZE;
+      const openLineIndex = block.range.start.line;
+      const closeLineIndex = block.range.end.line;
+
+      if (closeLineIndex > openLineIndex) {
+        setDesiredIndent(desiredIndentColumns, closeLineIndex, statementIndentColumns);
+      }
+
+      for (let lineIndex = openLineIndex + 1; lineIndex < closeLineIndex; lineIndex++) {
+        if (!isBlankLine(getLineText(document, lineIndex))) {
+          setDesiredIndent(desiredIndentColumns, lineIndex, blockContentIndentColumns);
+        }
+      }
+
+      for (const nestedStatement of block.statements) {
+        visitStatement(nestedStatement, blockContentIndentColumns);
+      }
+    }
+
+    if (statement.kind === NodeKind.Job || statement.kind === NodeKind.Def) {
+      for (const nestedStatement of statement.body.statements) {
+        visitStatement(nestedStatement);
+      }
+      return;
+    }
+
+    const expression = statement.expression as any;
+    if (expression?.kind === NodeKind.If) {
+      for (const nestedStatement of expression.thenBlock.statements) {
+        visitStatement(nestedStatement);
+      }
+      expression.elseBlock?.statements.forEach((nestedStatement: Statement) => visitStatement(nestedStatement));
+    }
+  };
+
+  for (const statement of program.statements) {
+    visitStatement(statement);
+  }
+
+  return desiredIndentColumns;
+}
+
 function getLineText(document: TextDocument, lineIndex: number): string {
   const line = document.getText({
     start: Position.create(lineIndex, 0),
@@ -527,11 +630,21 @@ function getLineText(document: TextDocument, lineIndex: number): string {
   return withoutNewline.endsWith("\r") ? withoutNewline.slice(0, -1) : withoutNewline;
 }
 
+function applyDesiredIndentation(text: string, desiredIndentColumns?: number): string {
+  if (desiredIndentColumns === undefined || isBlankLine(text)) {
+    return text;
+  }
+
+  return `${" ".repeat(desiredIndentColumns)}${text.trimStart()}`;
+}
+
 export function buildFormattingInput(document: TextDocument): FormattingInput {
   const { tokens } = lexText(document.getText());
   const { program, diagnostics } = parseText(document.getText());
   const coveredLines = collectStatementLines(program);
   const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
+  const desiredIndentColumns =
+    parseMode === "parsed" ? collectParsedIndentation(document, program) : new Map<number, number>();
   const diagnosticLines = collectDiagnosticLines(diagnostics);
   const syntaxProtectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
   const adjacentStandaloneCommentRanges =
@@ -562,6 +675,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
         attachedCommentRange ? [...lineProtectedRanges, attachedCommentRange] : lineProtectedRanges
       ),
       safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex) || lineProtectedRanges.length > 0 || attachedCommentRange !== null,
+      desiredIndentColumns: desiredIndentColumns.get(lineIndex),
     });
   }
 
@@ -579,10 +693,13 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
 
   for (let lineIndex = request.startLine; lineIndex <= request.endLine; lineIndex++) {
     const line = input.lines[lineIndex];
+    const formattedText = line.safeToFormat
+      ? applyDesiredIndentation(formatLineWithProtectedRanges(line.originalText, line.protectedRanges), line.desiredIndentColumns)
+      : line.originalText;
     decisions.push({
       lineIndex,
       originalText: line.originalText,
-      formattedText: line.safeToFormat ? formatLineWithProtectedRanges(line.originalText, line.protectedRanges) : line.originalText,
+      formattedText,
       kind: line.kind,
       parseMode: input.parseMode,
       coveredBySyntax: line.coveredBySyntax,

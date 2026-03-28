@@ -22,17 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added one explicit non-trivia recovery ownership bridge for a standalone closing-brace line `}`. A single `}` line can now keep an immediately following standalone `//` comment group attached to a malformed `-> {` region without reopening generic content-line scanning.
-- Scope decision: this bridge is limited to one standalone `}` line and still requires the owned group itself to be comment/blank-line trivia; other content lines, including `end`, `else`, and general expression statements, remain hard stops.
-- Assumption: a lone closing brace is narrowly enough tied to an unterminated or malformed block opener that preserving its spacing together with the attached comment group is lower risk than treating it as unrelated content.
-- Lesson captured for future PRs: once ownership can cross a named separator, protected recovery lines may need to remain format-safe even when parser coverage has already stopped, otherwise the ownership metadata becomes internally correct but externally inert.
-- Lesson captured for future PRs: parser/runtime shape and static AST typing do not align perfectly for every statement expression path (notably `if`-shaped expressions), so formatter work should validate runtime node shapes instead of assuming the current types are exhaustive.
-- Lesson captured for future PRs: comment preservation is still partial rather than general comment/trivia attachment, so structural formatting PRs should define ownership across non-trivia separators and broader cross-line comment attachment before introducing broader layout changes.
+- Block 3 slice: added parse-success-only structural indentation for explicit `-> { ... }` obligation blocks. The server formatter now computes desired indentation from parsed brace-block ownership instead of relying only on regex-style spacing cleanup.
+- Scope decision: this slice intentionally reindents only lines owned by parsed brace blocks, including nested brace blocks and standalone `//` comments inside those blocks. It does not yet canonicalize `job` / `def` / `if` `end` lines, non-brace block bodies, or malformed recovery regions.
+- Assumption: explicit brace-block ownership is unambiguous enough to support structural indentation even when surrounding files are inconsistently formatted, while broader whole-file reindentation would be too noisy for this stage.
+- Lesson captured for future PRs: when existing `.dla` / `.dlp` files may already be poorly indented, deriving indentation from the smallest unambiguous parsed region keeps the rule useful without forcing a repo-wide style reset.
+- Lesson captured for future PRs: standalone comment lines inside structurally owned regions should follow block indentation even when comment text itself remains unchanged.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: either add one more explicitly named recovery ownership bridge for a different delimiter-like separator if it is truly unambiguous, or stop expanding recovery heuristics here and begin a parse-success-only layout policy slice that does not depend on malformed-region ownership rules.
-- Keep broad structural layout rules deferred until recovery-region precision and comment/trivia attachment strategy are explicit.
+- Block 3: extend the same parse-success-only indentation policy to another unambiguous structural boundary, most likely `if` / `else` / `end`, while continuing to keep malformed recovery formatting conservative.
+- Keep broad multiline layout, blank-line normalization, and whole-file indentation policy deferred until the formatter has explicit ownership rules for non-brace block boundaries.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
