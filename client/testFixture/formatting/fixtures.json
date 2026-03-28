@@ -561,6 +561,33 @@
     ]
   },
   {
+    "name": "document canonically indents parsed output targets whose first target starts after newline arrow",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "sub /data/new($) ->",
+      "out1,",
+      "out2",
+      "value ->",
+      "first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "third"
+    ],
+    "expectedLines": [
+      "sub /data/new($) ->",
+      "  out1,",
+      "  out2",
+      "value ->",
+      "  first,",
+      "  {",
+      "  1 -> inner",
+      "},",
+      "  third"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -943,6 +970,37 @@
       "value -> first,",
       "  second",
       "other_value -> first,",
+      "  {",
+      "  1 -> inner",
+      "},",
+      "  third"
+    ]
+  },
+  {
+    "name": "range formatting indents parsed output targets whose first target starts after newline arrow",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 8
+    },
+    "inputLines": [
+      "sub /data/new($) ->",
+      "out1,",
+      "out2",
+      "value ->",
+      "first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "third"
+    ],
+    "expectedLines": [
+      "sub /data/new($) ->",
+      "  out1,",
+      "  out2",
+      "value ->",
+      "  first,",
       "  {",
       "  1 -> inner",
       "},",

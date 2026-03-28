@@ -265,6 +265,36 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed output targets whose first target starts after newline arrow", () => {
+    const input = [
+      "sub /data/new($) ->",
+      "out1,",
+      "out2",
+      "value ->",
+      "first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "third",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "sub /data/new($) ->",
+        "  out1,",
+        "  out2",
+        "value ->",
+        "  first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  third",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed job and def bodies and aligns closing end lines", () => {
     const input = [
       "job /example/test(x):",
@@ -598,6 +628,37 @@ describe("formatting", () => {
         "value -> first,",
         "  second",
         "other_value -> first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  third",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed output targets whose first target starts after newline arrow", () => {
+    const input = [
+      "sub /data/new($) ->",
+      "out1,",
+      "out2",
+      "value ->",
+      "first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "third",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 8)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "sub /data/new($) ->",
+        "  out1,",
+        "  out2",
+        "value ->",
+        "  first,",
         "  {",
         "  1 -> inner",
         "},",

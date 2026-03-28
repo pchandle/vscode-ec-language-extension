@@ -627,12 +627,81 @@ function parseBraceBlock(state: ParserState): BlockNode {
 }
 
 function parseTargetList(state: ParserState, targets: Token[], order?: Array<Token | BlockNode>) {
+  const isContinuationTargetToken = (token: Token | undefined): boolean => {
+    if (!token) {
+      return false;
+    }
+
+    if (token.kind === TokenKind.Identifier || token.kind === TokenKind.Boolean) {
+      return true;
+    }
+
+    if (token.kind !== TokenKind.Keyword) {
+      return false;
+    }
+
+    return !["sub", "job", "host", "join", "def", "if", "deliver", "defaults", "then", "else", "end"].includes(
+      token.lexeme.toLowerCase()
+    );
+  };
+
+  const looksLikeContinuedTargetList = (index: number): boolean => {
+    const token = state.tokens[index];
+    if (!token) {
+      return false;
+    }
+
+    if (token.kind === TokenKind.LBrace) {
+      return true;
+    }
+
+    if (token.kind === TokenKind.Comma) {
+      index++;
+    }
+
+    let sawTarget = false;
+    while (index < state.tokens.length) {
+      const currentToken = state.tokens[index];
+      if (!currentToken) {
+        return sawTarget;
+      }
+
+      if (currentToken.kind === TokenKind.Newline || currentToken.kind === TokenKind.EOF || currentToken.kind === TokenKind.RBrace) {
+        return sawTarget;
+      }
+
+      if (currentToken.kind === TokenKind.LBrace) {
+        return sawTarget;
+      }
+
+      if (!isContinuationTargetToken(currentToken)) {
+        return false;
+      }
+
+      sawTarget = true;
+      index++;
+
+      if (state.tokens[index]?.kind === TokenKind.Comma) {
+        index++;
+        continue;
+      }
+
+      return state.tokens[index]?.kind !== TokenKind.Arrow;
+    }
+
+    return sawTarget;
+  };
+
+  const consumeLeadingContinuationNewlines = () => {
+    while (current(state).kind === TokenKind.Newline && looksLikeContinuedTargetList(state.index + 1)) {
+      advance(state);
+    }
+  };
+
+  consumeLeadingContinuationNewlines();
+
   // allow empty targets (e.g., -> { ... })
-  if (
-    current(state).kind === TokenKind.LBrace ||
-    current(state).kind === TokenKind.Newline ||
-    current(state).kind === TokenKind.EOF
-  ) {
+  if (current(state).kind === TokenKind.LBrace || current(state).kind === TokenKind.Newline || current(state).kind === TokenKind.EOF) {
     return;
   }
   // Trailing commas indicate continuation, including across newlines.

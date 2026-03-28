@@ -111,6 +111,19 @@ describe("parser", () => {
     assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 
+  it("allows first target to start on the line after '->'", () => {
+    const text =
+      "sub /data/new/test/default/x64($) ->\n" +
+      "  first,\n" +
+      "  second\n" +
+      "value ->\n" +
+      "  target\n";
+    const { diagnostics, program } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.equal((program.statements[0] as any).targets.length, 2, "expected invocation targets to parse across newline-after-arrow");
+    assert.equal((program.statements[1] as any).targets.length, 1, "expected generic statement target to parse across newline-after-arrow");
+  });
+
   it("parses nested weave-in if/else/end with output targets", () => {
     const text = `
 if true then
