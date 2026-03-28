@@ -59,7 +59,7 @@ describe("formatting", () => {
       [
         "job /example/test(a, b):",
         "  value1, value2 -> out2",
-        "// keep   comment spacing",
+        "  // keep   comment spacing",
         "end",
       ].join("\n")
     );
@@ -185,11 +185,39 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed job and def bodies and aligns closing end lines", () => {
+    const input = [
+      "job /example/test(x):",
+      "// keep   comment spacing",
+      "sub /data/new($)->out",
+      " end",
+      "",
+      "def helper(x):",
+      "$  ->value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  // keep   comment spacing",
+        "  sub /data/new($) -> out",
+        "end",
+        "",
+        "def helper(x):",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
-      "host /example/test(a, b) -> out",
-      "",
-      "// keep   comment spacing",
+      "job /example/test(a, b):",
+      "  value1, value2 -> out2",
+      "  // keep   comment spacing",
       "end",
     ].join("\n");
 
@@ -280,6 +308,25 @@ describe("formatting", () => {
         "  else",
         "    $ -> fallback",
         "  end -> result",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats the selected portion of a parsed job body using structural indentation", () => {
+    const input = [
+      "job /example/test(x):",
+      "sub /data/new($)->out",
+      " end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 2)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  sub /data/new($) -> out",
         "end",
       ].join("\n")
     );

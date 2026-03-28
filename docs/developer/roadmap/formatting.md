@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: extended parse-success-only structural indentation to parsed `if` / `else` / `end` regions. The server formatter now aligns `else` and `end` with the `if` line and indents owned branch content one level deeper while preserving recovery-mode conservatism.
-- Scope decision: this slice is still limited to parse-success regions with explicit structural ownership. It covers branch bodies, standalone comments inside those branches, and `end -> ...` delimiter lines, but still does not introduce general `job` / `def` body indentation, blank-line policy changes, or malformed-region reindentation.
-- Assumption: in this roadmap stage, existing `.dla` / `.dlp` files may already be poorly formatted, so the formatter should only normalize `if` delimiters and branch indentation where parser ownership is explicit rather than attempting broader whole-file cleanup.
-- Lesson captured for future PRs: line-oriented delimiter discovery can be sufficient for low-risk canonicalization when the target syntax is constrained to parsed `if` / `else` / `end` regions, but broader structural layout work should prefer more explicit delimiter ownership data if ambiguity grows.
-- Lesson captured for future PRs: `end` lines that carry trailing output targets can still be treated as delimiter lines for indentation without introducing separate spacing policy.
+- Block 3 slice: extended parse-success-only structural indentation to parsed `job` / `def` bodies and their closing `end` lines. The server formatter now indents structurally owned body content one level beneath the header and aligns the matching closing `end` with the header line.
+- Scope decision: this slice remains limited to parse-success regions with explicit ownership. It reindents body statements and standalone `//` comments inside parsed `job` / `def` bodies, but it still avoids malformed-region reindentation, blank-line policy changes, and aggressive rewriting of fully protected multiline block-comment lines.
+- Assumption: existing `.dla` / `.dlp` files may still be inconsistently indented, so `job` / `def` formatting should only normalize lines that are clearly owned by the parsed body rather than attempting broader whole-file cleanup.
+- Lesson captured for future PRs: for low-risk block indentation, matching the first standalone `end` after a parsed body is safer than scanning for a later delimiter, because later `end` lines may belong to following declarations.
+- Lesson captured for future PRs: fully protected multiline block-comment lines should remain indentation-stable until comment attachment and comment-layout policy are more explicit.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only indentation policy to another unambiguous structural boundary, most likely `job` / `def` body indentation or another explicit non-brace block form, while continuing to keep malformed recovery formatting conservative.
-- Keep broad multiline layout, blank-line normalization, and whole-file indentation policy deferred until the formatter has explicit ownership rules for more top-level non-brace block boundaries.
+- Block 3: extend the same parse-success-only indentation policy to another unambiguous structural boundary, most likely top-level protocol/contract statement groups or a more explicit comment-attachment slice, while continuing to keep malformed recovery formatting conservative.
+- Keep broad multiline layout, blank-line normalization, and whole-file indentation policy deferred until the formatter has explicit ownership rules for comments and remaining non-brace block boundaries.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.

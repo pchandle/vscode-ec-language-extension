@@ -599,6 +599,28 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
   };
 
+  const visitDelimitedBody = (
+    startLineIndex: number,
+    body: { range: Range; statements: Statement[] },
+    headerIndentColumns: number
+  ): void => {
+    const bodyIndentColumns = headerIndentColumns + INDENT_SIZE;
+    const endLineIndex =
+      findLineMatching(body.range.end.line + 1, document.lineCount - 1, isStandaloneEndLine) ?? body.range.end.line;
+
+    const bodyStartLine = startLineIndex + 1;
+    const bodyEndLine = endLineIndex - 1;
+    if (bodyStartLine <= bodyEndLine) {
+      setNonBlankIndentRange(bodyStartLine, bodyEndLine, bodyIndentColumns);
+    }
+
+    setDesiredIndent(desiredIndentColumns, endLineIndex, headerIndentColumns);
+
+    for (const nestedStatement of body.statements) {
+      visitStatement(nestedStatement, bodyIndentColumns);
+    }
+  };
+
   const visitIf = (
     ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } },
     ifIndentColumns: number
@@ -678,9 +700,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     if (statement.kind === NodeKind.Job || statement.kind === NodeKind.Def) {
-      for (const nestedStatement of statement.body.statements) {
-        visitStatement(nestedStatement);
-      }
+      visitDelimitedBody(statementLineIndex, statement.body, statementIndentColumns);
       return;
     }
 
@@ -712,6 +732,15 @@ function applyDesiredIndentation(text: string, desiredIndentColumns?: number): s
   }
 
   return `${" ".repeat(desiredIndentColumns)}${text.trimStart()}`;
+}
+
+function isFullyProtectedLine(text: string, protectedRanges: FormattingCharacterRange[]): boolean {
+  if (protectedRanges.length === 0) {
+    return false;
+  }
+
+  const mergedRanges = mergeCharacterRanges(protectedRanges);
+  return mergedRanges.length === 1 && mergedRanges[0].startCharacter === 0 && mergedRanges[0].endCharacter >= text.length;
 }
 
 export function buildFormattingInput(document: TextDocument): FormattingInput {
@@ -770,7 +799,9 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
   for (let lineIndex = request.startLine; lineIndex <= request.endLine; lineIndex++) {
     const line = input.lines[lineIndex];
     const formattedText = line.safeToFormat
-      ? applyDesiredIndentation(formatLineWithProtectedRanges(line.originalText, line.protectedRanges), line.desiredIndentColumns)
+      ? isFullyProtectedLine(line.originalText, line.protectedRanges)
+        ? formatLineWithProtectedRanges(line.originalText, line.protectedRanges)
+        : applyDesiredIndentation(formatLineWithProtectedRanges(line.originalText, line.protectedRanges), line.desiredIndentColumns)
       : line.originalText;
     decisions.push({
       lineIndex,
