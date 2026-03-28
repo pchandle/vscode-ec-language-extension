@@ -631,6 +631,19 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
   };
 
+  const visitDelimitedHeaderContinuation = (
+    startLineIndex: number,
+    body: { range: Range; statements: Statement[] },
+    headerIndentColumns: number
+  ): void => {
+    const headerContinuationStartLine = startLineIndex + 1;
+    const headerContinuationEndLine = body.range.start.line - 1;
+
+    if (headerContinuationStartLine <= headerContinuationEndLine) {
+      setNonBlankIndentRange(headerContinuationStartLine, headerContinuationEndLine, headerIndentColumns + INDENT_SIZE);
+    }
+  };
+
   const visitIf = (
     ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } },
     ifIndentColumns: number
@@ -710,6 +723,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     if (statement.kind === NodeKind.Job || statement.kind === NodeKind.Def) {
+      visitDelimitedHeaderContinuation(statementLineIndex, statement.body, statementIndentColumns);
       visitDelimitedBody(statementLineIndex, statement.body, statementIndentColumns);
       return;
     }

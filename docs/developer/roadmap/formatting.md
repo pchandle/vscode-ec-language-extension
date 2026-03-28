@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added explicit parse-success-only indentation for standalone multiline block comments inside structurally owned regions. Attached multiline block comments can now shift with parsed `job` / `def` / `if` / brace ownership while preserving their internal relative indentation.
-- Scope decision: this slice only reindents full-line block-comment groups when the surrounding parsed structure already gives them an unambiguous target indent. It still avoids malformed-region comment reindentation, comment text reflow, blank-line policy changes, and inline block-comment layout rewrites.
-- Assumption: existing `.dla` / `.dlp` files may still contain inconsistent comment margins, so the formatter should move standalone multiline block comments only when a parsed structural owner already exists instead of treating all block comments as globally reflowable.
-- Lesson captured for future PRs: protected comment text and protected comment indentation are separate concerns. A formatter can preserve comment contents verbatim while still normalizing the outer comment margin when ownership is explicit.
-- Lesson captured for future PRs: comment-group indentation should be anchored from the first structurally owned line in the group and preserve relative indentation within the group, otherwise multiline comments become readable but internally flattened.
+- Block 3 slice: added parse-success-only indentation for multiline `job` / `def` headers and output-target continuations. Parsed header continuation lines now indent one level under the declaration header, including `:` lines that stand alone before the body.
+- Scope decision: this slice is limited to header/signature continuation lines that are clearly owned by parsed `job` / `def` declarations. It does not yet introduce general multiline statement continuation policy for arbitrary `sub` / `host` / `join` expressions, multiline argument reflow, or broader line-wrapping rules.
+- Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize declaration headers where parser ownership is explicit instead of guessing at all multiline statement continuations.
+- Lesson captured for future PRs: parsed declaration headers are a safe intermediate step between block indentation and general multiline expression layout because the formatter can identify their continuation span without inventing continuation heuristics for every statement form.
+- Lesson captured for future PRs: a standalone `:` line in a multiline `job` header can be treated as part of the header continuation region rather than as a body delimiter with independent layout policy.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another unambiguous comment boundary, most likely standalone `//` comment attachment at top-level statement-group boundaries or another explicit protocol/contract grouping slice, while continuing to keep malformed recovery formatting conservative.
-- Keep broad multiline layout, blank-line normalization, and general comment reflow deferred until the formatter has explicit ownership rules for remaining non-brace boundaries and non-line-comment trivia.
+- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely multiline continuation rules for additional statement forms such as `sub` / `host` / `join`, while continuing to keep malformed recovery formatting conservative.
+- Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for remaining statement continuations and non-brace boundaries.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.

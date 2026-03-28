@@ -235,6 +235,44 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed multiline job and def headers", () => {
+    const input = [
+      "job /example/test(",
+      "x,",
+      "y) out1,",
+      "out2",
+      ":",
+      "1 -> out1",
+      "end",
+      "",
+      "def helper(",
+      "x,",
+      "y):",
+      "$  ->value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(",
+        "  x,",
+        "  y) out1,",
+        "  out2",
+        "  :",
+        "  1 -> out1",
+        "end",
+        "",
+        "def helper(",
+        "  x,",
+        "  y):",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "job /example/test(a, b):",
@@ -372,6 +410,33 @@ describe("formatting", () => {
         "  /* keep  , -> spacing",
         "     and indentation */",
         "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline job headers with structural indentation", () => {
+    const input = [
+      "job /example/test(",
+      "x,",
+      "y) out1,",
+      "out2",
+      ":",
+      "1 -> out1",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(",
+        "  x,",
+        "  y) out1,",
+        "  out2",
+        "  :",
+        "  1 -> out1",
         "end",
       ].join("\n")
     );
