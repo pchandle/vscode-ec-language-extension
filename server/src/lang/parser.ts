@@ -651,6 +651,7 @@ function parseTargetList(state: ParserState, targets: Token[], order?: Array<Tok
       return false;
     }
 
+    // A braced obligation may start on the line after '->' before any target token appears.
     if (token.kind === TokenKind.LBrace) {
       return true;
     }

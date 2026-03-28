@@ -22,15 +22,15 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added parser-backed support and parse-success-only indentation for target lists whose first target starts on the line after `->`. Parsed newline-after-arrow target continuations now indent one level under the owning statement for both invocation and additional parsed statement forms.
-- Scope decision: this slice is limited to newline-after-`->` continuations that still look like an explicit parsed target list or braced obligation opener on the following line. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
+- Block 3 slice: added explicit coverage for parser-backed newline-after-`->` braced-obligation openings where the first obligation block starts on the following line. Parsed newline-after-arrow block openings now indent one level under the owning statement while preserving existing close-brace alignment.
+- Scope decision: this slice is limited to newline-after-`->` continuations that start with a braced obligation block on the following line, including cases with later trailing targets after the block. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
 - Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize continuation lines where parser ownership is explicit instead of guessing at all multiline statement continuations.
-- Lesson captured for future PRs: newline-after-arrow ownership is safe once the parser only consumes continuations that still resemble a valid target list, which preserves malformed recovery behavior for broken `->` lines.
-- Lesson captured for future PRs: parser-backed continuation ownership and formatter indentation can remain separate concerns as long as the parser refuses ambiguous newline continuations such as delimiter-only lines.
+- Lesson captured for future PRs: newline-after-arrow block ownership composes cleanly with the existing brace-block indentation pass once the parser keeps the block attached to the owning statement.
+- Lesson captured for future PRs: even when a roadmap slice is already enabled by prior parser work, it is still worth locking it in with explicit parser, formatter, and integration coverage before building on top of it.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely multiline braced-obligation openings immediately after newline-separated arrows where the first obligation block starts on the following line, while continuing to keep malformed recovery formatting conservative.
+- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely standalone comment attachment/indentation around newly owned multiline target and obligation continuations, while continuing to keep malformed recovery formatting conservative.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

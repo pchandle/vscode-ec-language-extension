@@ -295,6 +295,36 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed braced obligations whose first block starts after newline arrow", () => {
+    const input = [
+      "sub /data/new($) ->",
+      "{",
+      "1 -> inner",
+      "}",
+      "value ->",
+      "{",
+      "1 -> inner",
+      "},",
+      "third",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "sub /data/new($) ->",
+        "  {",
+        "  1 -> inner",
+        "}",
+        "value ->",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  third",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed job and def bodies and aligns closing end lines", () => {
     const input = [
       "job /example/test(x):",
@@ -659,6 +689,37 @@ describe("formatting", () => {
         "  out2",
         "value ->",
         "  first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  third",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed braced obligations whose first block starts after newline arrow", () => {
+    const input = [
+      "sub /data/new($) ->",
+      "{",
+      "1 -> inner",
+      "}",
+      "value ->",
+      "{",
+      "1 -> inner",
+      "},",
+      "third",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 8)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "sub /data/new($) ->",
+        "  {",
+        "  1 -> inner",
+        "}",
+        "value ->",
         "  {",
         "  1 -> inner",
         "},",

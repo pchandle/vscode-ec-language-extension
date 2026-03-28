@@ -588,6 +588,33 @@
     ]
   },
   {
+    "name": "document canonically indents parsed braced obligations whose first block starts after newline arrow",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "sub /data/new($) ->",
+      "{",
+      "1 -> inner",
+      "}",
+      "value ->",
+      "{",
+      "1 -> inner",
+      "},",
+      "third"
+    ],
+    "expectedLines": [
+      "sub /data/new($) ->",
+      "  {",
+      "  1 -> inner",
+      "}",
+      "value ->",
+      "  {",
+      "  1 -> inner",
+      "},",
+      "  third"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -1001,6 +1028,37 @@
       "  out2",
       "value ->",
       "  first,",
+      "  {",
+      "  1 -> inner",
+      "},",
+      "  third"
+    ]
+  },
+  {
+    "name": "range formatting indents parsed braced obligations whose first block starts after newline arrow",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 8
+    },
+    "inputLines": [
+      "sub /data/new($) ->",
+      "{",
+      "1 -> inner",
+      "}",
+      "value ->",
+      "{",
+      "1 -> inner",
+      "},",
+      "third"
+    ],
+    "expectedLines": [
+      "sub /data/new($) ->",
+      "  {",
+      "  1 -> inner",
+      "}",
+      "value ->",
       "  {",
       "  1 -> inner",
       "},",

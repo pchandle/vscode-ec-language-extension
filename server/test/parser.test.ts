@@ -124,6 +124,24 @@ describe("parser", () => {
     assert.equal((program.statements[1] as any).targets.length, 1, "expected generic statement target to parse across newline-after-arrow");
   });
 
+  it("allows first braced obligation to start on the line after '->'", () => {
+    const text =
+      "sub /data/new/test/default/x64($) ->\n" +
+      "{\n" +
+      "  1 -> inner\n" +
+      "}\n" +
+      "value ->\n" +
+      "{\n" +
+      "  1 -> inner\n" +
+      "},\n" +
+      "third\n";
+    const { diagnostics, program } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.ok((program.statements[0] as any).block, "expected invocation block to parse across newline-after-arrow");
+    assert.ok((program.statements[1] as any).block, "expected generic block to parse across newline-after-arrow");
+    assert.equal((program.statements[1] as any).targets.length, 1, "expected later generic targets after newline-start block to remain attached");
+  });
+
   it("parses nested weave-in if/else/end with output targets", () => {
     const text = `
 if true then
