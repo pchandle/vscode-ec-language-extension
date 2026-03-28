@@ -553,6 +553,15 @@ function setDesiredIndent(desiredIndentColumns: Map<number, number>, lineIndex: 
   desiredIndentColumns.set(lineIndex, Math.max(0, indentColumns));
 }
 
+function isInvocationContinuationCandidate(statement: Statement): boolean {
+  if (statement.kind !== NodeKind.Statement) {
+    return false;
+  }
+
+  const keyword = statement.keyword?.lexeme.toLowerCase();
+  return keyword === "sub" || keyword === "host" || keyword === "join";
+}
+
 function collectBraceBlocks(statement: Statement): BlockNode[] {
   const braceBlocks: BlockNode[] = [];
   const seen = new Set<string>();
@@ -644,6 +653,22 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
   };
 
+  const visitStatementContinuation = (statement: Statement, statementIndentColumns: number): void => {
+    if (!isInvocationContinuationCandidate(statement)) {
+      return;
+    }
+
+    if (statement.range.start.line >= statement.range.end.line) {
+      return;
+    }
+
+    if (statement.kind !== NodeKind.Statement || statement.block) {
+      return;
+    }
+
+    setNonBlankIndentRange(statement.range.start.line + 1, statement.range.end.line, statementIndentColumns + INDENT_SIZE);
+  };
+
   const visitIf = (
     ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } },
     ifIndentColumns: number
@@ -727,6 +752,8 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       visitDelimitedBody(statementLineIndex, statement.body, statementIndentColumns);
       return;
     }
+
+    visitStatementContinuation(statement, statementIndentColumns);
 
     const expression = statement.expression as any;
     if (expression?.kind === NodeKind.If) {

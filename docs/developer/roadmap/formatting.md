@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added parse-success-only indentation for multiline `job` / `def` headers and output-target continuations. Parsed header continuation lines now indent one level under the declaration header, including `:` lines that stand alone before the body.
-- Scope decision: this slice is limited to header/signature continuation lines that are clearly owned by parsed `job` / `def` declarations. It does not yet introduce general multiline statement continuation policy for arbitrary `sub` / `host` / `join` expressions, multiline argument reflow, or broader line-wrapping rules.
-- Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize declaration headers where parser ownership is explicit instead of guessing at all multiline statement continuations.
-- Lesson captured for future PRs: parsed declaration headers are a safe intermediate step between block indentation and general multiline expression layout because the formatter can identify their continuation span without inventing continuation heuristics for every statement form.
-- Lesson captured for future PRs: a standalone `:` line in a multiline `job` header can be treated as part of the header continuation region rather than as a body delimiter with independent layout policy.
+- Block 3 slice: added parse-success-only indentation for multiline `sub` / `host` / `join` invocation continuations. Parsed continuation lines now indent one level under the owning invocation header without changing malformed-region behavior.
+- Scope decision: this slice is limited to parsed multiline invocation statements whose ownership is explicit from the AST and that do not carry a braced obligation block on the same statement. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
+- Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize invocation continuations where parser ownership is explicit instead of guessing at all multiline statement continuations.
+- Lesson captured for future PRs: statement-range ownership is precise enough for low-disruption continuation indentation on parsed `sub` / `host` / `join` invocations, provided structural block formatting remains a separate pass.
+- Lesson captured for future PRs: invocation continuation indentation should stay opt-in by statement kind until broader multiline layout policy is designed, which keeps the formatter idempotent without overcommitting to generic continuation heuristics.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely multiline continuation rules for additional statement forms such as `sub` / `host` / `join`, while continuing to keep malformed recovery formatting conservative.
-- Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for remaining statement continuations and non-brace boundaries.
+- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely continuation rules for additional statement forms beyond `sub` / `host` / `join` or another clearly owned top-level statement-grouping boundary, while continuing to keep malformed recovery formatting conservative.
+- Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
