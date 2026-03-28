@@ -490,6 +490,35 @@
     ]
   },
   {
+    "name": "document canonically indents parsed multiline if headers and trailing end targets",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "if ready &&",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "else",
+      "$  ->fallback",
+      "end -> result1,",
+      "result2",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready &&",
+      "    available",
+      "    then",
+      "    sub /data/new($) -> out",
+      "  else",
+      "    $ -> fallback",
+      "  end -> result1,",
+      "    result2",
+      "end"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -803,6 +832,31 @@
       "  1) -> {",
       "  $ -> inner",
       "}"
+    ]
+  },
+  {
+    "name": "range formatting indents parsed multiline if headers and trailing end targets",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 5
+    },
+    "inputLines": [
+      "if ready &&",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "result2"
+    ],
+    "expectedLines": [
+      "if ready &&",
+      "  available",
+      "  then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "  result2"
     ]
   }
 ]

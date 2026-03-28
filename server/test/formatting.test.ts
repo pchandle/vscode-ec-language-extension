@@ -185,6 +185,38 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed multiline if headers and trailing end targets", () => {
+    const input = [
+      "job /example/test(x):",
+      "if ready &&",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "else",
+      "$  ->fallback",
+      "end -> result1,",
+      "result2",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  if ready &&",
+        "    available",
+        "    then",
+        "    sub /data/new($) -> out",
+        "  else",
+        "    $ -> fallback",
+        "  end -> result1,",
+        "    result2",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed job and def bodies and aligns closing end lines", () => {
     const input = [
       "job /example/test(x):",
@@ -449,6 +481,31 @@ describe("formatting", () => {
         "    $ -> fallback",
         "  end -> result",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline if headers and trailing end targets", () => {
+    const input = [
+      "if ready &&",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "result2",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "  available",
+        "  then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
+        "  result2",
       ].join("\n")
     );
   });

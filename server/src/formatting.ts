@@ -545,6 +545,10 @@ function isStandaloneElseLine(text: string): boolean {
   return text.trim() === "else";
 }
 
+function containsThenKeyword(text: string): boolean {
+  return /\bthen\b/.test(text);
+}
+
 function isStandaloneEndLine(text: string): boolean {
   return /^end(\s|$)/.test(text.trim());
 }
@@ -706,7 +710,20 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     const endLineIndex =
       findLastLineMatching(endSearchStartLine, ifNode.range.end.line, isStandaloneEndLine) ?? ifNode.range.end.line;
 
-    const thenBodyStartLine = ifLineIndex + 1;
+    const thenSearchEndLine =
+      ifNode.thenBlock.statements[0]?.range.start.line ??
+      elseLineIndex ??
+      endLineIndex;
+    const thenLineIndex =
+      findLineMatching(ifLineIndex, thenSearchEndLine, containsThenKeyword) ?? ifLineIndex;
+
+    const headerContinuationStartLine = ifLineIndex + 1;
+    const headerContinuationEndLine = thenLineIndex;
+    if (headerContinuationStartLine <= headerContinuationEndLine) {
+      setNonBlankIndentRange(headerContinuationStartLine, headerContinuationEndLine, branchIndentColumns);
+    }
+
+    const thenBodyStartLine = thenLineIndex + 1;
     const thenBodyEndLine = (elseLineIndex ?? endLineIndex) - 1;
     if (thenBodyStartLine <= thenBodyEndLine) {
       setNonBlankIndentRange(thenBodyStartLine, thenBodyEndLine, branchIndentColumns);
@@ -722,6 +739,10 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     setDesiredIndent(desiredIndentColumns, endLineIndex, ifIndentColumns);
+
+    if (endLineIndex + 1 <= ifNode.range.end.line) {
+      setNonBlankIndentRange(endLineIndex + 1, ifNode.range.end.line, branchIndentColumns);
+    }
 
     for (const nestedStatement of ifNode.thenBlock.statements) {
       visitStatement(nestedStatement, branchIndentColumns);
