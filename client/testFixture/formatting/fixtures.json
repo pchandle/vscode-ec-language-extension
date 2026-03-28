@@ -453,6 +453,43 @@
     ]
   },
   {
+    "name": "document canonically indents parsed multiline invocation continuations with braced obligations",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "$,",
+      "1) -> {",
+      "$  -> inner",
+      "}",
+      "join /example/protocol(",
+      "$,",
+      "signal) -> first,",
+      "{",
+      "$  -> second",
+      "},",
+      "third",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  sub /data/new(",
+      "    $,",
+      "    1) -> {",
+      "    $ -> inner",
+      "  }",
+      "  join /example/protocol(",
+      "    $,",
+      "    signal) -> first,",
+      "    {",
+      "    $ -> second",
+      "  },",
+      "    third",
+      "end"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -743,6 +780,29 @@
       "  1,",
       "  2) -> out1,",
       "  out2"
+    ]
+  },
+  {
+    "name": "range formatting indents parsed multiline invocation continuations with braced obligations",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 4
+    },
+    "inputLines": [
+      "sub /data/new(",
+      "$,",
+      "1) -> {",
+      "$  -> inner",
+      "}"
+    ],
+    "expectedLines": [
+      "sub /data/new(",
+      "  $,",
+      "  1) -> {",
+      "  $ -> inner",
+      "}"
     ]
   }
 ]

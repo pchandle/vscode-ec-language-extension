@@ -562,6 +562,10 @@ function isInvocationContinuationCandidate(statement: Statement): boolean {
   return keyword === "sub" || keyword === "host" || keyword === "join";
 }
 
+function isLineWithinBraceBlockInteriorOrClose(lineIndex: number, braceBlocks: BlockNode[]): boolean {
+  return braceBlocks.some((block) => lineIndex > block.range.start.line && lineIndex <= block.range.end.line);
+}
+
 function collectBraceBlocks(statement: Statement): BlockNode[] {
   const braceBlocks: BlockNode[] = [];
   const seen = new Set<string>();
@@ -662,11 +666,23 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       return;
     }
 
-    if (statement.kind !== NodeKind.Statement || statement.block) {
+    if (statement.kind !== NodeKind.Statement) {
       return;
     }
 
-    setNonBlankIndentRange(statement.range.start.line + 1, statement.range.end.line, statementIndentColumns + INDENT_SIZE);
+    const braceBlocks = collectBraceBlocks(statement).filter((block) => isBraceBlock(document, block));
+
+    for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
+      if (isBlankLine(getLineText(document, lineIndex))) {
+        continue;
+      }
+
+      if (isLineWithinBraceBlockInteriorOrClose(lineIndex, braceBlocks)) {
+        continue;
+      }
+
+      setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
+    }
   };
 
   const visitIf = (
@@ -723,7 +739,9 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       setDesiredIndent(desiredIndentColumns, statementLineIndex, desiredIndentColumnsForStatement);
     }
 
-    for (const block of collectBraceBlocks(statement)) {
+    const braceBlocks = collectBraceBlocks(statement);
+
+    for (const block of braceBlocks) {
       if (!isBraceBlock(document, block)) {
         continue;
       }

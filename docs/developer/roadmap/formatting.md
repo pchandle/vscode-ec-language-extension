@@ -22,15 +22,15 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added parse-success-only indentation for multiline `sub` / `host` / `join` invocation continuations. Parsed continuation lines now indent one level under the owning invocation header without changing malformed-region behavior.
-- Scope decision: this slice is limited to parsed multiline invocation statements whose ownership is explicit from the AST and that do not carry a braced obligation block on the same statement. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
+- Block 3 slice: added parse-success-only indentation for multiline `sub` / `host` / `join` invocation continuations that also carry braced obligation blocks. Parsed continuation lines now indent one level under the owning invocation header even when the same statement includes `-> { ... }` obligations or post-block continuation targets.
+- Scope decision: this slice is limited to parsed multiline invocation statements whose ownership is explicit from the AST, including statements that carry braced obligation blocks. It still does not introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
 - Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize invocation continuations where parser ownership is explicit instead of guessing at all multiline statement continuations.
-- Lesson captured for future PRs: statement-range ownership is precise enough for low-disruption continuation indentation on parsed `sub` / `host` / `join` invocations, provided structural block formatting remains a separate pass.
-- Lesson captured for future PRs: invocation continuation indentation should stay opt-in by statement kind until broader multiline layout policy is designed, which keeps the formatter idempotent without overcommitting to generic continuation heuristics.
+- Lesson captured for future PRs: statement-range ownership remains precise enough for low-disruption continuation indentation on parsed `sub` / `host` / `join` invocations even when brace-block formatting shares the same statement, provided continuation indentation skips brace-block interior and closing lines.
+- Lesson captured for future PRs: continuation indentation and brace-block indentation can stay as separate passes so long as shared statements define clear ownership boundaries for open lines, block interiors, and closing delimiters.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely continuation rules for additional statement forms beyond `sub` / `host` / `join` or another clearly owned top-level statement-grouping boundary, while continuing to keep malformed recovery formatting conservative.
+- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely multiline condition/header continuation rules for parsed `if` expressions or another clearly owned statement boundary, while continuing to keep malformed recovery formatting conservative.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

@@ -313,6 +313,46 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed multiline invocation continuations that carry braced obligations", () => {
+    const input = [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "$,",
+      "1) -> {",
+      "$  -> inner",
+      "}",
+      "join /example/protocol(",
+      "$,",
+      "signal) -> first,",
+      "{",
+      "$  -> second",
+      "},",
+      "third",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  sub /data/new(",
+        "    $,",
+        "    1) -> {",
+        "    $ -> inner",
+        "  }",
+        "  join /example/protocol(",
+        "    $,",
+        "    signal) -> first,",
+        "    {",
+        "    $ -> second",
+        "  },",
+        "    third",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "job /example/test(a, b):",
@@ -501,6 +541,29 @@ describe("formatting", () => {
         "  1,",
         "  2) -> out1,",
         "  out2",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline invocation continuations with braced obligations", () => {
+    const input = [
+      "sub /data/new(",
+      "$,",
+      "1) -> {",
+      "$  -> inner",
+      "}",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 4)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "sub /data/new(",
+        "  $,",
+        "  1) -> {",
+        "  $ -> inner",
+        "}",
       ].join("\n")
     );
   });
