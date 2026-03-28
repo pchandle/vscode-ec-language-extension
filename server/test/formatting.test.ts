@@ -239,6 +239,32 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed multiline output-target continuations for additional statement forms", () => {
+    const input = [
+      "value -> first,",
+      "second",
+      "other_value -> first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "third",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "  second",
+        "other_value -> first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  third",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed job and def bodies and aligns closing end lines", () => {
     const input = [
       "job /example/test(x):",
@@ -549,6 +575,33 @@ describe("formatting", () => {
         "  default,",
         "  x64,",
         "  codevalley",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline output-target continuations for additional statement forms", () => {
+    const input = [
+      "value -> first,",
+      "second",
+      "other_value -> first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "third",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 6)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "  second",
+        "other_value -> first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  third",
       ].join("\n")
     );
   });

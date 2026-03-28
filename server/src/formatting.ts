@@ -574,6 +574,24 @@ function isDefaultsContinuationCandidate(statement: Statement): boolean {
   return statement.keyword?.lexeme.toLowerCase() === "defaults";
 }
 
+function isAdditionalOutputContinuationCandidate(statement: Statement): boolean {
+  if (statement.kind !== NodeKind.Statement) {
+    return false;
+  }
+
+  const keyword = statement.keyword?.lexeme.toLowerCase();
+  if (keyword === "sub" || keyword === "host" || keyword === "join" || keyword === "defaults") {
+    return false;
+  }
+
+  const expression = statement.expression as any;
+  if (expression?.kind === NodeKind.If) {
+    return false;
+  }
+
+  return statement.targets.length > 0 || Boolean(statement.obligationOrder?.length);
+}
+
 function isLineWithinBraceBlockInteriorOrClose(lineIndex: number, braceBlocks: BlockNode[]): boolean {
   return braceBlocks.some((block) => lineIndex > block.range.start.line && lineIndex <= block.range.end.line);
 }
@@ -670,7 +688,11 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
   };
 
   const visitStatementContinuation = (statement: Statement, statementIndentColumns: number): void => {
-    if (!isInvocationContinuationCandidate(statement) && !isDefaultsContinuationCandidate(statement)) {
+    if (
+      !isInvocationContinuationCandidate(statement) &&
+      !isDefaultsContinuationCandidate(statement) &&
+      !isAdditionalOutputContinuationCandidate(statement)
+    ) {
       return;
     }
 
@@ -688,6 +710,39 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     const braceBlocks = collectBraceBlocks(statement).filter((block) => isBraceBlock(document, block));
+
+    if (isAdditionalOutputContinuationCandidate(statement)) {
+      const continuationLineIndexes = new Set<number>();
+
+      for (const target of statement.targets) {
+        if (target.range.start.line > statement.range.start.line) {
+          continuationLineIndexes.add(target.range.start.line);
+        }
+      }
+
+      statement.obligationOrder?.forEach((item: BlockNode | Token) => {
+        if ((item as BlockNode).kind === NodeKind.Block) {
+          const block = item as BlockNode;
+          if (block.range.start.line > statement.range.start.line) {
+            continuationLineIndexes.add(block.range.start.line);
+          }
+          return;
+        }
+
+        const token = item as Token;
+        if (token.range.start.line > statement.range.start.line) {
+          continuationLineIndexes.add(token.range.start.line);
+        }
+      });
+
+      for (const lineIndex of continuationLineIndexes) {
+        if (!isBlankLine(getLineText(document, lineIndex))) {
+          setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
+        }
+      }
+
+      return;
+    }
 
     for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
       if (isBlankLine(getLineText(document, lineIndex))) {
