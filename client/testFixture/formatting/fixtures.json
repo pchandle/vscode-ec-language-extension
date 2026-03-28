@@ -519,6 +519,25 @@
     ]
   },
   {
+    "name": "document canonically indents parsed multiline defaults continuations",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "defaults: data,",
+      "default,",
+      "x64,",
+      "codevalley",
+      "sub /data/new($)->out"
+    ],
+    "expectedLines": [
+      "defaults: data,",
+      "  default,",
+      "  x64,",
+      "  codevalley",
+      "sub /data/new($) -> out"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -857,6 +876,27 @@
       "  sub /data/new($) -> out",
       "end -> result1,",
       "  result2"
+    ]
+  },
+  {
+    "name": "range formatting indents parsed multiline defaults continuations",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 3
+    },
+    "inputLines": [
+      "defaults: data,",
+      "default,",
+      "x64,",
+      "codevalley"
+    ],
+    "expectedLines": [
+      "defaults: data,",
+      "  default,",
+      "  x64,",
+      "  codevalley"
     ]
   }
 ]

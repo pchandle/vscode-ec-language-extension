@@ -197,4 +197,18 @@ sub check/flag($, cfg_enable_debug) -> {
     assert.equal(stmt.classification?.lexeme, "check/flag");
     assert.ok(Array.isArray(stmt.callArgs) && stmt.callArgs.length === 2, "expected call args for check/flag");
   });
+
+  it("allows multiline defaults entries across newline continuations", () => {
+    const text =
+      "defaults: data,\n" +
+      "  default,\n" +
+      "  x64,\n" +
+      "  codevalley\n" +
+      "sub /data/new($) -> out\n";
+    const { diagnostics, program } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    assert.equal(program.statements.length, 2, "expected multiline defaults to remain a single statement before the sub statement");
+    assert.equal((program.statements[0] as any).keyword?.lexeme?.toLowerCase?.(), "defaults");
+    assert.equal(program.statements[0].range.end.line, 3, "expected defaults statement to cover multiline continuation lines");
+  });
 });

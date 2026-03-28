@@ -566,6 +566,14 @@ function isInvocationContinuationCandidate(statement: Statement): boolean {
   return keyword === "sub" || keyword === "host" || keyword === "join";
 }
 
+function isDefaultsContinuationCandidate(statement: Statement): boolean {
+  if (statement.kind !== NodeKind.Statement) {
+    return false;
+  }
+
+  return statement.keyword?.lexeme.toLowerCase() === "defaults";
+}
+
 function isLineWithinBraceBlockInteriorOrClose(lineIndex: number, braceBlocks: BlockNode[]): boolean {
   return braceBlocks.some((block) => lineIndex > block.range.start.line && lineIndex <= block.range.end.line);
 }
@@ -662,7 +670,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
   };
 
   const visitStatementContinuation = (statement: Statement, statementIndentColumns: number): void => {
-    if (!isInvocationContinuationCandidate(statement)) {
+    if (!isInvocationContinuationCandidate(statement) && !isDefaultsContinuationCandidate(statement)) {
       return;
     }
 
@@ -671,6 +679,11 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     if (statement.kind !== NodeKind.Statement) {
+      return;
+    }
+
+    if (isDefaultsContinuationCandidate(statement)) {
+      setNonBlankIndentRange(statement.range.start.line + 1, statement.range.end.line, statementIndentColumns + INDENT_SIZE);
       return;
     }
 

@@ -882,34 +882,58 @@ function parsePrimary(state: ParserState): ExpressionNode | null {
 
 function parseDefaults(state: ParserState): StatementNode {
   const start = advance(state); // consume 'defaults'
+  let lastToken = start;
+  let allowContinuationNewline = false;
+  let awaitingFirstEntry = false;
+
   if (current(state).kind === TokenKind.Colon) {
-    advance(state);
+    lastToken = advance(state);
+    awaitingFirstEntry = true;
   }
-  // collect entries until newline/EOF
-  while (current(state).kind !== TokenKind.EOF && current(state).kind !== TokenKind.Newline) {
+
+  while (current(state).kind !== TokenKind.EOF) {
+    if (current(state).kind === TokenKind.Newline) {
+      if (allowContinuationNewline || awaitingFirstEntry) {
+        advance(state);
+        allowContinuationNewline = false;
+        continue;
+      }
+      break;
+    }
+
     if (current(state).kind === TokenKind.Comma) {
-      advance(state);
+      lastToken = advance(state);
+      allowContinuationNewline = true;
       continue;
     }
+
     if (
       current(state).kind === TokenKind.Identifier ||
       current(state).kind === TokenKind.Keyword ||
       current(state).kind === TokenKind.Classification
     ) {
-      advance(state);
+      lastToken = advance(state);
+      allowContinuationNewline = false;
+      awaitingFirstEntry = false;
       continue;
     }
+
     // anything else is unexpected but continue
     state.diagnostics.push({ message: `Unexpected token '${current(state).lexeme}' in defaults`, range: current(state).range });
-    advance(state);
+    lastToken = advance(state);
+    allowContinuationNewline = false;
+    awaitingFirstEntry = false;
   }
+
   if (current(state).kind === TokenKind.Newline) {
     advance(state);
   }
+
   return {
     kind: NodeKind.Statement,
     expression: null,
     targets: [],
-    range: { start: start.range.start, end: current(state).range.start },
+    keyword: start,
+    range: { start: start.range.start, end: lastToken.range.end },
   };
 }

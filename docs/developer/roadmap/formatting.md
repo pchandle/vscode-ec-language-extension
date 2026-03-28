@@ -22,15 +22,15 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added parse-success-only indentation for multiline parsed `if` headers and multiline trailing targets after `end -> ...`. Continuation lines before `then` and continuation targets after the terminating `end` now indent one level under the owning `if` statement without changing malformed-region behavior.
-- Scope decision: this slice is limited to parsed `if` expressions whose ownership is explicit from the AST. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
+- Block 3 slice: added explicit parser ownership and parse-success-only indentation for multiline `defaults` continuations. Newline-separated defaults entries now remain part of a single parsed `defaults` statement, and continuation lines indent one level under the owning `defaults` header.
+- Scope decision: this slice is limited to multiline `defaults` entries that continue across newlines after `:` or `,`. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
 - Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize continuation lines where parser ownership is explicit instead of guessing at all multiline statement continuations.
-- Lesson captured for future PRs: parsed `if` expressions can own both pre-`then` header continuation lines and post-`end` target continuation lines without conflating them with branch body indentation, provided the delimiter lines remain explicitly aligned in a separate pass.
-- Lesson captured for future PRs: continuation ownership for non-invocation statements is safest when it is anchored to explicit delimiters such as `then` and `end`, rather than trying to infer generic multiline-expression layout.
+- Lesson captured for future PRs: low-disruption formatter slices sometimes need a small parser extension first; once multiline `defaults` ownership exists in the AST, the formatter rule itself stays simple and transport-independent.
+- Lesson captured for future PRs: multiline continuation ownership remains safest when it is anchored to explicit separators such as `:` and trailing `,`, rather than trying to infer generic multiline layout from raw text alone.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely another clearly owned statement boundary such as multiline `defaults` handling once parser ownership exists across newlines, while continuing to keep malformed recovery formatting conservative.
+- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely another clearly owned statement boundary such as multiline output-target continuations for additional parsed statement forms, while continuing to keep malformed recovery formatting conservative.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
