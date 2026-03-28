@@ -362,6 +362,25 @@
     ]
   },
   {
+    "name": "document reindents standalone multiline block comments inside parsed structural regions",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "/* keep  , -> spacing",
+      "   and indentation */",
+      "sub /data/new($)->out",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  /* keep  , -> spacing",
+      "     and indentation */",
+      "  sub /data/new($) -> out",
+      "end"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -577,6 +596,29 @@
     ],
     "expectedLines": [
       "job /example/test(x):",
+      "  sub /data/new($) -> out",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting reindents standalone multiline block comments inside parsed regions",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 3
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "/* keep  , -> spacing",
+      "   and indentation */",
+      "sub /data/new($)->out",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  /* keep  , -> spacing",
+      "     and indentation */",
       "  sub /data/new($) -> out",
       "end"
     ]

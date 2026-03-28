@@ -213,6 +213,28 @@ describe("formatting", () => {
     );
   });
 
+  it("reindents standalone multiline block comments inside parsed structural regions while preserving inner relative spacing", () => {
+    const input = [
+      "job /example/test(x):",
+      "/* keep  , -> spacing",
+      "   and indentation */",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  /* keep  , -> spacing",
+        "     and indentation */",
+        "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "job /example/test(a, b):",
@@ -326,6 +348,29 @@ describe("formatting", () => {
     expect(output).to.equal(
       [
         "job /example/test(x):",
+        "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected standalone multiline block comments inside parsed regions with structural indentation", () => {
+    const input = [
+      "job /example/test(x):",
+      "/* keep  , -> spacing",
+      "   and indentation */",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 3)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  /* keep  , -> spacing",
+        "     and indentation */",
         "  sub /data/new($) -> out",
         "end",
       ].join("\n")

@@ -17,6 +17,7 @@ export interface FormattingLine {
   protectedRanges: FormattingCharacterRange[];
   safeToFormat: boolean;
   desiredIndentColumns?: number;
+  allowIndentOnProtectedLine?: boolean;
 }
 
 export interface FormattingCharacterRange {
@@ -87,6 +88,15 @@ function leadingWhitespaceWidth(text: string): number {
 
 function isRecoveryCommentOwnershipSeparatorLine(text: string): boolean {
   return text.trim() === "}";
+}
+
+function isFullyProtectedLine(text: string, protectedRanges: FormattingCharacterRange[]): boolean {
+  if (protectedRanges.length === 0) {
+    return false;
+  }
+
+  const mergedRanges = mergeCharacterRanges(protectedRanges);
+  return mergedRanges.length === 1 && mergedRanges[0].startCharacter === 0 && mergedRanges[0].endCharacter >= text.length;
 }
 
 function addRangeLines(lines: Set<number>, range: Range): void {
@@ -734,13 +744,52 @@ function applyDesiredIndentation(text: string, desiredIndentColumns?: number): s
   return `${" ".repeat(desiredIndentColumns)}${text.trimStart()}`;
 }
 
-function isFullyProtectedLine(text: string, protectedRanges: FormattingCharacterRange[]): boolean {
-  if (protectedRanges.length === 0) {
-    return false;
+function collectParsedProtectedCommentIndentation(
+  document: TextDocument,
+  desiredIndentColumns: Map<number, number>,
+  blockCommentRanges: Map<number, FormattingCharacterRange[]>
+): Set<number> {
+  const linesAllowingProtectedIndent = new Set<number>();
+
+  for (let lineIndex = 0; lineIndex < document.lineCount;) {
+    const lineText = getLineText(document, lineIndex);
+    const ranges = blockCommentRanges.get(lineIndex) ?? [];
+    if (!isFullyProtectedLine(lineText, ranges)) {
+      lineIndex++;
+      continue;
+    }
+
+    const groupLines: number[] = [];
+    while (lineIndex < document.lineCount) {
+      const groupLineText = getLineText(document, lineIndex);
+      const groupRanges = blockCommentRanges.get(lineIndex) ?? [];
+      if (!isFullyProtectedLine(groupLineText, groupRanges)) {
+        break;
+      }
+      groupLines.push(lineIndex);
+      lineIndex++;
+    }
+
+    const anchoredIndentColumns = desiredIndentColumns.get(groupLines[0]);
+    if (anchoredIndentColumns === undefined) {
+      continue;
+    }
+
+    const baseIndentColumns = Math.min(
+      ...groupLines
+        .map((groupLine) => getLineText(document, groupLine))
+        .filter((text) => !isBlankLine(text))
+        .map((text) => leadingWhitespaceWidth(text))
+    );
+
+    for (const groupLine of groupLines) {
+      const originalIndentColumns = leadingWhitespaceWidth(getLineText(document, groupLine));
+      desiredIndentColumns.set(groupLine, anchoredIndentColumns + Math.max(0, originalIndentColumns - baseIndentColumns));
+      linesAllowingProtectedIndent.add(groupLine);
+    }
   }
 
-  const mergedRanges = mergeCharacterRanges(protectedRanges);
-  return mergedRanges.length === 1 && mergedRanges[0].startCharacter === 0 && mergedRanges[0].endCharacter >= text.length;
+  return linesAllowingProtectedIndent;
 }
 
 export function buildFormattingInput(document: TextDocument): FormattingInput {
@@ -755,6 +804,10 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
   const adjacentStandaloneCommentRanges =
     parseMode === "recovery" ? collectAdjacentStandaloneCommentRanges(document, syntaxProtectedRanges) : new Map<number, FormattingCharacterRange[]>();
   const blockCommentRanges = collectBlockCommentRanges(document);
+  const linesAllowingProtectedIndent =
+    parseMode === "parsed"
+      ? collectParsedProtectedCommentIndentation(document, desiredIndentColumns, blockCommentRanges)
+      : new Set<number>();
   const lines: FormattingLine[] = [];
 
   for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
@@ -781,6 +834,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       ),
       safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex) || lineProtectedRanges.length > 0 || attachedCommentRange !== null,
       desiredIndentColumns: desiredIndentColumns.get(lineIndex),
+      allowIndentOnProtectedLine: linesAllowingProtectedIndent.has(lineIndex),
     });
   }
 
@@ -799,7 +853,7 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
   for (let lineIndex = request.startLine; lineIndex <= request.endLine; lineIndex++) {
     const line = input.lines[lineIndex];
     const formattedText = line.safeToFormat
-      ? isFullyProtectedLine(line.originalText, line.protectedRanges)
+      ? isFullyProtectedLine(line.originalText, line.protectedRanges) && !line.allowIndentOnProtectedLine
         ? formatLineWithProtectedRanges(line.originalText, line.protectedRanges)
         : applyDesiredIndentation(formatLineWithProtectedRanges(line.originalText, line.protectedRanges), line.desiredIndentColumns)
       : line.originalText;

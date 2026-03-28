@@ -22,16 +22,16 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: extended parse-success-only structural indentation to parsed `job` / `def` bodies and their closing `end` lines. The server formatter now indents structurally owned body content one level beneath the header and aligns the matching closing `end` with the header line.
-- Scope decision: this slice remains limited to parse-success regions with explicit ownership. It reindents body statements and standalone `//` comments inside parsed `job` / `def` bodies, but it still avoids malformed-region reindentation, blank-line policy changes, and aggressive rewriting of fully protected multiline block-comment lines.
-- Assumption: existing `.dla` / `.dlp` files may still be inconsistently indented, so `job` / `def` formatting should only normalize lines that are clearly owned by the parsed body rather than attempting broader whole-file cleanup.
-- Lesson captured for future PRs: for low-risk block indentation, matching the first standalone `end` after a parsed body is safer than scanning for a later delimiter, because later `end` lines may belong to following declarations.
-- Lesson captured for future PRs: fully protected multiline block-comment lines should remain indentation-stable until comment attachment and comment-layout policy are more explicit.
+- Block 3 slice: added explicit parse-success-only indentation for standalone multiline block comments inside structurally owned regions. Attached multiline block comments can now shift with parsed `job` / `def` / `if` / brace ownership while preserving their internal relative indentation.
+- Scope decision: this slice only reindents full-line block-comment groups when the surrounding parsed structure already gives them an unambiguous target indent. It still avoids malformed-region comment reindentation, comment text reflow, blank-line policy changes, and inline block-comment layout rewrites.
+- Assumption: existing `.dla` / `.dlp` files may still contain inconsistent comment margins, so the formatter should move standalone multiline block comments only when a parsed structural owner already exists instead of treating all block comments as globally reflowable.
+- Lesson captured for future PRs: protected comment text and protected comment indentation are separate concerns. A formatter can preserve comment contents verbatim while still normalizing the outer comment margin when ownership is explicit.
+- Lesson captured for future PRs: comment-group indentation should be anchored from the first structurally owned line in the group and preserve relative indentation within the group, otherwise multiline comments become readable but internally flattened.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only indentation policy to another unambiguous structural boundary, most likely top-level protocol/contract statement groups or a more explicit comment-attachment slice, while continuing to keep malformed recovery formatting conservative.
-- Keep broad multiline layout, blank-line normalization, and whole-file indentation policy deferred until the formatter has explicit ownership rules for comments and remaining non-brace block boundaries.
+- Block 3: extend the same parse-success-only ownership model to another unambiguous comment boundary, most likely standalone `//` comment attachment at top-level statement-group boundaries or another explicit protocol/contract grouping slice, while continuing to keep malformed recovery formatting conservative.
+- Keep broad multiline layout, blank-line normalization, and general comment reflow deferred until the formatter has explicit ownership rules for remaining non-brace boundaries and non-line-comment trivia.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
