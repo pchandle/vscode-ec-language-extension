@@ -157,6 +157,34 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents parsed if/else blocks and aligns their delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  if ready then",
+      "// keep   comment spacing",
+      "sub /data/new($)->out",
+      "  else",
+      "$  ->fallback",
+      " end -> result",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    // keep   comment spacing",
+        "    sub /data/new($) -> out",
+        "  else",
+        "    $ -> fallback",
+        "  end -> result",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "host /example/test(a, b) -> out",
@@ -225,6 +253,33 @@ describe("formatting", () => {
         "  value -> {",
         "    sub /data/new($) -> out",
         "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats the selected portion of a parsed if block using structural indentation", () => {
+    const input = [
+      "job /example/test(x):",
+      "  if ready then",
+      "sub /data/new($)->out",
+      " else",
+      "$  ->fallback",
+      "end -> result",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 2, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    sub /data/new($) -> out",
+        "  else",
+        "    $ -> fallback",
+        "  end -> result",
         "end",
       ].join("\n")
     );

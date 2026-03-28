@@ -312,6 +312,31 @@
     ]
   },
   {
+    "name": "document canonically indents parsed if else blocks",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "// keep   comment spacing",
+      "sub /data/new($)->out",
+      "  else",
+      "$  ->fallback",
+      " end -> result",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    // keep   comment spacing",
+      "    sub /data/new($) -> out",
+      "  else",
+      "    $ -> fallback",
+      "  end -> result",
+      "end"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -482,6 +507,33 @@
       "  value -> {",
       "    sub /data/new($) -> out",
       "  }",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting uses structural indentation inside parsed if blocks",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 2,
+      "endLine": 5
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "sub /data/new($)->out",
+      " else",
+      "$  ->fallback",
+      "end -> result",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($) -> out",
+      "  else",
+      "    $ -> fallback",
+      "  end -> result",
       "end"
     ]
   }

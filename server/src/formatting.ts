@@ -531,6 +531,14 @@ function isBraceBlock(document: TextDocument, block: BlockNode): boolean {
   return lineText[block.range.start.character] === "{";
 }
 
+function isStandaloneElseLine(text: string): boolean {
+  return text.trim() === "else";
+}
+
+function isStandaloneEndLine(text: string): boolean {
+  return /^end(\s|$)/.test(text.trim());
+}
+
 function setDesiredIndent(desiredIndentColumns: Map<number, number>, lineIndex: number, indentColumns: number): void {
   desiredIndentColumns.set(lineIndex, Math.max(0, indentColumns));
 }
@@ -564,6 +572,77 @@ function collectBraceBlocks(statement: Statement): BlockNode[] {
 
 function collectParsedIndentation(document: TextDocument, program: ProgramNode): Map<number, number> {
   const desiredIndentColumns = new Map<number, number>();
+
+  const findLineMatching = (startLine: number, endLine: number, predicate: (text: string) => boolean): number | undefined => {
+    for (let lineIndex = startLine; lineIndex <= endLine; lineIndex++) {
+      if (predicate(getLineText(document, lineIndex))) {
+        return lineIndex;
+      }
+    }
+    return undefined;
+  };
+
+  const findLastLineMatching = (startLine: number, endLine: number, predicate: (text: string) => boolean): number | undefined => {
+    for (let lineIndex = endLine; lineIndex >= startLine; lineIndex--) {
+      if (predicate(getLineText(document, lineIndex))) {
+        return lineIndex;
+      }
+    }
+    return undefined;
+  };
+
+  const setNonBlankIndentRange = (startLine: number, endLine: number, indentColumns: number): void => {
+    for (let lineIndex = startLine; lineIndex <= endLine; lineIndex++) {
+      if (!isBlankLine(getLineText(document, lineIndex))) {
+        setDesiredIndent(desiredIndentColumns, lineIndex, indentColumns);
+      }
+    }
+  };
+
+  const visitIf = (
+    ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } },
+    ifIndentColumns: number
+  ): void => {
+    const ifLineIndex = ifNode.range.start.line;
+    const branchIndentColumns = ifIndentColumns + INDENT_SIZE;
+
+    setDesiredIndent(desiredIndentColumns, ifLineIndex, ifIndentColumns);
+
+    const elseSearchEndLine = ifNode.elseBlock ? Math.max(ifNode.thenBlock.range.end.line + 1, ifNode.elseBlock.range.start.line) : ifNode.range.end.line;
+    const elseLineIndex =
+      ifNode.elseBlock
+        ? findLineMatching(ifNode.thenBlock.range.end.line + 1, elseSearchEndLine, isStandaloneElseLine)
+        : undefined;
+
+    const endSearchStartLine = ifNode.elseBlock
+      ? Math.max((elseLineIndex ?? ifNode.elseBlock.range.end.line) + 1, ifNode.elseBlock.range.end.line)
+      : Math.max(ifNode.thenBlock.range.end.line + 1, ifLineIndex + 1);
+    const endLineIndex =
+      findLastLineMatching(endSearchStartLine, ifNode.range.end.line, isStandaloneEndLine) ?? ifNode.range.end.line;
+
+    const thenBodyStartLine = ifLineIndex + 1;
+    const thenBodyEndLine = (elseLineIndex ?? endLineIndex) - 1;
+    if (thenBodyStartLine <= thenBodyEndLine) {
+      setNonBlankIndentRange(thenBodyStartLine, thenBodyEndLine, branchIndentColumns);
+    }
+
+    if (elseLineIndex !== undefined) {
+      setDesiredIndent(desiredIndentColumns, elseLineIndex, ifIndentColumns);
+      const elseBodyStartLine = elseLineIndex + 1;
+      const elseBodyEndLine = endLineIndex - 1;
+      if (elseBodyStartLine <= elseBodyEndLine) {
+        setNonBlankIndentRange(elseBodyStartLine, elseBodyEndLine, branchIndentColumns);
+      }
+    }
+
+    setDesiredIndent(desiredIndentColumns, endLineIndex, ifIndentColumns);
+
+    for (const nestedStatement of ifNode.thenBlock.statements) {
+      visitStatement(nestedStatement, branchIndentColumns);
+    }
+
+    ifNode.elseBlock?.statements.forEach((nestedStatement: Statement) => visitStatement(nestedStatement, branchIndentColumns));
+  };
 
   const visitStatement = (statement: Statement, desiredIndentColumnsForStatement?: number): void => {
     const statementLineIndex = statement.range.start.line;
@@ -607,10 +686,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
 
     const expression = statement.expression as any;
     if (expression?.kind === NodeKind.If) {
-      for (const nestedStatement of expression.thenBlock.statements) {
-        visitStatement(nestedStatement);
-      }
-      expression.elseBlock?.statements.forEach((nestedStatement: Statement) => visitStatement(nestedStatement));
+      visitIf(expression, statementIndentColumns);
     }
   };
 
