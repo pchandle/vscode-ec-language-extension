@@ -23,6 +23,29 @@ describe("formatting", () => {
     expect(model.lines[1].coveredBySyntax).to.equal(true);
   });
 
+  it("keeps multiline def header targets and comment-separated continuation lines inside the parsed formatter input model", () => {
+    const input = createDocument(
+      [
+        "def helper(",
+        "x,",
+        "y) out1,",
+        "// keep target note",
+        "out2:",
+        "$ -> value",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+    const def = model.program.statements[0] as any;
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(def.targets.map((target: any) => target.lexeme)).to.deep.equal(["out1", "out2"]);
+    expect(def.body.range.start.line).to.equal(5);
+    expect(model.lines[3].desiredIndentColumns).to.equal(2);
+    expect(model.lines[4].desiredIndentColumns).to.equal(2);
+    expect(model.lines[5].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -533,6 +556,32 @@ describe("formatting", () => {
         "  // keep helper note",
         "  x,",
         "  y):",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps low-disruption formatting for parsed multiline def header targets separated by standalone comment lines", () => {
+    const input = [
+      "def helper(",
+      "x,",
+      "y) out1,",
+      "// keep target note",
+      "out2:",
+      "$  ->value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "def helper(",
+        "  x,",
+        "  y) out1,",
+        "  // keep target note",
+        "  out2:",
         "  $ -> value",
         "end",
       ].join("\n")

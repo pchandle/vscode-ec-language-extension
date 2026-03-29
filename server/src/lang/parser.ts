@@ -601,7 +601,7 @@ function parseDef(state: ParserState): DefNode {
   } else {
     state.diagnostics.push({ message: "Expected '(' after def name", range: current(state).range });
   }
-  const targets = parseInlineTargets(state);
+  const targets = parseInlineTargets(state, { allowNewlines: true });
   const body = parseDelimitedBlock(state, ["end"]);
   if (!(current(state).kind === TokenKind.Keyword && current(state).lexeme.toLowerCase() === "end")) {
     state.diagnostics.push({ message: "Expected 'end' to close def", range: current(state).range });

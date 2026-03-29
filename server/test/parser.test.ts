@@ -112,6 +112,35 @@ describe("parser", () => {
     assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 
+  it("allows multiline def header targets before ':'", () => {
+    const text =
+      "def helper(x) out1,\n" +
+      "  out2:\n" +
+      "  $ -> value\n" +
+      "end";
+    const { diagnostics, program } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    const def = program.statements[0] as any;
+    assert.deepEqual(def.targets.map((target: any) => target.lexeme), ["out1", "out2"]);
+    assert.equal(def.body.range.start.line, 2, "expected def body to start after the multiline header target list");
+  });
+
+  it("allows multiline def header targets separated by standalone comment lines", () => {
+    const text =
+      "def helper(\n" +
+      "  x,\n" +
+      "  y) out1,\n" +
+      "  // keep target note\n" +
+      "  out2:\n" +
+      "  $ -> value\n" +
+      "end";
+    const { diagnostics, program } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+    const def = program.statements[0] as any;
+    assert.deepEqual(def.targets.map((target: any) => target.lexeme), ["out1", "out2"]);
+    assert.equal(def.body.range.start.line, 5, "expected def body to start after the comment-separated multiline header target list");
+  });
+
   it("allows trailing comma before block in target list", () => {
     const text = "sub /data/new/test/default/x64($) -> _, {\n  1 -> out\n}";
     const { diagnostics } = parseText(text);
