@@ -325,6 +325,36 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents standalone comments attached to parsed multiline target and obligation continuations", () => {
+    const input = [
+      "value -> first,",
+      "// keep target note",
+      "second",
+      "other_value -> first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "// keep trailing target note",
+      "third",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "  // keep target note",
+        "  second",
+        "other_value -> first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  // keep trailing target note",
+        "  third",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed job and def bodies and aligns closing end lines", () => {
     const input = [
       "job /example/test(x):",
@@ -723,6 +753,37 @@ describe("formatting", () => {
         "  {",
         "  1 -> inner",
         "},",
+        "  third",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected standalone comments attached to parsed multiline target and obligation continuations", () => {
+    const input = [
+      "value -> first,",
+      "// keep target note",
+      "second",
+      "other_value -> first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "// keep trailing target note",
+      "third",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 8)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "  // keep target note",
+        "  second",
+        "other_value -> first,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "  // keep trailing target note",
         "  third",
       ].join("\n")
     );

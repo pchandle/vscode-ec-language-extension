@@ -615,6 +615,33 @@
     ]
   },
   {
+    "name": "document canonically indents standalone comments attached to parsed multiline target and obligation continuations",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "value -> first,",
+      "// keep target note",
+      "second",
+      "other_value -> first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "// keep trailing target note",
+      "third"
+    ],
+    "expectedLines": [
+      "value -> first,",
+      "  // keep target note",
+      "  second",
+      "other_value -> first,",
+      "  {",
+      "  1 -> inner",
+      "},",
+      "  // keep trailing target note",
+      "  third"
+    ]
+  },
+  {
     "name": "range formatting keeps attached inline comments on malformed recovery lines",
     "file": "test.dla",
     "kind": "range",
@@ -1062,6 +1089,37 @@
       "  {",
       "  1 -> inner",
       "},",
+      "  third"
+    ]
+  },
+  {
+    "name": "range formatting indents standalone comments attached to parsed multiline target and obligation continuations",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 8
+    },
+    "inputLines": [
+      "value -> first,",
+      "// keep target note",
+      "second",
+      "other_value -> first,",
+      "{",
+      "1 -> inner",
+      "},",
+      "// keep trailing target note",
+      "third"
+    ],
+    "expectedLines": [
+      "value -> first,",
+      "  // keep target note",
+      "  second",
+      "other_value -> first,",
+      "  {",
+      "  1 -> inner",
+      "},",
+      "  // keep trailing target note",
       "  third"
     ]
   }

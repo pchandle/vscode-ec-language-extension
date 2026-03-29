@@ -652,6 +652,42 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
   };
 
+  const setAttachedStandaloneCommentIndent = (anchorLineIndex: number, indentColumns: number): void => {
+    const setCommentGroupIndent = (startLineIndex: number, direction: -1 | 1): void => {
+      const pendingBlankLines: number[] = [];
+      const commentLines: number[] = [];
+      let lineIndex = startLineIndex;
+
+      while (lineIndex >= 0 && lineIndex < document.lineCount) {
+        const text = getLineText(document, lineIndex);
+        if (isStandaloneLineComment(text)) {
+          commentLines.push(lineIndex);
+          lineIndex += direction;
+          continue;
+        }
+
+        if (isBlankLine(text)) {
+          pendingBlankLines.push(lineIndex);
+          lineIndex += direction;
+          continue;
+        }
+
+        break;
+      }
+
+      if (commentLines.length === 0) {
+        return;
+      }
+
+      for (const commentLineIndex of [...commentLines, ...pendingBlankLines]) {
+        setDesiredIndent(desiredIndentColumns, commentLineIndex, indentColumns);
+      }
+    };
+
+    setCommentGroupIndent(anchorLineIndex - 1, -1);
+    setCommentGroupIndent(anchorLineIndex + 1, 1);
+  };
+
   const visitDelimitedBody = (
     startLineIndex: number,
     body: { range: Range; statements: Statement[] },
@@ -738,6 +774,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       for (const lineIndex of continuationLineIndexes) {
         if (!isBlankLine(getLineText(document, lineIndex))) {
           setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
+          setAttachedStandaloneCommentIndent(lineIndex, statementIndentColumns + INDENT_SIZE);
         }
       }
 

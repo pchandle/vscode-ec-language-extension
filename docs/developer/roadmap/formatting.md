@@ -22,15 +22,15 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
-- Block 3 slice: added explicit coverage for parser-backed newline-after-`->` braced-obligation openings where the first obligation block starts on the following line. Parsed newline-after-arrow block openings now indent one level under the owning statement while preserving existing close-brace alignment.
-- Scope decision: this slice is limited to newline-after-`->` continuations that start with a braced obligation block on the following line, including cases with later trailing targets after the block. It does not yet introduce general continuation policy for every statement form, multiline expression reflow, or broader line-wrapping rules.
-- Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize continuation lines where parser ownership is explicit instead of guessing at all multiline statement continuations.
-- Lesson captured for future PRs: newline-after-arrow block ownership composes cleanly with the existing brace-block indentation pass once the parser keeps the block attached to the owning statement.
-- Lesson captured for future PRs: even when a roadmap slice is already enabled by prior parser work, it is still worth locking it in with explicit parser, formatter, and integration coverage before building on top of it.
+- Block 3 slice: attached standalone `//` comment lines to parser-owned multiline target and obligation continuations for additional output statement forms. Parsed multiline target lists and newline-after-arrow obligation openings now indent directly attached standalone comment groups one level under the owning statement, matching the continuation lines they surround.
+- Scope decision: this slice is limited to standalone `//` comment groups directly adjacent to parser-owned multiline target or obligation continuation lines in the additional-output continuation path. It does not yet expand comment attachment to every parsed multiline header/body region, inline comments, malformed recovery ownership, broader blank-line policy, or the still-unowned gap where a standalone comment appears between a newline-after-`->` line and the first braced obligation opening.
+- Assumption: existing `.dla` / `.dlp` files may still have inconsistent continuation indentation, so the formatter should only normalize standalone comment lines where parser ownership is explicit instead of guessing across ambiguous multiline layouts.
+- Lesson captured for future PRs: parsed comment attachment can stay low-risk when it is driven from continuation lines that already have explicit desired indentation instead of introducing a separate global comment-ownership pass.
+- Lesson captured for future PRs: blank lines can safely follow attached standalone comment groups inside parsed continuation regions without changing broader blank-line normalization policy.
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another explicit multiline grouping slice, most likely standalone comment attachment/indentation around newly owned multiline target and obligation continuations, while continuing to keep malformed recovery formatting conservative.
+- Block 3: extend the same parse-success-only comment-attachment model to another explicit multiline ownership slice, most likely standalone `//` comment attachment/indentation around parsed multiline headers and continuations for `defaults`, `if`, and `job` / `def`, while continuing to keep malformed recovery formatting conservative.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
