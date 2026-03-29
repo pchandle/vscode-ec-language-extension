@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed block-layout normalization to collapse excessive blank-line runs inside parse-success `if` trailing `end ->` continuation regions while preserving a single blank line. This now applies when a parsed `if` owns multiline trailing targets after `end -> ...`, for both document formatting and range formatting when the selected range fully covers the affected continuation slice.
+- Scope decision: this slice is limited to parser-owned `if` trailing `end ->` continuation regions. It does not broaden malformed recovery behavior, top-level statement spacing, standalone blank-line policy immediately before a bare `end`, declaration `end` policy beyond existing body handling, or general blank-line normalization outside parser-owned `if` continuation ownership.
+- Assumption: once an `if`’s `end -> ...` line already owns its continuation indentation structurally, collapsing only the second-and-later blank lines inside that owned continuation region is an obvious low-churn Block 4 cleanup.
+- Lesson captured for future PRs: delimiter-adjacent blank-line policy can often be introduced safely by following existing parser-owned continuation regions first, instead of trying to solve every surrounding `end` spacing case in one PR.
+- Next-step implication: the next Block 4 slice should keep targeting another obvious parsed-region layout gap, most likely a standalone `else` / bare `end` adjacency case with comments or blank lines, before moving on to broader block-spacing policy.
 - Block 4 slice: started block-layout normalization by collapsing excessive blank-line runs inside explicitly parsed block bodies while preserving a single blank line. This now applies to parse-success `job` / `def` bodies, `if` branch bodies, and brace-block interiors, and works for both document formatting and range formatting when the selected range fully covers the affected block slice.
 - Scope decision: this slice is limited to parsed explicit body/interior regions where ownership is unambiguous and where extra blank lines can be deleted without guessing. It does not normalize blank lines in malformed recovery mode, top-level statement spacing, multiline header/target continuation regions, or broader blank-line policy around `else` / `end` boundaries.
 - Assumption: collapsing only the second-and-later blank lines inside explicitly parsed block bodies is an “obvious case” under Block 4 that improves readability without introducing disruptive style churn.
@@ -52,7 +57,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: extend block-layout normalization with another obvious, low-churn parsed-region rule, most likely surrounding blank-line handling near `else` / `end` boundaries or another narrow multiline-body layout policy that users will notice during routine formatting.
+- Block 4: extend block-layout normalization with another obvious, low-churn parsed-region rule, most likely a comment-aware `else` / bare `end` adjacency case or another narrow multiline-boundary layout policy that users will notice during routine formatting.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

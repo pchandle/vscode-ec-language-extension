@@ -74,13 +74,14 @@ async function executeFormatting(
 ): Promise<readonly vscode.TextEdit[] | undefined> {
   if (fixture.kind === "range") {
     assert.ok(fixture.range, "expected range formatting fixture to include a range");
-    const endCharacter = doc.lineAt(fixture.range.endLine).text.length;
+    const endLine = Math.min(fixture.range.endLine, doc.lineCount - 1);
+    const endCharacter = doc.lineAt(endLine).text.length;
     return vscode.commands.executeCommand<readonly vscode.TextEdit[]>(
       "vscode.executeFormatRangeProvider",
       docUri,
       new vscode.Range(
         new vscode.Position(fixture.range.startLine, 0),
-        new vscode.Position(fixture.range.endLine, endCharacter)
+        new vscode.Position(endLine, endCharacter)
       ),
       { tabSize: 2, insertSpaces: true }
     );

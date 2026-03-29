@@ -1026,6 +1026,10 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       }
     }
 
+    if (endLineIndex + 1 <= ifNode.range.end.line) {
+      markExtraBlankLinesInRange(endLineIndex + 1, ifNode.range.end.line);
+    }
+
     for (const nestedStatement of ifNode.thenBlock.statements) {
       visitStatement(nestedStatement);
     }

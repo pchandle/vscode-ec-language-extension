@@ -1451,5 +1451,59 @@
       "  }",
       "end"
     ]
+  },
+  {
+    "name": "document collapses excessive blank lines around parsed if end boundaries",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "",
+      "",
+      "end -> result1,",
+      "",
+      "",
+      "  // keep target note",
+      "  result2"
+    ],
+    "expectedLines": [
+      "if ready then",
+      "  sub /data/new($) -> out",
+      "",
+      "end -> result1,",
+      "",
+      "  // keep target note",
+      "  result2"
+    ]
+  },
+  {
+    "name": "range formatting collapses excessive blank lines around parsed if end boundaries",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 0,
+      "endLine": 8
+    },
+    "inputLines": [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "",
+      "",
+      "end -> result1,",
+      "",
+      "",
+      "  // keep target note",
+      "  result2"
+    ],
+    "expectedLines": [
+      "if ready then",
+      "  sub /data/new($) -> out",
+      "",
+      "end -> result1,",
+      "",
+      "  // keep target note",
+      "  result2"
+    ]
   }
 ]
