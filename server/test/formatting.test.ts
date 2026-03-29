@@ -619,6 +619,50 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents standalone comments attached to parsed multiline invocation continuations", () => {
+    const input = [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "// keep arg note",
+      "$,",
+      "1) ->",
+      "// keep target note",
+      "out1,",
+      "out2",
+      "join /example/protocol(",
+      "// keep join arg note",
+      "$,",
+      "signal) -> {",
+      "// keep obligation note",
+      "$  -> second",
+      "}",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  sub /data/new(",
+        "    // keep arg note",
+        "    $,",
+        "    1) ->",
+        "    // keep target note",
+        "    out1,",
+        "    out2",
+        "  join /example/protocol(",
+        "    // keep join arg note",
+        "    $,",
+        "    signal) -> {",
+        "    // keep obligation note",
+        "    $ -> second",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "job /example/test(a, b):",
@@ -1094,6 +1138,47 @@ describe("formatting", () => {
         "  $,",
         "  1) -> {",
         "  $ -> inner",
+        "}",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected standalone comments attached to parsed multiline invocation continuations", () => {
+    const input = [
+      "sub /data/new(",
+      "// keep arg note",
+      "$,",
+      "1) ->",
+      "// keep target note",
+      "out1,",
+      "out2",
+      "join /example/protocol(",
+      "// keep join arg note",
+      "$,",
+      "signal) -> {",
+      "// keep obligation note",
+      "$  -> second",
+      "}",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 12)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "sub /data/new(",
+        "  // keep arg note",
+        "  $,",
+        "  1) ->",
+        "  // keep target note",
+        "  out1,",
+        "  out2",
+        "join /example/protocol(",
+        "  // keep join arg note",
+        "  $,",
+        "  signal) -> {",
+        "  // keep obligation note",
+        "  $ -> second",
         "}",
       ].join("\n")
     );

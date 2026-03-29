@@ -801,6 +801,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       }
 
       setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
+      setAttachedStandaloneCommentIndent(lineIndex, statementIndentColumns + INDENT_SIZE);
     }
   };
 

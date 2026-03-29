@@ -1308,5 +1308,87 @@
       "  // keep trailing target note",
       "  third"
     ]
+  },
+  {
+    "name": "document canonically indents standalone comments attached to parsed multiline invocation continuations",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "// keep arg note",
+      "$,",
+      "1) ->",
+      "// keep target note",
+      "out1,",
+      "out2",
+      "join /example/protocol(",
+      "// keep join arg note",
+      "$,",
+      "signal) -> {",
+      "// keep obligation note",
+      "$  -> second",
+      "}",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  sub /data/new(",
+      "    // keep arg note",
+      "    $,",
+      "    1) ->",
+      "    // keep target note",
+      "    out1,",
+      "    out2",
+      "  join /example/protocol(",
+      "    // keep join arg note",
+      "    $,",
+      "    signal) -> {",
+      "    // keep obligation note",
+      "    $ -> second",
+      "  }",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting indents standalone comments attached to parsed multiline invocation continuations",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 12
+    },
+    "inputLines": [
+      "sub /data/new(",
+      "// keep arg note",
+      "$,",
+      "1) ->",
+      "// keep target note",
+      "out1,",
+      "out2",
+      "join /example/protocol(",
+      "// keep join arg note",
+      "$,",
+      "signal) -> {",
+      "// keep obligation note",
+      "$  -> second",
+      "}"
+    ],
+    "expectedLines": [
+      "sub /data/new(",
+      "  // keep arg note",
+      "  $,",
+      "  1) ->",
+      "  // keep target note",
+      "  out1,",
+      "  out2",
+      "join /example/protocol(",
+      "  // keep join arg note",
+      "  $,",
+      "  signal) -> {",
+      "  // keep obligation note",
+      "  $ -> second",
+      "}"
+    ]
   }
 ]

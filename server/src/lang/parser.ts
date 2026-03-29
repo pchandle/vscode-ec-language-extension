@@ -689,6 +689,10 @@ function parseTargetList(state: ParserState, targets: Token[], order?: Array<Tok
   };
 
   const looksLikeContinuedTargetList = (index: number): boolean => {
+    while (state.tokens[index]?.kind === TokenKind.Newline) {
+      index++;
+    }
+
     const token = state.tokens[index];
     if (!token) {
       return false;
