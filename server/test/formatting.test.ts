@@ -111,6 +111,26 @@ describe("formatting", () => {
     expect(model.lines[5].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks extra blank lines before parsed bare if end delimiters for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    sub /data/new($)->out",
+        "",
+        "",
+        "  end",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(false);
+    expect(model.lines[4].deleteLine).to.equal(true);
+    expect(model.lines[5].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -346,6 +366,33 @@ describe("formatting", () => {
         "",
         "  // keep target note",
         "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("canonically indents parsed if blocks with bare end delimiters and collapses adjacent blank lines", () => {
+    const input = [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      "",
+      "",
+      "    // keep note",
+      "  end",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    sub /data/new($) -> out",
+        "",
+        "    // keep note",
+        "  end",
+        "end",
       ].join("\n")
     );
   });
@@ -1008,6 +1055,34 @@ describe("formatting", () => {
         "",
         "  // keep target note",
         "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed if blocks with bare end delimiters and adjacent blank lines", () => {
+    const input = [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      "",
+      "",
+      "    // keep note",
+      "  end",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 6)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    sub /data/new($) -> out",
+        "",
+        "    // keep note",
+        "  end",
+        "end",
       ].join("\n")
     );
   });

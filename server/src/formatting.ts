@@ -826,7 +826,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       ? Math.max((elseLineIndex ?? ifNode.elseBlock.range.end.line) + 1, ifNode.elseBlock.range.end.line)
       : Math.max(ifNode.thenBlock.range.end.line + 1, ifLineIndex + 1);
     const endLineIndex =
-      findLastLineMatching(endSearchStartLine, ifNode.range.end.line, isStandaloneEndLine) ?? ifNode.range.end.line;
+      findLineMatching(endSearchStartLine, document.lineCount - 1, isStandaloneEndLine) ?? ifNode.range.end.line;
 
     const thenSearchEndLine =
       ifNode.thenBlock.statements[0]?.range.start.line ??
@@ -1004,7 +1004,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       ? Math.max((elseLineIndex ?? ifNode.elseBlock.range.end.line) + 1, ifNode.elseBlock.range.end.line)
       : Math.max(ifNode.thenBlock.range.end.line + 1, ifLineIndex + 1);
     const endLineIndex =
-      findLastLineMatching(endSearchStartLine, ifNode.range.end.line, isStandaloneEndLine) ?? ifNode.range.end.line;
+      findLineMatching(endSearchStartLine, document.lineCount - 1, isStandaloneEndLine) ?? ifNode.range.end.line;
     const thenSearchEndLine =
       ifNode.thenBlock.statements[0]?.range.start.line ??
       elseLineIndex ??

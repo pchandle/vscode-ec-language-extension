@@ -1505,5 +1505,57 @@
       "  // keep target note",
       "  result2"
     ]
+  },
+  {
+    "name": "document canonically indents parsed if blocks with bare end delimiters and adjacent blank lines",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      "",
+      "",
+      "    // keep note",
+      "  end",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($) -> out",
+      "",
+      "    // keep note",
+      "  end",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting indents parsed if blocks with bare end delimiters and adjacent blank lines",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 6
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      "",
+      "",
+      "    // keep note",
+      "  end",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($) -> out",
+      "",
+      "    // keep note",
+      "  end",
+      "end"
+    ]
   }
 ]

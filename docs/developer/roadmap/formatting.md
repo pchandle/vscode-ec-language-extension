@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parse-success `if` closure layout so bare `end` delimiters are found and aligned even when the parser range stops at the last branch statement, and excessive blank-line runs immediately before those bare `end` lines now collapse to a single blank line. This applies to document formatting and range formatting when the selected range fully covers the affected parsed `if` slice.
+- Scope decision: this slice is limited to parser-owned bare `if ... end` closure boundaries. It does not change malformed recovery behavior, broaden declaration `end` policy, or introduce general blank-line normalization outside parsed `if` delimiter regions.
+- Assumption: nested `if` blocks with bare `end` delimiters are common enough in normal editing that fixing delimiter alignment and the adjacent blank-line suffix is still core Block 4 work, not tail-end edge-case polish.
+- Lesson captured for future PRs: parse-success formatter logic cannot assume AST ranges include delimiter lines, so delimiter lookup for layout policy should follow the concrete syntax boundary in the document when the parser node stops at the last owned body statement.
+- Next-step implication: the next Block 4 slice should stay focused on another obvious parsed-region boundary rule, most likely a comment-aware `else` adjacency case or another narrow delimiter-adjacent blank-line normalization step.
 - Block 4 slice: extended parsed block-layout normalization to collapse excessive blank-line runs inside parse-success `if` trailing `end ->` continuation regions while preserving a single blank line. This now applies when a parsed `if` owns multiline trailing targets after `end -> ...`, for both document formatting and range formatting when the selected range fully covers the affected continuation slice.
 - Scope decision: this slice is limited to parser-owned `if` trailing `end ->` continuation regions. It does not broaden malformed recovery behavior, top-level statement spacing, standalone blank-line policy immediately before a bare `end`, declaration `end` policy beyond existing body handling, or general blank-line normalization outside parser-owned `if` continuation ownership.
 - Assumption: once an `if`’s `end -> ...` line already owns its continuation indentation structurally, collapsing only the second-and-later blank lines inside that owned continuation region is an obvious low-churn Block 4 cleanup.
@@ -57,7 +62,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: extend block-layout normalization with another obvious, low-churn parsed-region rule, most likely a comment-aware `else` / bare `end` adjacency case or another narrow multiline-boundary layout policy that users will notice during routine formatting.
+- Block 4: extend block-layout normalization with another obvious, low-churn parsed-region rule, most likely a comment-aware `else` adjacency case or another narrow delimiter-adjacent blank-line policy that users will notice during routine formatting.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
