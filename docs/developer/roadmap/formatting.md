@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 3 slice: extended parse-success declaration-header ownership for `def` headers whose first target starts on the line after `)`, including standalone comment-separated continuation lines before `:`. This closes the remaining newline-start header-target asymmetry between `job` and `def`, so those lines now stay inside the parsed `def` header instead of leaking into the body.
+- Scope decision: this slice is limited to parser-backed ownership for newline-start multiline `def` header targets plus formatter-model/output regression coverage that locks in the existing low-disruption indentation for those parsed lines. It does not broaden malformed recovery behavior, declaration-body indentation policy, or general declaration layout.
+- Assumption: `def` headers should share the same newline-start target ownership rules already accepted for `job` headers, so aligning their parser behavior is lower risk than introducing formatter-side correction for the old `def` body leakage.
+- Lesson captured for future PRs: declaration-header parsing gaps can remain hidden when formatter indentation coincidentally matches both interpretations, so parser/model assertions are necessary even when document-format output changes are intentionally minimal.
+- Next-step implication: the remaining declaration-focused Block 3 work should now move past header-target parsing and focus on a declaration-adjacent ownership or layout slice with clearer formatter-surface impact, most likely a body-adjacent standalone comment gap or another explicitly parser-owned declaration subregion.
 - Block 3 slice: extended parse-success declaration-header ownership for multiline `def` targets so newline continuations after the parameter list, including standalone comment-separated target continuation lines before `:`, remain inside the parsed `def` header instead of leaking into the body. This keeps the formatter input model aligned with the existing parsed declaration-header indentation path without introducing a broader style-policy change.
 - Scope decision: this slice is limited to parser-backed ownership for multiline `def` header targets plus formatter-model/output regression coverage that locks in the current low-disruption indentation for those parsed lines. It does not broaden malformed recovery behavior, change declaration-body indentation policy, or introduce new layout rules beyond the existing declaration-header indentation path.
 - Assumption: multiline `def` header targets should follow the same newline-continuation ownership rules already accepted for multiline `job` header targets, so extending that parser behavior is lower risk than adding new formatter heuristics on top of the old `def` body leakage.
@@ -42,7 +47,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another declaration-focused slice with visible formatting consequences, most likely a remaining declaration-body-adjacent standalone comment ownership gap, while continuing to keep malformed recovery formatting conservative.
+- Block 3: extend the same parse-success-only ownership model to another declaration-focused slice with clearer formatter-surface impact, most likely a remaining declaration-body-adjacent standalone comment ownership gap or another explicitly parser-owned declaration subregion, while continuing to keep malformed recovery formatting conservative.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

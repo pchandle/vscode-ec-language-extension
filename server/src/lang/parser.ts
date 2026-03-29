@@ -529,7 +529,7 @@ function parseJob(state: ParserState): JobNode {
     parseParameterList(state, params);
   }
   let targets = parseInlineTargets(state, { consumeColon: false, allowNewlines: true });
-  if (targets.length === 0 && looksLikeJobHeaderTargetsAfterNewline(state)) {
+  if (targets.length === 0 && looksLikeDeclarationHeaderTargetsAfterNewline(state)) {
     if (current(state).kind === TokenKind.Newline) {
       skipNewlines(state);
     }
@@ -552,7 +552,7 @@ function parseJob(state: ParserState): JobNode {
   };
 }
 
-function looksLikeJobHeaderTargetsAfterNewline(state: ParserState): boolean {
+function looksLikeDeclarationHeaderTargetsAfterNewline(state: ParserState): boolean {
   let i = state.index;
   while (state.tokens[i]?.kind === TokenKind.Newline) i++;
 
@@ -601,7 +601,13 @@ function parseDef(state: ParserState): DefNode {
   } else {
     state.diagnostics.push({ message: "Expected '(' after def name", range: current(state).range });
   }
-  const targets = parseInlineTargets(state, { allowNewlines: true });
+  let targets = parseInlineTargets(state, { allowNewlines: true });
+  if (targets.length === 0 && looksLikeDeclarationHeaderTargetsAfterNewline(state)) {
+    if (current(state).kind === TokenKind.Newline) {
+      skipNewlines(state);
+    }
+    targets = parseInlineTargets(state, { allowNewlines: true });
+  }
   const body = parseDelimitedBlock(state, ["end"]);
   if (!(current(state).kind === TokenKind.Keyword && current(state).lexeme.toLowerCase() === "end")) {
     state.diagnostics.push({ message: "Expected 'end' to close def", range: current(state).range });

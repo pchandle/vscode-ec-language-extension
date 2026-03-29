@@ -46,6 +46,31 @@ describe("formatting", () => {
     expect(model.lines[5].desiredIndentColumns).to.equal(2);
   });
 
+  it("keeps newline-start def header targets and comment-separated continuation lines inside the parsed formatter input model", () => {
+    const input = createDocument(
+      [
+        "def helper(",
+        "x,",
+        "y)",
+        "// keep target note",
+        "out1,",
+        "out2:",
+        "$ -> value",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+    const def = model.program.statements[0] as any;
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(def.targets.map((target: any) => target.lexeme)).to.deep.equal(["out1", "out2"]);
+    expect(def.body.range.start.line).to.equal(6);
+    expect(model.lines[3].desiredIndentColumns).to.equal(2);
+    expect(model.lines[4].desiredIndentColumns).to.equal(2);
+    expect(model.lines[5].desiredIndentColumns).to.equal(2);
+    expect(model.lines[6].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -581,6 +606,34 @@ describe("formatting", () => {
         "  x,",
         "  y) out1,",
         "  // keep target note",
+        "  out2:",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps low-disruption formatting for parsed def header targets that start on the next line after ')'", () => {
+    const input = [
+      "def helper(",
+      "x,",
+      "y)",
+      "// keep target note",
+      "out1,",
+      "out2:",
+      "$  ->value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "def helper(",
+        "  x,",
+        "  y)",
+        "  // keep target note",
+        "  out1,",
         "  out2:",
         "  $ -> value",
         "end",
