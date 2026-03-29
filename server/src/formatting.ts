@@ -719,7 +719,12 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     const headerContinuationEndLine = body.range.start.line - 1;
 
     if (headerContinuationStartLine <= headerContinuationEndLine) {
-      setNonBlankIndentRange(headerContinuationStartLine, headerContinuationEndLine, headerIndentColumns + INDENT_SIZE);
+      for (let lineIndex = headerContinuationStartLine; lineIndex <= headerContinuationEndLine; lineIndex++) {
+        if (!isBlankLine(getLineText(document, lineIndex))) {
+          setDesiredIndent(desiredIndentColumns, lineIndex, headerIndentColumns + INDENT_SIZE);
+          setAttachedStandaloneCommentIndent(lineIndex, headerIndentColumns + INDENT_SIZE);
+        }
+      }
     }
   };
 

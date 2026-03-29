@@ -471,6 +471,48 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents standalone comments attached to parsed multiline job and def headers", () => {
+    const input = [
+      "job /example/test(",
+      "// keep param note",
+      "x,",
+      "y) out1,",
+      "out2",
+      ":",
+      "1 -> out1",
+      "end",
+      "",
+      "def helper(",
+      "// keep helper note",
+      "x,",
+      "y):",
+      "$  ->value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(",
+        "  // keep param note",
+        "  x,",
+        "  y) out1,",
+        "  out2",
+        "  :",
+        "  1 -> out1",
+        "end",
+        "",
+        "def helper(",
+        "  // keep helper note",
+        "  x,",
+        "  y):",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed multiline invocation continuations for sub host and join", () => {
     const input = [
       "job /example/test(x):",
@@ -910,6 +952,49 @@ describe("formatting", () => {
         "  out2",
         "  :",
         "  1 -> out1",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected standalone comments attached to parsed multiline job and def headers", () => {
+    const input = [
+      "job /example/test(",
+      "// keep param note",
+      "x,",
+      "y) out1,",
+      "out2",
+      ":",
+      "1 -> out1",
+      "end",
+      "",
+      "def helper(",
+      "// keep helper note",
+      "x,",
+      "y):",
+      "$  ->value",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 14)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(",
+        "  // keep param note",
+        "  x,",
+        "  y) out1,",
+        "  out2",
+        "  :",
+        "  1 -> out1",
+        "end",
+        "",
+        "def helper(",
+        "  // keep helper note",
+        "  x,",
+        "  y):",
+        "  $ -> value",
         "end",
       ].join("\n")
     );
