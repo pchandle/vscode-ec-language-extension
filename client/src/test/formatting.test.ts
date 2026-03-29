@@ -13,7 +13,9 @@ type FormattingFixture = {
   expectEdits?: boolean;
   range?: {
     startLine: number;
+    startCharacter?: number;
     endLine: number;
+    endCharacter?: number;
   };
 };
 
@@ -74,13 +76,15 @@ async function executeFormatting(
 ): Promise<readonly vscode.TextEdit[] | undefined> {
   if (fixture.kind === "range") {
     assert.ok(fixture.range, "expected range formatting fixture to include a range");
+    const startLine = Math.min(fixture.range.startLine, doc.lineCount - 1);
     const endLine = Math.min(fixture.range.endLine, doc.lineCount - 1);
-    const endCharacter = doc.lineAt(endLine).text.length;
+    const startCharacter = Math.max(0, fixture.range.startCharacter ?? 0);
+    const endCharacter = fixture.range.endCharacter ?? doc.lineAt(endLine).text.length;
     return vscode.commands.executeCommand<readonly vscode.TextEdit[]>(
       "vscode.executeFormatRangeProvider",
       docUri,
       new vscode.Range(
-        new vscode.Position(fixture.range.startLine, 0),
+        new vscode.Position(startLine, startCharacter),
         new vscode.Position(endLine, endCharacter)
       ),
       { tabSize: 2, insertSpaces: true }

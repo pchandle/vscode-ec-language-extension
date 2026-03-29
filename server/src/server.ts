@@ -43,6 +43,7 @@ import { ProgramNode, Statement } from './lang/ast';
 import { normalizeContractClassification, normalizeProtocolClassification } from './lang/normalization';
 import { collectReferencedClassifications } from './specReferenceCollector';
 import { formatDocument, formatDocumentRange } from './formatting';
+import { normalizeRangeToTouchedLines } from './formattingRange';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -1114,7 +1115,12 @@ connection.onDocumentRangeFormatting((params) => {
 		return [];
 	}
 
-	return formatDocumentRange(document, params.range.start.line, params.range.end.line);
+	const normalizedRange = normalizeRangeToTouchedLines(document, params.range);
+	if (!normalizedRange) {
+		return [];
+	}
+
+	return formatDocumentRange(document, normalizedRange.startLine, normalizedRange.endLine);
 });
 
 connection.onShutdown(() => {

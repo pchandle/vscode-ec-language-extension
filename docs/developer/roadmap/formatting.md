@@ -18,10 +18,15 @@ The recommended sequence is:
 - Block 2: Server-side formatter parity: completed
 - Block 3: Syntax-aware formatting core: in progress
 - Block 4: Block layout and multiline normalization: in progress
-- Block 5: Selection formatting and range correctness: not started
+- Block 5: Selection formatting and range correctness: in progress
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: started selection-formatting correctness by defining range formatting as line-bounded over the lines actually touched by the selection. A range that ends at column 0 on a later line now formats through the previous line instead of unexpectedly pulling in the untouched trailing line, and the integration fixtures now cover partial-line range selections explicitly.
+- Scope decision: this slice is limited to range-boundary normalization at the server formatting entrypoint plus fixture support for partial-line selection coordinates. It does not change the formatter’s existing line-bounded policy for touched lines, expand selections to enclosing syntax units, or alter document-formatting behavior.
+- Assumption: the smallest high-value Block 5 step is to remove the surprising “trailing untouched line gets formatted” case before deciding whether future range formatting should stay line-bounded or expand to enclosing constructs.
+- Lesson captured for future PRs: range-format correctness can improve without reopening formatter policy by normalizing editor selection coordinates before they enter the syntax-aware formatting pipeline.
+- Next-step implication: the next Block 5 slice should clarify another line-bounded selection edge, most likely partial selections that start/end inside delimiter-adjacent structural lines or a documented decision about whether some ranges should expand to enclosing syntactic units.
 - Block 4 slice: extended parse-success `if` closure layout so bare `end` delimiters are found and aligned even when the parser range stops at the last branch statement, and excessive blank-line runs immediately before those bare `end` lines now collapse to a single blank line. This applies to document formatting and range formatting when the selected range fully covers the affected parsed `if` slice.
 - Scope decision: this slice is limited to parser-owned bare `if ... end` closure boundaries. It does not change malformed recovery behavior, broaden declaration `end` policy, or introduce general blank-line normalization outside parsed `if` delimiter regions.
 - Assumption: nested `if` blocks with bare `end` delimiters are common enough in normal editing that fixing delimiter alignment and the adjacent blank-line suffix is still core Block 4 work, not tail-end edge-case polish.
@@ -62,7 +67,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: extend block-layout normalization with another obvious, low-churn parsed-region rule, most likely a comment-aware `else` adjacency case or another narrow delimiter-adjacent blank-line policy that users will notice during routine formatting.
+- Block 5: clarify another range-formatting boundary rule, most likely partial selections that start/end inside delimiter-adjacent structural lines or a documented decision about whether some selections should expand to enclosing syntactic units.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

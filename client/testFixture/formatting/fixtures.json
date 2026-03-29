@@ -1557,5 +1557,28 @@
       "  end",
       "end"
     ]
+  },
+  {
+    "name": "range formatting ignores an untouched trailing line when the selection ends at column zero",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "startCharacter": 0,
+      "endLine": 2,
+      "endCharacter": 0
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "sub /data/new($)->out",
+      " else",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  sub /data/new($) -> out",
+      " else",
+      "end"
+    ]
   }
 ]
