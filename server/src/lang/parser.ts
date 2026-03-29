@@ -998,6 +998,23 @@ function parseDefaults(state: ParserState): StatementNode {
   let lastToken = start;
   let allowContinuationNewline = false;
   let awaitingFirstEntry = false;
+  const looksLikeDefaultsContinuation = (): boolean => {
+    let i = state.index;
+    while (state.tokens[i]?.kind === TokenKind.Newline) {
+      i++;
+    }
+
+    const tok = state.tokens[i];
+    if (!tok || tok.kind === TokenKind.EOF) {
+      return false;
+    }
+
+    return (
+      tok.kind === TokenKind.Identifier ||
+      tok.kind === TokenKind.Keyword ||
+      tok.kind === TokenKind.Classification
+    );
+  };
 
   if (current(state).kind === TokenKind.Colon) {
     lastToken = advance(state);
@@ -1007,7 +1024,10 @@ function parseDefaults(state: ParserState): StatementNode {
   while (current(state).kind !== TokenKind.EOF) {
     if (current(state).kind === TokenKind.Newline) {
       if (allowContinuationNewline || awaitingFirstEntry) {
-        advance(state);
+        if (!looksLikeDefaultsContinuation()) {
+          break;
+        }
+        skipNewlines(state);
         allowContinuationNewline = false;
         continue;
       }

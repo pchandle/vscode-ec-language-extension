@@ -239,6 +239,30 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents standalone comments attached to parsed multiline defaults continuations", () => {
+    const input = [
+      "defaults: data,",
+      "// keep defaults note",
+      "default,",
+      "x64,",
+      "// keep platform note",
+      "codevalley",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  // keep defaults note",
+        "  default,",
+        "  x64,",
+        "  // keep platform note",
+        "  codevalley",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents standalone comments attached to parsed multiline if headers and trailing end targets", () => {
     const input = [
       "if ready &&",
@@ -736,6 +760,31 @@ describe("formatting", () => {
         "defaults: data,",
         "  default,",
         "  x64,",
+        "  codevalley",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected standalone comments attached to parsed multiline defaults continuations", () => {
+    const input = [
+      "defaults: data,",
+      "// keep defaults note",
+      "default,",
+      "x64,",
+      "// keep platform note",
+      "codevalley",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  // keep defaults note",
+        "  default,",
+        "  x64,",
+        "  // keep platform note",
         "  codevalley",
       ].join("\n")
     );

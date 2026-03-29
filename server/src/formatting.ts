@@ -746,7 +746,12 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     if (isDefaultsContinuationCandidate(statement)) {
-      setNonBlankIndentRange(statement.range.start.line + 1, statement.range.end.line, statementIndentColumns + INDENT_SIZE);
+      for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
+        if (!isBlankLine(getLineText(document, lineIndex))) {
+          setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
+          setAttachedStandaloneCommentIndent(lineIndex, statementIndentColumns + INDENT_SIZE);
+        }
+      }
       return;
     }
 
