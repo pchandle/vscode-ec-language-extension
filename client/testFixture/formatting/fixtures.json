@@ -538,6 +538,31 @@
     ]
   },
   {
+    "name": "document canonically indents standalone comments attached to parsed multiline if headers and trailing end targets",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "if ready &&",
+      "// keep condition note",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "// keep target note",
+      "result2"
+    ],
+    "expectedLines": [
+      "if ready &&",
+      "  // keep condition note",
+      "  available",
+      "  then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "  // keep target note",
+      "  result2"
+    ]
+  },
+  {
     "name": "document canonically indents parsed multiline output target continuations for additional statement forms",
     "file": "test.dla",
     "kind": "document",
@@ -1001,6 +1026,35 @@
       "  default,",
       "  x64,",
       "  codevalley"
+    ]
+  },
+  {
+    "name": "range formatting indents standalone comments attached to parsed multiline if headers and trailing end targets",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 7
+    },
+    "inputLines": [
+      "if ready &&",
+      "// keep condition note",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "// keep target note",
+      "result2"
+    ],
+    "expectedLines": [
+      "if ready &&",
+      "  // keep condition note",
+      "  available",
+      "  then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "  // keep target note",
+      "  result2"
     ]
   },
   {

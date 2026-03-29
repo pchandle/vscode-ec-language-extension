@@ -825,7 +825,12 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     const headerContinuationStartLine = ifLineIndex + 1;
     const headerContinuationEndLine = thenLineIndex;
     if (headerContinuationStartLine <= headerContinuationEndLine) {
-      setNonBlankIndentRange(headerContinuationStartLine, headerContinuationEndLine, branchIndentColumns);
+      for (let lineIndex = headerContinuationStartLine; lineIndex <= headerContinuationEndLine; lineIndex++) {
+        if (!isBlankLine(getLineText(document, lineIndex))) {
+          setDesiredIndent(desiredIndentColumns, lineIndex, branchIndentColumns);
+          setAttachedStandaloneCommentIndent(lineIndex, branchIndentColumns);
+        }
+      }
     }
 
     const thenBodyStartLine = thenLineIndex + 1;
@@ -846,7 +851,12 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     setDesiredIndent(desiredIndentColumns, endLineIndex, ifIndentColumns);
 
     if (endLineIndex + 1 <= ifNode.range.end.line) {
-      setNonBlankIndentRange(endLineIndex + 1, ifNode.range.end.line, branchIndentColumns);
+      for (let lineIndex = endLineIndex + 1; lineIndex <= ifNode.range.end.line; lineIndex++) {
+        if (!isBlankLine(getLineText(document, lineIndex))) {
+          setDesiredIndent(desiredIndentColumns, lineIndex, branchIndentColumns);
+          setAttachedStandaloneCommentIndent(lineIndex, branchIndentColumns);
+        }
+      }
     }
 
     for (const nestedStatement of ifNode.thenBlock.statements) {

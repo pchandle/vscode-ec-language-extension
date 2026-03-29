@@ -239,6 +239,34 @@ describe("formatting", () => {
     );
   });
 
+  it("canonically indents standalone comments attached to parsed multiline if headers and trailing end targets", () => {
+    const input = [
+      "if ready &&",
+      "// keep condition note",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "// keep target note",
+      "result2",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "  // keep condition note",
+        "  available",
+        "  then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
+        "  // keep target note",
+        "  result2",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents parsed multiline output-target continuations for additional statement forms", () => {
     const input = [
       "value -> first,",
@@ -665,6 +693,35 @@ describe("formatting", () => {
         "  default,",
         "  x64,",
         "  codevalley",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected standalone comments attached to parsed multiline if headers and trailing end targets", () => {
+    const input = [
+      "if ready &&",
+      "// keep condition note",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "// keep target note",
+      "result2",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 7)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "  // keep condition note",
+        "  available",
+        "  then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
+        "  // keep target note",
+        "  result2",
       ].join("\n")
     );
   });
