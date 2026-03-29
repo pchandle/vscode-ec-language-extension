@@ -99,6 +99,19 @@ describe("parser", () => {
     assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
   });
 
+  it("allows multiline job header targets separated by standalone comment lines", () => {
+    const text =
+      "job /example/test(\n" +
+      "  x,\n" +
+      "  y) out1,\n" +
+      "  // keep target note\n" +
+      "  out2:\n" +
+      "  1 -> out1\n" +
+      "end";
+    const { diagnostics } = parseText(text);
+    assert.equal(diagnostics.length, 0, `Expected no diagnostics, got ${diagnostics.map((d) => d.message).join(", ")}`);
+  });
+
   it("allows trailing comma before block in target list", () => {
     const text = "sub /data/new/test/default/x64($) -> _, {\n  1 -> out\n}";
     const { diagnostics } = parseText(text);

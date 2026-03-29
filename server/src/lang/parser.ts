@@ -425,6 +425,41 @@ function parseInlineTargets(
   const allowNewlines = options?.allowNewlines ?? false;
   const targets: Token[] = [];
   const reserved = new Set(["sub", "job", "host", "join", "def", "if", "deliver"]);
+  const looksLikeInlineTargetContinuation = (): boolean => {
+    let i = state.index;
+    while (state.tokens[i]?.kind === TokenKind.Newline) {
+      i++;
+    }
+
+    let sawTarget = false;
+    while (i < state.tokens.length) {
+      const tok = state.tokens[i];
+      if (!tok) {
+        return false;
+      }
+      if (tok.kind === TokenKind.Colon) {
+        return sawTarget;
+      }
+      if (tok.kind === TokenKind.Arrow || tok.kind === TokenKind.LBrace || tok.kind === TokenKind.RBrace || tok.kind === TokenKind.EOF) {
+        return false;
+      }
+      if (
+        tok.kind === TokenKind.Identifier ||
+        tok.kind === TokenKind.Boolean ||
+        (tok.kind === TokenKind.Keyword && !reserved.has(tok.lexeme.toLowerCase()))
+      ) {
+        sawTarget = true;
+        i++;
+        continue;
+      }
+      if (tok.kind === TokenKind.Comma || tok.kind === TokenKind.Newline) {
+        i++;
+        continue;
+      }
+      return false;
+    }
+    return false;
+  };
   let newlineContinuation = false;
   while (current(state).kind !== TokenKind.EOF) {
     if (current(state).kind === TokenKind.Colon) {
@@ -439,8 +474,16 @@ function parseInlineTargets(
     }
     if (current(state).kind === TokenKind.Newline) {
       if (allowNewlines) {
+        if (newlineContinuation) {
+          if (!looksLikeInlineTargetContinuation()) {
+            break;
+          }
+          skipNewlines(state);
+          newlineContinuation = false;
+          continue;
+        }
         advance(state);
-        if (newlineContinuation || current(state).kind === TokenKind.Colon) {
+        if (current(state).kind === TokenKind.Colon) {
           newlineContinuation = false;
           continue;
         }
