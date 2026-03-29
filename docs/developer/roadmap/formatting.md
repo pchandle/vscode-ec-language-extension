@@ -17,11 +17,16 @@ The recommended sequence is:
 - Block 1: Foundation and safety rails: in progress
 - Block 2: Server-side formatter parity: completed
 - Block 3: Syntax-aware formatting core: in progress
-- Block 4: Block layout and multiline normalization: not started
+- Block 4: Block layout and multiline normalization: in progress
 - Block 5: Selection formatting and range correctness: not started
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: started block-layout normalization by collapsing excessive blank-line runs inside explicitly parsed block bodies while preserving a single blank line. This now applies to parse-success `job` / `def` bodies, `if` branch bodies, and brace-block interiors, and works for both document formatting and range formatting when the selected range fully covers the affected block slice.
+- Scope decision: this slice is limited to parsed explicit body/interior regions where ownership is unambiguous and where extra blank lines can be deleted without guessing. It does not normalize blank lines in malformed recovery mode, top-level statement spacing, multiline header/target continuation regions, or broader blank-line policy around `else` / `end` boundaries.
+- Assumption: collapsing only the second-and-later blank lines inside explicitly parsed block bodies is an “obvious case” under Block 4 that improves readability without introducing disruptive style churn.
+- Lesson captured for future PRs: once the formatter starts making structural deletion edits, range-format expectations need to be scoped to fully selected structural slices rather than assuming later delimiters outside the selection will also be realigned.
+- Next-step implication: the next Block 4 slice should stay focused on another obvious block-layout normalization rule with clear user-visible payoff, most likely surrounding blank-line handling near `else` / `end` boundaries or another narrow multiline-body layout rule, instead of reopening parse-ownership work.
 - Block 3 slice: extended parse-success declaration-header ownership for `def` headers whose first target starts on the line after `)`, including standalone comment-separated continuation lines before `:`. This closes the remaining newline-start header-target asymmetry between `job` and `def`, so those lines now stay inside the parsed `def` header instead of leaking into the body.
 - Scope decision: this slice is limited to parser-backed ownership for newline-start multiline `def` header targets plus formatter-model/output regression coverage that locks in the existing low-disruption indentation for those parsed lines. It does not broaden malformed recovery behavior, declaration-body indentation policy, or general declaration layout.
 - Assumption: `def` headers should share the same newline-start target ownership rules already accepted for `job` headers, so aligning their parser behavior is lower risk than introducing formatter-side correction for the old `def` body leakage.
@@ -47,7 +52,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 3: extend the same parse-success-only ownership model to another declaration-focused slice with clearer formatter-surface impact, most likely a remaining declaration-body-adjacent standalone comment ownership gap or another explicitly parser-owned declaration subregion, while continuing to keep malformed recovery formatting conservative.
+- Block 4: extend block-layout normalization with another obvious, low-churn parsed-region rule, most likely surrounding blank-line handling near `else` / `end` boundaries or another narrow multiline-body layout policy that users will notice during routine formatting.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

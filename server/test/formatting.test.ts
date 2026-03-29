@@ -71,6 +71,27 @@ describe("formatting", () => {
     expect(model.lines[6].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks extra blank lines inside parsed block bodies for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "",
+        "",
+        "    // keep note",
+        "    sub /data/new($)->out",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[2].deleteLine).to.equal(false);
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].desiredIndentColumns).to.equal(4);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -229,6 +250,55 @@ describe("formatting", () => {
         "    $ -> fallback",
         "  end -> result",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses excessive blank lines inside parsed explicit block bodies", () => {
+    const input = [
+      "job /example/test(x):",
+      "",
+      "",
+      "  // keep body note",
+      "  $  ->value",
+      "end",
+      "",
+      "if ready then",
+      "",
+      "",
+      "  // keep then note",
+      "  sub /data/new($)->out",
+      "end",
+      "",
+      "value -> {",
+      "",
+      "",
+      "  // keep block note",
+      "  sub /data/new($)->out",
+      "}",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "",
+        "  // keep body note",
+        "  $ -> value",
+        "end",
+        "",
+        "if ready then",
+        "",
+        "  // keep then note",
+        "  sub /data/new($) -> out",
+        "end",
+        "",
+        "value -> {",
+        "",
+        "  // keep block note",
+        "  sub /data/new($) -> out",
+        "}",
       ].join("\n")
     );
   });
@@ -831,6 +901,34 @@ describe("formatting", () => {
       [
         "job /example/test(x):",
         "  value -> {",
+        "    sub /data/new($) -> out",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses excessive blank lines only inside the selected portion of a parsed block body", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "",
+      "",
+      "  // keep block note",
+      "sub /data/new($)->out",
+      "}",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 2, 6)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "",
+        "    // keep block note",
         "    sub /data/new($) -> out",
         "  }",
         "end",

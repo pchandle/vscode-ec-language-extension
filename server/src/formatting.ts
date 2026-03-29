@@ -18,6 +18,7 @@ export interface FormattingLine {
   safeToFormat: boolean;
   desiredIndentColumns?: number;
   allowIndentOnProtectedLine?: boolean;
+  deleteLine?: boolean;
 }
 
 export interface FormattingCharacterRange {
@@ -46,6 +47,7 @@ export interface FormattingDecision {
   parseMode: FormattingParseMode;
   coveredBySyntax: boolean;
   safeToFormat: boolean;
+  deleteLine: boolean;
 }
 
 const INDENT_SIZE = 2;
@@ -933,6 +935,141 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
   return desiredIndentColumns;
 }
 
+function collectParsedBlankLinesToDelete(document: TextDocument, program: ProgramNode): Set<number> {
+  const blankLinesToDelete = new Set<number>();
+
+  const findLineMatching = (startLine: number, endLine: number, predicate: (text: string) => boolean): number | undefined => {
+    for (let lineIndex = startLine; lineIndex <= endLine; lineIndex++) {
+      if (predicate(getLineText(document, lineIndex))) {
+        return lineIndex;
+      }
+    }
+    return undefined;
+  };
+
+  const findLastLineMatching = (startLine: number, endLine: number, predicate: (text: string) => boolean): number | undefined => {
+    for (let lineIndex = endLine; lineIndex >= startLine; lineIndex--) {
+      if (predicate(getLineText(document, lineIndex))) {
+        return lineIndex;
+      }
+    }
+    return undefined;
+  };
+
+  const markExtraBlankLinesInRange = (startLine: number, endLine: number): void => {
+    let sawBlankLine = false;
+
+    for (let lineIndex = startLine; lineIndex <= endLine; lineIndex++) {
+      if (isBlankLine(getLineText(document, lineIndex))) {
+        if (sawBlankLine) {
+          blankLinesToDelete.add(lineIndex);
+        } else {
+          sawBlankLine = true;
+        }
+        continue;
+      }
+
+      sawBlankLine = false;
+    }
+  };
+
+  const visitDelimitedBody = (
+    startLineIndex: number,
+    body: { range: Range; statements: Statement[] }
+  ): void => {
+    const endLineIndex =
+      findLineMatching(body.range.end.line + 1, document.lineCount - 1, isStandaloneEndLine) ?? body.range.end.line;
+    const bodyStartLine = startLineIndex + 1;
+    const bodyEndLine = endLineIndex - 1;
+
+    if (bodyStartLine <= bodyEndLine) {
+      markExtraBlankLinesInRange(bodyStartLine, bodyEndLine);
+    }
+
+    for (const nestedStatement of body.statements) {
+      visitStatement(nestedStatement);
+    }
+  };
+
+  const visitIf = (
+    ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } }
+  ): void => {
+    const ifLineIndex = ifNode.range.start.line;
+    const elseSearchEndLine = ifNode.elseBlock ? Math.max(ifNode.thenBlock.range.end.line + 1, ifNode.elseBlock.range.start.line) : ifNode.range.end.line;
+    const elseLineIndex =
+      ifNode.elseBlock
+        ? findLineMatching(ifNode.thenBlock.range.end.line + 1, elseSearchEndLine, isStandaloneElseLine)
+        : undefined;
+    const endSearchStartLine = ifNode.elseBlock
+      ? Math.max((elseLineIndex ?? ifNode.elseBlock.range.end.line) + 1, ifNode.elseBlock.range.end.line)
+      : Math.max(ifNode.thenBlock.range.end.line + 1, ifLineIndex + 1);
+    const endLineIndex =
+      findLastLineMatching(endSearchStartLine, ifNode.range.end.line, isStandaloneEndLine) ?? ifNode.range.end.line;
+    const thenSearchEndLine =
+      ifNode.thenBlock.statements[0]?.range.start.line ??
+      elseLineIndex ??
+      endLineIndex;
+    const thenLineIndex =
+      findLineMatching(ifLineIndex, thenSearchEndLine, containsThenKeyword) ?? ifLineIndex;
+
+    const thenBodyStartLine = thenLineIndex + 1;
+    const thenBodyEndLine = (elseLineIndex ?? endLineIndex) - 1;
+    if (thenBodyStartLine <= thenBodyEndLine) {
+      markExtraBlankLinesInRange(thenBodyStartLine, thenBodyEndLine);
+    }
+
+    if (elseLineIndex !== undefined) {
+      const elseBodyStartLine = elseLineIndex + 1;
+      const elseBodyEndLine = endLineIndex - 1;
+      if (elseBodyStartLine <= elseBodyEndLine) {
+        markExtraBlankLinesInRange(elseBodyStartLine, elseBodyEndLine);
+      }
+    }
+
+    for (const nestedStatement of ifNode.thenBlock.statements) {
+      visitStatement(nestedStatement);
+    }
+
+    ifNode.elseBlock?.statements.forEach((nestedStatement: Statement) => visitStatement(nestedStatement));
+  };
+
+  const visitStatement = (statement: Statement): void => {
+    const braceBlocks = collectBraceBlocks(statement);
+
+    for (const block of braceBlocks) {
+      if (!isBraceBlock(document, block)) {
+        continue;
+      }
+
+      const openLineIndex = block.range.start.line;
+      const closeLineIndex = block.range.end.line;
+      if (openLineIndex + 1 <= closeLineIndex - 1) {
+        markExtraBlankLinesInRange(openLineIndex + 1, closeLineIndex - 1);
+      }
+
+      for (const nestedStatement of block.statements) {
+        visitStatement(nestedStatement);
+      }
+    }
+
+    if (statement.kind === NodeKind.Job || statement.kind === NodeKind.Def) {
+      visitDelimitedBody(statement.range.start.line, statement.body);
+      return;
+    }
+
+    const expression = statement.expression as any;
+    if (expression?.kind === NodeKind.If) {
+      visitIf(expression);
+    }
+  };
+
+  for (const statement of program.statements) {
+    visitStatement(statement);
+  }
+
+  return blankLinesToDelete;
+}
+
 function getLineText(document: TextDocument, lineIndex: number): string {
   const line = document.getText({
     start: Position.create(lineIndex, 0),
@@ -1005,6 +1142,8 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
   const parseMode: FormattingParseMode = diagnostics.length > 0 ? "recovery" : "parsed";
   const desiredIndentColumns =
     parseMode === "parsed" ? collectParsedIndentation(document, program) : new Map<number, number>();
+  const blankLinesToDelete =
+    parseMode === "parsed" ? collectParsedBlankLinesToDelete(document, program) : new Set<number>();
   const diagnosticLines = collectDiagnosticLines(diagnostics);
   const syntaxProtectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
   const adjacentStandaloneCommentRanges =
@@ -1041,6 +1180,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       safeToFormat: parseMode === "parsed" || coveredLines.has(lineIndex) || lineProtectedRanges.length > 0 || attachedCommentRange !== null,
       desiredIndentColumns: desiredIndentColumns.get(lineIndex),
       allowIndentOnProtectedLine: linesAllowingProtectedIndent.has(lineIndex),
+      deleteLine: blankLinesToDelete.has(lineIndex),
     });
   }
 
@@ -1058,6 +1198,7 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
 
   for (let lineIndex = request.startLine; lineIndex <= request.endLine; lineIndex++) {
     const line = input.lines[lineIndex];
+    const deleteLine = Boolean(line.deleteLine && line.lineIndex < request.endLine);
     const formattedText = line.safeToFormat
       ? isFullyProtectedLine(line.originalText, line.protectedRanges) && !line.allowIndentOnProtectedLine
         ? formatLineWithProtectedRanges(line.originalText, line.protectedRanges)
@@ -1071,16 +1212,40 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
       parseMode: input.parseMode,
       coveredBySyntax: line.coveredBySyntax,
       safeToFormat: line.safeToFormat,
+      deleteLine,
     });
   }
 
   return decisions;
 }
 
-export function emitFormattingEdits(decisions: FormattingDecision[]): TextEdit[] {
+export function emitFormattingEdits(document: TextDocument, decisions: FormattingDecision[]): TextEdit[] {
   const edits: TextEdit[] = [];
 
-  for (const decision of decisions) {
+  for (let index = 0; index < decisions.length; index++) {
+    const decision = decisions[index];
+
+    if (decision.deleteLine) {
+      const deleteStartLine = decision.lineIndex;
+      let deleteEndLine = decision.lineIndex;
+
+      while (index + 1 < decisions.length && decisions[index + 1].deleteLine && decisions[index + 1].lineIndex === deleteEndLine + 1) {
+        deleteEndLine = decisions[index + 1].lineIndex;
+        index++;
+      }
+
+      edits.push(
+        TextEdit.replace(
+          Range.create(
+            Position.create(deleteStartLine, 0),
+            Position.create(deleteEndLine + 1, 0)
+          ),
+          ""
+        )
+      );
+      continue;
+    }
+
     if (decision.formattedText !== decision.originalText) {
       edits.push(
         TextEdit.replace(
@@ -1100,11 +1265,11 @@ export function emitFormattingEdits(decisions: FormattingDecision[]): TextEdit[]
 export function formatDocument(document: TextDocument): TextEdit[] {
   const input = buildFormattingInput(document);
   const decisions = planFormatting(input, { startLine: 0, endLine: document.lineCount - 1 });
-  return emitFormattingEdits(decisions);
+  return emitFormattingEdits(document, decisions);
 }
 
 export function formatDocumentRange(document: TextDocument, startLine: number, endLine: number): TextEdit[] {
   const input = buildFormattingInput(document);
   const decisions = planFormatting(input, { startLine, endLine });
-  return emitFormattingEdits(decisions);
+  return emitFormattingEdits(document, decisions);
 }

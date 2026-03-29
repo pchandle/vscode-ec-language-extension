@@ -908,7 +908,7 @@
     "kind": "range",
     "range": {
       "startLine": 2,
-      "endLine": 5
+      "endLine": 6
     },
     "inputLines": [
       "job /example/test(x):",
@@ -1389,6 +1389,67 @@
       "  // keep obligation note",
       "  $ -> second",
       "}"
+    ]
+  },
+  {
+    "name": "document collapses excessive blank lines inside parsed explicit block bodies",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "",
+      "",
+      "  // keep body note",
+      "  $  ->value",
+      "end",
+      "",
+      "value -> {",
+      "",
+      "",
+      "  // keep block note",
+      "  sub /data/new($)->out",
+      "}"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "",
+      "  // keep body note",
+      "  $ -> value",
+      "end",
+      "",
+      "value -> {",
+      "",
+      "  // keep block note",
+      "  sub /data/new($) -> out",
+      "}"
+    ]
+  },
+  {
+    "name": "range formatting collapses excessive blank lines inside parsed block bodies",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 2,
+      "endLine": 6
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "",
+      "",
+      "  // keep block note",
+      "sub /data/new($)->out",
+      "}",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  value -> {",
+      "",
+      "    // keep block note",
+      "    sub /data/new($) -> out",
+      "  }",
+      "end"
     ]
   }
 ]
