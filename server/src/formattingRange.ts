@@ -33,12 +33,27 @@ export function normalizeRangeToTouchedLines(
     endLine = startLine;
   }
 
-  startLine = expandThenHeaderSuffix(document, startLine, endLine);
-  startLine = expandBareEndOwnedSuffix(document, startLine, endLine);
-  endLine = expandElseBodyPrefix(document, startLine, endLine);
-  endLine = expandEndArrowContinuationPrefix(document, startLine, endLine);
+  ({ startLine, endLine } = applyStandaloneIfDelimiterExpansions(document, startLine, endLine));
 
   return { startLine, endLine };
+}
+
+function applyStandaloneIfDelimiterExpansions(
+  document: TextDocument,
+  startLine: number,
+  endLine: number
+): NormalizedFormattingRange {
+  // Block 5 range policy stays intentionally narrow for now:
+  // only standalone if-delimiter lines promote the selection to their nearest owned slice.
+  let expandedStartLine = startLine;
+  let expandedEndLine = endLine;
+
+  expandedStartLine = expandThenHeaderSuffix(document, expandedStartLine, expandedEndLine);
+  expandedStartLine = expandBareEndOwnedSuffix(document, expandedStartLine, expandedEndLine);
+  expandedEndLine = expandElseBodyPrefix(document, expandedStartLine, expandedEndLine);
+  expandedEndLine = expandEndArrowContinuationPrefix(document, expandedStartLine, expandedEndLine);
+
+  return { startLine: expandedStartLine, endLine: expandedEndLine };
 }
 
 function clampLine(line: number, lineCount: number): number {

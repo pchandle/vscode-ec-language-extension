@@ -1162,6 +1162,38 @@ describe("formatting", () => {
     );
   });
 
+  it("keeps a selected multiline if-header content line line-bounded", () => {
+    const input = [
+      "if ready &&",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(1, 1), Position.create(1, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 1,
+      endLine: 1,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "  available",
+        "then",
+        "sub /data/new($)->out",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("formats a selected standalone then line together with its immediate header suffix", () => {
     const input = [
       "if ready &&",

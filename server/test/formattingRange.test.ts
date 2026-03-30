@@ -73,6 +73,30 @@ describe("formattingRange", () => {
     });
   });
 
+  it("keeps a multiline if-header content line line-bounded", () => {
+    const document = createDocument(
+      ["if ready &&", "available", "then", "sub /data/new($)->out", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(1, 1), Position.create(1, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 1,
+      endLine: 1,
+    });
+  });
+
+  it("keeps a same-line if-then header selection line-bounded", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(0, 1), Position.create(0, 8));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 0,
+      endLine: 0,
+    });
+  });
+
   it("expands a selection touching a standalone then line backward to include the immediate header suffix", () => {
     const document = createDocument(
       ["if ready &&", "available", "then", "sub /data/new($)->out", "end"].join("\n")
