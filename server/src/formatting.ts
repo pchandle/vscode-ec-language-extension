@@ -1000,6 +1000,25 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
   };
 
+  const markDelimiterLeadingCommentGap = (delimiterLineIndex: number): void => {
+    const blankLinesBetweenDelimiterAndComment: number[] = [];
+
+    for (let lineIndex = delimiterLineIndex + 1; lineIndex < document.lineCount; lineIndex++) {
+      const lineText = getLineText(document, lineIndex);
+
+      if (isBlankLine(lineText)) {
+        blankLinesBetweenDelimiterAndComment.push(lineIndex);
+        continue;
+      }
+
+      if (blankLinesBetweenDelimiterAndComment.length > 0 && isStandaloneLineComment(lineText)) {
+        blankLinesBetweenDelimiterAndComment.forEach((blankLineIndex) => blankLinesToDelete.add(blankLineIndex));
+      }
+
+      break;
+    }
+  };
+
   const visitDelimitedBody = (
     startLineIndex: number,
     body: { range: Range; statements: Statement[] }
@@ -1166,6 +1185,10 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       const closeLineIndex = block.range.end.line;
       if (openLineIndex + 1 <= closeLineIndex - 1) {
         markExtraBlankLinesInRange(openLineIndex + 1, closeLineIndex - 1);
+      }
+
+      if (closeLineIndex > openLineIndex) {
+        markDelimiterLeadingCommentGap(openLineIndex);
       }
 
       if (closeLineIndex > openLineIndex) {

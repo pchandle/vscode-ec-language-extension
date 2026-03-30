@@ -89,7 +89,7 @@ describe("formatting", () => {
     const model = buildFormattingInput(input);
 
     expect(model.parseMode).to.equal("parsed");
-    expect(model.lines[2].deleteLine).to.equal(false);
+    expect(model.lines[2].deleteLine).to.equal(true);
     expect(model.lines[3].deleteLine).to.equal(true);
     expect(model.lines[4].desiredIndentColumns).to.equal(4);
   });
@@ -345,6 +345,26 @@ describe("formatting", () => {
     expect(model.lines[5].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed brace-block open delimiters and a following standalone comment group for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "",
+        "",
+        "    // keep open note",
+        "    sub /data/new($) -> out",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[2].deleteLine).to.equal(true);
+    expect(model.lines[3].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -548,7 +568,6 @@ describe("formatting", () => {
         "end",
         "",
         "value -> {",
-        "",
         "  // keep block note",
         "  sub /data/new($) -> out",
         "}",
@@ -870,6 +889,32 @@ describe("formatting", () => {
         "  value -> {",
         "    sub /data/new($) -> out",
         "    // keep close note",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed brace-block open delimiters and following standalone comment groups", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "",
+      "",
+      "    // keep open note",
+      "    sub /data/new($) -> out",
+      "  }",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    // keep open note",
+        "    sub /data/new($) -> out",
         "  }",
         "end",
       ].join("\n")
@@ -1500,7 +1545,6 @@ describe("formatting", () => {
       [
         "job /example/test(x):",
         "  value -> {",
-        "",
         "    // keep block note",
         "    sub /data/new($) -> out",
         "  }",
@@ -1836,6 +1880,33 @@ describe("formatting", () => {
         "  value -> {",
         "    sub /data/new($) -> out",
         "    // keep close note",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed brace blocks with comment-attached open delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "",
+      "",
+      "    // keep open note",
+      "    sub /data/new($) -> out",
+      "  }",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 6)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    // keep open note",
+        "    sub /data/new($) -> out",
         "  }",
         "end",
       ].join("\n")

@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed delimiter-adjacent blank-line normalization to collapse blank lines between parsed brace-block open delimiters and a following standalone comment group. Comment groups that annotate the first owned content inside a `{ ... }` block now stay visually attached to the opening boundary instead of preserving spacer blank lines after the open.
+- Scope decision: this slice is limited to parse-success brace-block openings whose `{ ... }` ownership is already explicit in the parsed formatter model. It does not change malformed recovery behavior, brace-block interior blank-line policy beyond the existing repeated-blank-line rule, brace-close behavior beyond the already completed close-adjacency slice, or broader block-opening style.
+- Assumption: once parsed brace-block close delimiters already had matching comment-attachment cleanup, the symmetric brace-block open case was the next smallest explicit boundary with similarly clear ownership and low review noise.
+- Lesson captured for future PRs: delimiter-adjacent comment-attachment work is easiest to reason about when an opening and closing boundary family are completed symmetrically before moving on to broader layout policy.
+- Next-step implication: Block 4 should now pause brace-specific delimiter-adjacent cleanup unless another equally explicit non-brace boundary gap still has concrete user-visible payoff; otherwise the next PR should move to a different narrow multiline-layout improvement.
 - Block 4 slice: extended parsed delimiter-adjacent blank-line normalization to collapse blank lines between standalone comment groups and parsed brace-block close delimiters. Comment groups that annotate a closing `}` now stay visually attached to that owned boundary instead of preserving spacer blank lines before the close.
 - Scope decision: this slice is limited to parse-success brace-block closures whose `{ ... }` ownership is already explicit in the parsed formatter model. It does not change malformed recovery behavior, brace-block interior blank-line policy beyond the existing repeated-blank-line rule, declaration or `if` delimiter behavior, or broader brace-layout style.
 - Assumption: after parsed declaration `end` closures, brace-block close delimiters were the next smallest non-`if`, non-continuation owned boundary with the same clear “comment annotates the closer” relationship and low style-churn risk.
@@ -177,7 +182,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: continue only if another equally explicit parser-owned boundary still shows a concrete delimiter/body adjacency gap; otherwise pause delimiter-adjacent cleanup and move to a different narrow structural layout improvement rather than broadening blank-line heuristics.
+- Block 4: pause delimiter-adjacent cleanup unless another equally explicit parser-owned boundary shows a concrete uncovered gap; otherwise move to a different narrow multiline-layout improvement rather than broadening blank-line heuristics.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
