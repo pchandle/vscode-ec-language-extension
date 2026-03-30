@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: collapsed pure blank-line gaps at parsed `if` branch starts so `then` / `else` boundaries now attach directly to the first owned branch statement when no standalone comment group occupies that opening slot. Parse-success branch bodies no longer preserve a spacer blank line between the branch boundary and the first statement.
+- Scope decision: this slice is limited to parse-success `if` branch openings where the first nonblank line after `then` or `else` is branch content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached branch openings beyond the already completed slice, declaration/brace/continuation body starts, or broader blank-line policy inside branches.
+- Assumption: after declaration body-start blank gaps, parsed `if` branch starts were the next smallest equally explicit owned family because the formatter already has stable branch-boundary lookup and body ownership for both `then` and `else`.
+- Lesson captured for future PRs: once a pure blank-gap opening rule proves stable for one owned family, the safest follow-up is the matching family whose boundary lookup already exists in the parsed layout path, not a generic “remove leading blank lines everywhere” expansion.
+- Next-step implication: the next Block 4 slice should either apply the same pure-blank-gap opening rule to one more equally explicit owned family, if one still has clear payoff, or move to a different small multiline-layout improvement instead of broadening opening-gap removal heuristically.
 - Block 4 slice: collapsed pure blank-line gaps at parsed `job` / `def` body starts so declaration headers now attach directly to the first owned body statement when no standalone comment group occupies that opening slot. Parse-success declaration bodies no longer preserve a spacer blank line between the header boundary and the first statement.
 - Scope decision: this slice is limited to parse-success declaration body openings for `job` / `def` where the first nonblank line after the header boundary is body content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached declaration openings beyond the already completed slice, `if` / brace / continuation body starts, or broader blank-line policy inside declaration bodies.
 - Assumption: after exhausting the explicit opening-boundary comment-attachment families, declaration body starts were the smallest remaining parser-owned layout boundary where removing a pure blank spacer before the first statement is still an obvious, low-ambiguity improvement.
@@ -217,7 +222,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: either mirror the new pure-blank-gap body-opening rule for one more equally explicit owned family, most likely parsed `if` branch starts, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of opening blank lines.
+- Block 4: either apply the pure-blank-gap opening rule to one more equally explicit owned family, if another still has clear user-visible payoff, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of opening blank lines.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

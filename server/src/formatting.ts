@@ -1182,6 +1182,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     if (thenBodyStartLine <= thenBodyEndLine) {
       markExtraBlankLinesInRange(thenBodyStartLine, thenBodyEndLine);
       markDelimiterLeadingCommentGap(thenLineIndex);
+      markDelimiterLeadingContentGap(thenLineIndex);
     }
 
     if (elseLineIndex !== undefined) {
@@ -1190,6 +1191,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       if (elseBodyStartLine <= elseBodyEndLine) {
         markExtraBlankLinesInRange(elseBodyStartLine, elseBodyEndLine);
         markDelimiterLeadingCommentGap(elseLineIndex);
+        markDelimiterLeadingContentGap(elseLineIndex);
       }
 
       markCommentAdjacentDelimiterGap(elseLineIndex);
