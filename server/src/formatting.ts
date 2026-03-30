@@ -1232,6 +1232,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
 
       if (closeLineIndex > openLineIndex) {
         markDelimiterLeadingCommentGap(openLineIndex);
+        markDelimiterLeadingContentGap(openLineIndex);
       }
 
       if (closeLineIndex > openLineIndex) {

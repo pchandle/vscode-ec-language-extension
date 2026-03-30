@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: collapsed pure blank-line gaps at parsed brace-block opens so `{` now attaches directly to the first owned block content line when no standalone comment group occupies that opening slot. Parse-success brace blocks no longer preserve a spacer blank line between the open delimiter and the first block statement.
+- Scope decision: this slice is limited to parse-success brace-block openings where the first nonblank line after `{` is block content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached brace openings beyond the already completed slice, declaration/branch/continuation openings, or broader brace interior blank-line policy.
+- Assumption: after pure blank-gap cleanup at declaration, branch, and `end ->` starts, brace-block openings were the last equally explicit owned opening family with clear parser-owned boundaries and user-visible payoff.
+- Lesson captured for future PRs: once the explicit owned opening families are exhausted, further Block 4 work should move to a different structural layout improvement rather than continuing to broaden opening-gap removal across weaker boundary shapes.
+- Next-step implication: the next Block 4 slice should move to a different small multiline-layout improvement instead of continuing the pure-blank-gap opening thread, unless another equally explicit owned opening family is discovered during implementation.
 - Block 4 slice: collapsed pure blank-line gaps at parsed multiline `end ->` continuation starts so the `end ->` boundary now attaches directly to the first owned continuation line when no standalone comment group occupies that opening slot. Parse-success trailing-target continuations no longer preserve a spacer blank line between `end ->` and the first continuation target.
 - Scope decision: this slice is limited to parse-success multiline `if` trailing-target continuation openings where the first nonblank line after `end ->` is continuation content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached `end ->` openings beyond the already completed slice, branch/declaration/brace openings, or broader continuation blank-line policy.
 - Assumption: after pure blank-gap cleanup at declaration and `if` branch starts, multiline `end ->` continuation starts were the next smallest equally explicit owned opening family because the formatter already treats that region as a parser-owned continuation slice.
@@ -227,7 +232,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: either apply the pure-blank-gap opening rule to one last equally explicit owned family, if another still has clear user-visible payoff, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of opening blank lines.
+- Block 4: move to a different small multiline-layout improvement instead of continuing the pure-blank-gap opening thread, unless another equally explicit owned opening family is discovered during implementation.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
