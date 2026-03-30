@@ -1390,6 +1390,46 @@ describe("formatting", () => {
     );
   });
 
+  it("keeps an inner else-body selection anchored to the inner slice instead of cascading to the enclosing if", () => {
+    const input = [
+      "if outer then",
+      "  if inner then",
+      "    sub /data/new($)->out",
+      "  else",
+      "    $  ->fallback",
+      "  end",
+      "else",
+      "  $ -> outerFallback",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(4, 1), Position.create(4, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 3,
+      endLine: 4,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if outer then",
+        "  if inner then",
+        "    sub /data/new($)->out",
+        "  else",
+        "    $ -> fallback",
+        "  end",
+        "else",
+        "  $ -> outerFallback",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("formats a selected end-arrow delimiter line together with its immediate continuation prefix", () => {
     const input = [
       "if ready then",

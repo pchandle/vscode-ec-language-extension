@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: hardened the current owned-slice contract so expansion rules trigger only from the originally touched lines, not from lines that were added by an earlier range-expansion step. Range formatting now makes that “no cascading into enclosing slices” policy explicit in the server helper, with nested-range regressions that keep an inner structural slice from growing into its enclosing `if`.
+- Scope decision: this slice does not add a new owned-slice rule. It keeps the existing standalone-delimiter and first-owned-line promotions, but freezes them as non-cascading expansions rooted only in the user’s touched lines. Document-formatting behavior is unchanged.
+- Assumption: after the narrow `then` / `else` / bare `end` / multiline `end ->` and first-owned-line rules were in place, the smallest reviewable next step was to codify their stop condition instead of adding another boundary case that would risk drifting toward enclosing-unit expansion.
+- Lesson captured for future PRs: once a range-formatting policy depends on multiple small structural promotions, the contract must specify not just what expands, but also that newly expanded lines do not themselves become triggers for broader expansion.
+- Next-step implication: the next Block 5 slice should make the final decision on whether any remaining concrete partial-selection case still justifies a new nearest-boundary rule, or whether Block 5 should conclude with the current non-cascading owned-slice contract.
 - Block 5 slice: extended owned-slice expansion to the first `then`-body content line by promoting a selected first body line backward to the nearest `then` boundary line, whether that boundary is same-line `if ... then` or a standalone `then`. Range formatting now treats the first selected then-body line together with its leading blank/comment suffix and the nearest `then` boundary as one small structural then slice instead of formatting only the touched body line.
 - Scope decision: this slice is limited to the first then-body content line whose nearest preceding owned boundary contains `then`. Later then-body content lines remain line-bounded, the selection does not expand to the full enclosing `if`, and document-formatting behavior is unchanged.
 - Assumption: after the first else-body and first multiline `end ->` continuation-content rules, the most defensible remaining owned-slice promotion is the matching first then-body content line, because it has the same “first body line without its boundary” weakness while still avoiding enclosing-unit expansion.
@@ -122,7 +127,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: decide whether any concrete partial-selection case still justifies another first-owned-line rule, or whether Block 5 should now conclude with the current narrow range-formatting contract.
+- Block 5: decide whether any remaining concrete partial-selection case still justifies another nearest-boundary owned-slice rule, or whether Block 5 should now conclude with the current non-cascading range-formatting contract.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

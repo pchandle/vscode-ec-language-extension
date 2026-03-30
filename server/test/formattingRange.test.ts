@@ -269,6 +269,28 @@ describe("formattingRange", () => {
     });
   });
 
+  it("keeps an inner else-body selection anchored to the inner slice instead of cascading to the enclosing if", () => {
+    const document = createDocument(
+      [
+        "if outer then",
+        "  if inner then",
+        "    sub /data/new($)->out",
+        "  else",
+        "    $  ->fallback",
+        "  end",
+        "else",
+        "  $ -> outerFallback",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(4, 1), Position.create(4, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 3,
+      endLine: 4,
+    });
+  });
+
   it("expands a selection touching an end-arrow continuation line to include the immediate continuation line", () => {
     const document = createDocument(
       ["if ready then", "  sub /data/new($)->out", "end -> result1,", "result2"].join("\n")

@@ -33,29 +33,35 @@ export function normalizeRangeToTouchedLines(
     endLine = startLine;
   }
 
-  ({ startLine, endLine } = applyStandaloneIfDelimiterExpansions(document, startLine, endLine));
+  const touchedStartLine = startLine;
+  const touchedEndLine = endLine;
+
+  ({ startLine, endLine } = applyStandaloneIfDelimiterExpansions(document, touchedStartLine, touchedEndLine, startLine, endLine));
 
   return { startLine, endLine };
 }
 
 function applyStandaloneIfDelimiterExpansions(
   document: TextDocument,
+  touchedStartLine: number,
+  touchedEndLine: number,
   startLine: number,
   endLine: number
 ): NormalizedFormattingRange {
   // Block 5 range policy stays intentionally narrow:
   // only a few explicit if-header/delimiter cases promote the selection to their nearest owned slice.
+  // Rules trigger from the originally touched lines so expansions do not cascade into enclosing-unit behavior.
   let expandedStartLine = startLine;
   let expandedEndLine = endLine;
 
-  expandedStartLine = expandThenHeaderSuffix(document, expandedStartLine, expandedEndLine);
-  expandedStartLine = expandThenBodyContentPrefix(document, expandedStartLine, expandedEndLine);
-  expandedStartLine = expandBareEndOwnedSuffix(document, expandedStartLine, expandedEndLine);
-  expandedStartLine = expandEndArrowContentPrefix(document, expandedStartLine, expandedEndLine);
-  expandedStartLine = expandElseBodyContentPrefix(document, expandedStartLine, expandedEndLine);
-  expandedEndLine = expandIfHeaderContentSuffix(document, expandedStartLine, expandedEndLine);
-  expandedEndLine = expandElseBodyPrefix(document, expandedStartLine, expandedEndLine);
-  expandedEndLine = expandEndArrowContinuationPrefix(document, expandedStartLine, expandedEndLine);
+  expandedStartLine = expandThenHeaderSuffix(document, touchedStartLine, touchedEndLine, expandedStartLine);
+  expandedStartLine = expandThenBodyContentPrefix(document, touchedStartLine, touchedEndLine, expandedStartLine);
+  expandedStartLine = expandBareEndOwnedSuffix(document, touchedStartLine, touchedEndLine, expandedStartLine);
+  expandedStartLine = expandEndArrowContentPrefix(document, touchedStartLine, touchedEndLine, expandedStartLine);
+  expandedStartLine = expandElseBodyContentPrefix(document, touchedStartLine, touchedEndLine, expandedStartLine);
+  expandedEndLine = expandIfHeaderContentSuffix(document, touchedStartLine, touchedEndLine, expandedEndLine);
+  expandedEndLine = expandElseBodyPrefix(document, touchedStartLine, touchedEndLine, expandedEndLine);
+  expandedEndLine = expandEndArrowContinuationPrefix(document, touchedStartLine, touchedEndLine, expandedEndLine);
 
   return { startLine: expandedStartLine, endLine: expandedEndLine };
 }
@@ -121,10 +127,8 @@ function isExpandableThenBodyContentLine(document: TextDocument, line: number): 
   return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isThenBoundaryLine(document, line);
 }
 
-function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedStartLine = startLine;
-
-  for (let line = endLine; line >= expandedStartLine; line--) {
+function expandThenHeaderSuffix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedStartLine: number): number {
+  for (let line = touchedEndLine; line >= touchedStartLine; line--) {
     if (!isStandaloneThenLine(document, line)) {
       continue;
     }
@@ -147,10 +151,8 @@ function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLi
   return expandedStartLine;
 }
 
-function expandThenBodyContentPrefix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedStartLine = startLine;
-
-  for (let line = endLine; line >= expandedStartLine; line--) {
+function expandThenBodyContentPrefix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedStartLine: number): number {
+  for (let line = touchedEndLine; line >= touchedStartLine; line--) {
     if (!isExpandableThenBodyContentLine(document, line)) {
       continue;
     }
@@ -185,10 +187,8 @@ function expandThenBodyContentPrefix(document: TextDocument, startLine: number, 
   return expandedStartLine;
 }
 
-function expandElseBodyContentPrefix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedStartLine = startLine;
-
-  for (let line = endLine; line >= expandedStartLine; line--) {
+function expandElseBodyContentPrefix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedStartLine: number): number {
+  for (let line = touchedEndLine; line >= touchedStartLine; line--) {
     if (!isExpandableElseBodyContentLine(document, line)) {
       continue;
     }
@@ -223,10 +223,8 @@ function expandElseBodyContentPrefix(document: TextDocument, startLine: number, 
   return expandedStartLine;
 }
 
-function expandEndArrowContentPrefix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedStartLine = startLine;
-
-  for (let line = endLine; line >= expandedStartLine; line--) {
+function expandEndArrowContentPrefix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedStartLine: number): number {
+  for (let line = touchedEndLine; line >= touchedStartLine; line--) {
     if (!isExpandableEndArrowContentLine(document, line)) {
       continue;
     }
@@ -262,10 +260,8 @@ function expandEndArrowContentPrefix(document: TextDocument, startLine: number, 
   return expandedStartLine;
 }
 
-function expandIfHeaderContentSuffix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedEndLine = endLine;
-
-  for (let line = startLine; line <= expandedEndLine; line++) {
+function expandIfHeaderContentSuffix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedEndLine: number): number {
+  for (let line = touchedStartLine; line <= touchedEndLine; line++) {
     if (!isExpandableIfHeaderContentLine(document, line)) {
       continue;
     }
@@ -298,10 +294,8 @@ function expandIfHeaderContentSuffix(document: TextDocument, startLine: number, 
   return expandedEndLine;
 }
 
-function expandBareEndOwnedSuffix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedStartLine = startLine;
-
-  for (let line = endLine; line >= expandedStartLine; line--) {
+function expandBareEndOwnedSuffix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedStartLine: number): number {
+  for (let line = touchedEndLine; line >= touchedStartLine; line--) {
     if (!isBareEndLine(document, line)) {
       continue;
     }
@@ -324,10 +318,8 @@ function expandBareEndOwnedSuffix(document: TextDocument, startLine: number, end
   return expandedStartLine;
 }
 
-function expandElseBodyPrefix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedEndLine = endLine;
-
-  for (let line = startLine; line <= expandedEndLine; line++) {
+function expandElseBodyPrefix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedEndLine: number): number {
+  for (let line = touchedStartLine; line <= touchedEndLine; line++) {
     if (!isStandaloneElseLine(document, line)) {
       continue;
     }
@@ -350,10 +342,8 @@ function expandElseBodyPrefix(document: TextDocument, startLine: number, endLine
   return expandedEndLine;
 }
 
-function expandEndArrowContinuationPrefix(document: TextDocument, startLine: number, endLine: number): number {
-  let expandedEndLine = endLine;
-
-  for (let line = startLine; line <= expandedEndLine; line++) {
+function expandEndArrowContinuationPrefix(document: TextDocument, touchedStartLine: number, touchedEndLine: number, expandedEndLine: number): number {
+  for (let line = touchedStartLine; line <= touchedEndLine; line++) {
     if (!isEndArrowContinuationLine(document, line)) {
       continue;
     }
