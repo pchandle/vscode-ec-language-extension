@@ -50,6 +50,7 @@ function applyStandaloneIfDelimiterExpansions(
 
   expandedStartLine = expandThenHeaderSuffix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandBareEndOwnedSuffix(document, expandedStartLine, expandedEndLine);
+  expandedStartLine = expandEndArrowContentPrefix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandIfHeaderContentSuffix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandElseBodyPrefix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandEndArrowContinuationPrefix(document, expandedStartLine, expandedEndLine);
@@ -102,6 +103,10 @@ function isExpandableIfHeaderContentLine(document: TextDocument, line: number): 
   return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isStandaloneThenLine(document, line);
 }
 
+function isExpandableEndArrowContentLine(document: TextDocument, line: number): boolean {
+  return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isEndArrowContinuationLine(document, line);
+}
+
 function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLine: number): number {
   let expandedStartLine = startLine;
 
@@ -122,6 +127,43 @@ function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLi
       }
 
       break;
+    }
+  }
+
+  return expandedStartLine;
+}
+
+function expandEndArrowContentPrefix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedStartLine = startLine;
+
+  for (let line = endLine; line >= expandedStartLine; line--) {
+    if (!isExpandableEndArrowContentLine(document, line)) {
+      continue;
+    }
+
+    let candidateStartLine: number | null = null;
+
+    for (let previousLine = line - 1; previousLine >= 0; previousLine--) {
+      if (isEndArrowContinuationLine(document, previousLine)) {
+        candidateStartLine = previousLine;
+        break;
+      }
+
+      if (isStandaloneElseLine(document, previousLine) || isStandaloneEndLine(document, previousLine)) {
+        break;
+      }
+
+      if (isBlankLine(document, previousLine) || isStandaloneLineComment(document, previousLine)) {
+        candidateStartLine = previousLine;
+        continue;
+      }
+
+      candidateStartLine = previousLine;
+      break;
+    }
+
+    if (candidateStartLine !== null && isEndArrowContinuationLine(document, candidateStartLine)) {
+      expandedStartLine = Math.min(expandedStartLine, candidateStartLine);
     }
   }
 

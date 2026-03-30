@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: extended range expansion to the matching multiline `end ->` continuation-content case by promoting a selected first continuation content line backward to the `end ->` delimiter it still belongs to. Range formatting now treats the first selected continuation target together with its leading blank/comment suffix and multiline `end ->` delimiter as one small structural continuation slice instead of formatting only the touched continuation line.
+- Scope decision: this slice is limited to the first multiline `end ->` continuation content line whose nearest preceding owned boundary is a multiline `end ->` delimiter. It does not expand same-line `end -> result` selections, does not jump backward across another nontrivia content line, does not expand to the full enclosing `if`, and does not change document-formatting behavior.
+- Assumption: once multiline header-content selection gained its standalone `then` suffix, the next smallest worthwhile non-delimiter counterpart is the first continuation-content line after a multiline `end ->` delimiter, because leaving that line without its delimiter prefix is similarly weak but still narrower than general enclosing-unit expansion.
+- Lesson captured for future PRs: owned-slice expansion can broaden safely beyond standalone delimiters when it remains anchored to the nearest concrete syntax boundary and refuses to cross another content line.
+- Next-step implication: the next Block 5 slice should decide whether any remaining concrete partial-selection case still needs owned-slice promotion or whether the formatter should stop here short of a general enclosing-unit policy.
 - Block 5 slice: extended range expansion to the first concrete non-delimiter partial-selection case by promoting a selected multiline `if` header content line forward to the standalone `then` suffix it still owns. Range formatting now treats a selected multiline header continuation together with its trailing blank/comment suffix and standalone `then` line as one small structural header slice instead of formatting only the touched content line.
 - Scope decision: this slice is limited to multiline `if` header content lines that have a standalone `then` ahead of them. Same-line `if ... then` headers remain line-bounded, the selection does not expand to the full enclosing `if`, and document-formatting behavior is unchanged.
 - Assumption: leaving a selected multiline header continuation line without its trailing standalone `then` suffix is the first remaining partial-selection case weak enough to justify moving beyond the previously documented standalone-delimiter contract, while still keeping the policy narrower than general enclosing-unit expansion.
@@ -102,7 +107,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: evaluate whether another concrete remaining partial-selection case justifies additional owned-slice expansion, or whether range formatting should stop short of a general enclosing-unit policy.
+- Block 5: evaluate whether any remaining concrete partial-selection case still justifies owned-slice expansion, or whether range formatting should now stop short of a general enclosing-unit policy.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

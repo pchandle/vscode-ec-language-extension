@@ -193,6 +193,38 @@ describe("formattingRange", () => {
     });
   });
 
+  it("expands a selected first end-arrow continuation content line backward to the delimiter", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "end -> result1,", "result2", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(3, 1), Position.create(3, 6));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 3,
+    });
+  });
+
+  it("expands a selected first end-arrow continuation content line backward through blank and comment suffix lines", () => {
+    const document = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "end -> result1,",
+        "",
+        "// keep target note",
+        "result2",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(5, 1), Position.create(5, 6));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 5,
+    });
+  });
+
   it("expands an end-arrow selection through blank and comment prefixes before the first continuation line", () => {
     const document = createDocument(
       [
