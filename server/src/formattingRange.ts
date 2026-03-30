@@ -51,6 +51,7 @@ function applyStandaloneIfDelimiterExpansions(
   expandedStartLine = expandThenHeaderSuffix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandBareEndOwnedSuffix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandEndArrowContentPrefix(document, expandedStartLine, expandedEndLine);
+  expandedStartLine = expandElseBodyContentPrefix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandIfHeaderContentSuffix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandElseBodyPrefix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandEndArrowContinuationPrefix(document, expandedStartLine, expandedEndLine);
@@ -107,6 +108,10 @@ function isExpandableEndArrowContentLine(document: TextDocument, line: number): 
   return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isEndArrowContinuationLine(document, line);
 }
 
+function isExpandableElseBodyContentLine(document: TextDocument, line: number): boolean {
+  return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isStandaloneElseLine(document, line);
+}
+
 function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLine: number): number {
   let expandedStartLine = startLine;
 
@@ -127,6 +132,44 @@ function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLi
       }
 
       break;
+    }
+  }
+
+  return expandedStartLine;
+}
+
+function expandElseBodyContentPrefix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedStartLine = startLine;
+
+  for (let line = endLine; line >= expandedStartLine; line--) {
+    if (!isExpandableElseBodyContentLine(document, line)) {
+      continue;
+    }
+
+    // Only the first else-body content line can claim the standalone `else` delimiter as its nearest owned boundary.
+    let candidateStartLine: number | null = null;
+
+    for (let previousLine = line - 1; previousLine >= 0; previousLine--) {
+      if (isStandaloneElseLine(document, previousLine)) {
+        candidateStartLine = previousLine;
+        break;
+      }
+
+      if (isStandaloneEndLine(document, previousLine)) {
+        break;
+      }
+
+      if (isBlankLine(document, previousLine) || isStandaloneLineComment(document, previousLine)) {
+        candidateStartLine = previousLine;
+        continue;
+      }
+
+      candidateStartLine = previousLine;
+      break;
+    }
+
+    if (candidateStartLine !== null && isStandaloneElseLine(document, candidateStartLine)) {
+      expandedStartLine = Math.min(expandedStartLine, candidateStartLine);
     }
   }
 

@@ -73,6 +73,50 @@ describe("formattingRange", () => {
     });
   });
 
+  it("expands a selected first else-body content line backward to the else delimiter", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "else", "$  ->fallback", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(3, 1), Position.create(3, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 3,
+    });
+  });
+
+  it("expands a selected first else-body content line backward through blank and comment suffix lines", () => {
+    const document = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "else",
+        "",
+        "// keep fallback note",
+        "$  ->fallback",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(5, 1), Position.create(5, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 5,
+    });
+  });
+
+  it("keeps a later else-body content line line-bounded", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "else", "$ -> fallback1", "$ -> fallback2", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(4, 1), Position.create(4, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 4,
+      endLine: 4,
+    });
+  });
+
   it("expands a multiline if-header content line forward to the standalone then suffix", () => {
     const document = createDocument(
       ["if ready &&", "available", "then", "sub /data/new($)->out", "end"].join("\n")

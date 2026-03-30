@@ -1162,6 +1162,74 @@ describe("formatting", () => {
     );
   });
 
+  it("formats a selected first else-body content line together with the else delimiter prefix", () => {
+    const input = [
+      "if ready then",
+      "sub /data/new($)->out",
+      "else",
+      "// keep fallback note",
+      "$  ->fallback",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(4, 1), Position.create(4, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 2,
+      endLine: 4,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "sub /data/new($)->out",
+        "else",
+        "  // keep fallback note",
+        "  $ -> fallback",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps a selected later else-body content line line-bounded", () => {
+    const input = [
+      "if ready then",
+      "sub /data/new($)->out",
+      "else",
+      "$ -> fallback1",
+      "$  ->fallback2",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(4, 1), Position.create(4, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 4,
+      endLine: 4,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "sub /data/new($)->out",
+        "else",
+        "$ -> fallback1",
+        "  $ -> fallback2",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("formats a selected multiline if-header content line together with the standalone then suffix", () => {
     const input = [
       "if ready &&",
