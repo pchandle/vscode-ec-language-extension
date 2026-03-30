@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: clarified the matching bare `end`-adjacent selection rule by expanding a range that touches a standalone `end` line backward to include the immediate owned suffix above it. Range formatting now treats a bare `end` together with its trailing body/comment suffix as a small structural unit instead of formatting only the delimiter line in isolation.
+- Scope decision: this slice is limited to standalone bare `end` selections and expands only backward through blank/comment suffix lines to the first preceding content line. It does not special-case `end ->` continuation lines yet, does not expand to the whole enclosing construct, and does not alter document-formatting behavior.
+- Assumption: a selected bare `end` line is not useful in isolation when the immediately preceding body/comment suffix remains untouched, so this backward expansion is the smallest worthwhile counterpart to the prior `else`-line rule.
+- Lesson captured for future PRs: delimiter-line range expansion should follow the smallest owned slice in the natural direction of the syntax boundary, which may be forward for `else` and backward for bare `end`.
+- Next-step implication: the next Block 5 slice should decide whether `end ->` continuation lines deserve a similar forward expansion rule or whether the roadmap should jump to a more general enclosing-unit policy decision.
 - Block 5 slice: clarified the first delimiter-adjacent structural selection rule by expanding a range that touches a standalone `else` line to include the immediate else-body prefix. Range formatting now treats `else` plus its first owned body prefix as a small structural unit instead of formatting only the delimiter line in isolation.
 - Scope decision: this slice is limited to standalone `else` line selections and expands only through blank/comment prefix lines up to the first else-body content line. It does not expand to the entire enclosing `if`, does not special-case `end` lines yet, and does not alter document-formatting behavior.
 - Assumption: formatting a selected `else` line without any of its owned body prefix is too weak to be useful, so this small expansion rule is a better first delimiter-adjacent Block 5 policy than jumping straight to full enclosing-unit expansion.
@@ -77,7 +82,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: clarify the matching `end`-adjacent structural selection rule or another narrow delimiter-line expansion case before deciding whether some selections should expand to whole enclosing syntactic units.
+- Block 5: decide whether `end ->` continuation lines deserve a similar forward expansion rule or whether range formatting should instead move to a more general enclosing-unit policy for structural delimiter selections.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

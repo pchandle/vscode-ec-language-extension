@@ -72,4 +72,36 @@ describe("formattingRange", () => {
       endLine: 6,
     });
   });
+
+  it("expands a selection touching a bare end line backward to include the immediate owned suffix", () => {
+    const document = createDocument(
+      ["job /example/test(x):", "  if ready then", "    sub /data/new($)->out", "    // keep note", "  end", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(4, 2), Position.create(4, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 4,
+    });
+  });
+
+  it("expands a bare end-line selection backward through blank and comment suffix lines", () => {
+    const document = createDocument(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    sub /data/new($)->out",
+        "",
+        "    // keep note",
+        "  end",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(5, 2), Position.create(5, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 5,
+    });
+  });
 });

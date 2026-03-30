@@ -1632,5 +1632,34 @@
       "  end",
       "end"
     ]
+  },
+  {
+    "name": "range formatting expands a bare end-line selection to include the immediate owned suffix",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 5,
+      "startCharacter": 2,
+      "endLine": 5,
+      "endCharacter": 5
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      "",
+      "    // keep note",
+      "  end",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($) -> out",
+      "",
+      "    // keep note",
+      "  end",
+      "end"
+    ]
   }
 ]

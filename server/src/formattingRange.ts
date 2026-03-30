@@ -33,6 +33,7 @@ export function normalizeRangeToTouchedLines(
     endLine = startLine;
   }
 
+  startLine = expandBareEndOwnedSuffix(document, startLine, endLine);
   endLine = expandElseBodyPrefix(document, startLine, endLine);
 
   return { startLine, endLine };
@@ -64,6 +65,36 @@ function isStandaloneElseLine(document: TextDocument, line: number): boolean {
 
 function isStandaloneEndLine(document: TextDocument, line: number): boolean {
   return /^end(\s|$)/.test(getLineText(document, line).trim());
+}
+
+function isBareEndLine(document: TextDocument, line: number): boolean {
+  return getLineText(document, line).trim() === "end";
+}
+
+function expandBareEndOwnedSuffix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedStartLine = startLine;
+
+  for (let line = endLine; line >= expandedStartLine; line--) {
+    if (!isBareEndLine(document, line)) {
+      continue;
+    }
+
+    for (let previousLine = line - 1; previousLine >= 0; previousLine--) {
+      if (isStandaloneElseLine(document, previousLine) || isStandaloneEndLine(document, previousLine)) {
+        break;
+      }
+
+      expandedStartLine = Math.min(expandedStartLine, previousLine);
+
+      if (isBlankLine(document, previousLine) || isStandaloneLineComment(document, previousLine)) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  return expandedStartLine;
 }
 
 function expandElseBodyPrefix(document: TextDocument, startLine: number, endLine: number): number {
