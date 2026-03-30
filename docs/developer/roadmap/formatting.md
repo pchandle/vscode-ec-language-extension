@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: clarified the first delimiter-adjacent structural selection rule by expanding a range that touches a standalone `else` line to include the immediate else-body prefix. Range formatting now treats `else` plus its first owned body prefix as a small structural unit instead of formatting only the delimiter line in isolation.
+- Scope decision: this slice is limited to standalone `else` line selections and expands only through blank/comment prefix lines up to the first else-body content line. It does not expand to the entire enclosing `if`, does not special-case `end` lines yet, and does not alter document-formatting behavior.
+- Assumption: formatting a selected `else` line without any of its owned body prefix is too weak to be useful, so this small expansion rule is a better first delimiter-adjacent Block 5 policy than jumping straight to full enclosing-unit expansion.
+- Lesson captured for future PRs: structural range expansion can be introduced incrementally by promoting single delimiter lines to the smallest meaningful owned slice instead of forcing an all-or-nothing decision about enclosing-unit formatting.
+- Next-step implication: the next Block 5 slice should clarify the matching `end`-adjacent case or another narrow structural selection rule, rather than broadening immediately to whole-construct expansion.
 - Block 5 slice: extended touched-line range normalization to exclude an untouched leading line when a multi-line selection starts at the end of that line. Range formatting now trims both kinds of off-by-one line-boundary surprises: trailing lines ended at column 0 and leading lines entered only at end-of-line.
 - Scope decision: this slice is limited to multi-line range-boundary normalization for untouched leading lines, plus regression coverage for the server helper and integration fixture path. It does not change same-line zero-width selection behavior, expand selections to enclosing syntax units, or alter document-formatting behavior.
 - Assumption: completing the leading-line counterpart to the previous trailing-line fix is the smallest high-value Block 5 follow-up before deciding whether any ranges should expand beyond the touched lines model.
@@ -72,7 +77,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: clarify a delimiter-adjacent structural selection rule, most likely partial selections that start/end inside lines like `else` or `end`, or a documented decision about whether some selections should expand to enclosing syntactic units.
+- Block 5: clarify the matching `end`-adjacent structural selection rule or another narrow delimiter-line expansion case before deciding whether some selections should expand to whole enclosing syntactic units.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

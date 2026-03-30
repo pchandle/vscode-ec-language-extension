@@ -33,6 +33,8 @@ export function normalizeRangeToTouchedLines(
     endLine = startLine;
   }
 
+  endLine = expandElseBodyPrefix(document, startLine, endLine);
+
   return { startLine, endLine };
 }
 
@@ -42,4 +44,50 @@ function clampLine(line: number, lineCount: number): number {
 
 function getLineLength(document: TextDocument, line: number): number {
   return document.getText(Range.create(line, 0, line + 1, 0)).replace(/\r?\n$/, "").length;
+}
+
+function getLineText(document: TextDocument, line: number): string {
+  return document.getText(Range.create(line, 0, line + 1, 0)).replace(/\r?\n$/, "");
+}
+
+function isBlankLine(document: TextDocument, line: number): boolean {
+  return getLineText(document, line).trim().length === 0;
+}
+
+function isStandaloneLineComment(document: TextDocument, line: number): boolean {
+  return /^\s*\/\//.test(getLineText(document, line));
+}
+
+function isStandaloneElseLine(document: TextDocument, line: number): boolean {
+  return getLineText(document, line).trim() === "else";
+}
+
+function isStandaloneEndLine(document: TextDocument, line: number): boolean {
+  return /^end(\s|$)/.test(getLineText(document, line).trim());
+}
+
+function expandElseBodyPrefix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedEndLine = endLine;
+
+  for (let line = startLine; line <= expandedEndLine; line++) {
+    if (!isStandaloneElseLine(document, line)) {
+      continue;
+    }
+
+    for (let nextLine = line + 1; nextLine < document.lineCount; nextLine++) {
+      if (isStandaloneEndLine(document, nextLine)) {
+        break;
+      }
+
+      expandedEndLine = Math.max(expandedEndLine, nextLine);
+
+      if (isBlankLine(document, nextLine) || isStandaloneLineComment(document, nextLine)) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  return expandedEndLine;
 }

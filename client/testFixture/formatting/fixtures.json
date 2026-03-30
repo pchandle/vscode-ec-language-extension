@@ -1603,5 +1603,34 @@
       "  else",
       "end"
     ]
+  },
+  {
+    "name": "range formatting expands an else-line selection to include the else body prefix",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 3,
+      "startCharacter": 1,
+      "endLine": 3,
+      "endCharacter": 5
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      " else",
+      "    $  ->fallback",
+      "  end",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  if ready then",
+      "    sub /data/new($)->out",
+      "  else",
+      "    $ -> fallback",
+      "  end",
+      "end"
+    ]
   }
 ]

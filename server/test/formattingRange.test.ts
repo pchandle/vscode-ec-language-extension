@@ -38,4 +38,38 @@ describe("formattingRange", () => {
       endLine: 2,
     });
   });
+
+  it("expands a selection touching an else line to include the immediate else-body line", () => {
+    const document = createDocument(
+      ["job /example/test(x):", "  if ready then", "    sub /data/new($)->out", " else", "    $  ->fallback", "  end", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(3, 1), Position.create(3, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 3,
+      endLine: 4,
+    });
+  });
+
+  it("expands an else-line selection through comment and blank prefixes before the first body line", () => {
+    const document = createDocument(
+      [
+        "job /example/test(x):",
+        "  if ready then",
+        "    sub /data/new($)->out",
+        " else",
+        "",
+        "    // keep note",
+        "    $  ->fallback",
+        "  end",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(3, 1), Position.create(3, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 3,
+      endLine: 6,
+    });
+  });
 });
