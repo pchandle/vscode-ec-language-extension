@@ -158,6 +158,25 @@ describe("formatting", () => {
     expect(model.lines[9].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between a standalone comment group and a parsed end-arrow delimiter for deletion", () => {
+    const input = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "  // keep target note",
+        "",
+        "",
+        "end -> result1,",
+        "  result2",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -450,6 +469,30 @@ describe("formatting", () => {
         "  $ -> fallback",
         "  // keep end note",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between standalone comment groups and parsed end-arrow delimiters", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "  // keep target note",
+      "",
+      "",
+      "end -> result1,",
+      "  result2",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "  // keep target note",
+        "end -> result1,",
+        "  result2",
       ].join("\n")
     );
   });
@@ -1171,6 +1214,31 @@ describe("formatting", () => {
         "  $ -> fallback",
         "  // keep end note",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed if blocks with comment-attached end-arrow delimiters", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "  // keep target note",
+      "",
+      "",
+      "end -> result1,",
+      "  result2",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 6)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "  // keep target note",
+        "end -> result1,",
+        "  result2",
       ].join("\n")
     );
   });

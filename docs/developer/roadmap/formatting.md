@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed `if` blank-line normalization to collapse blank lines between standalone comment groups and a following multiline `end ->` delimiter. Parsed comment groups that annotate trailing target ownership now stay visually attached to the `end ->` boundary instead of preserving spacer blank lines that weaken that association.
+- Scope decision: this slice is limited to parse-success `if` regions and only to standalone comment groups immediately above a parsed multiline `end ->` delimiter. It does not change continuation-body blank-line policy after `end ->`, top-level blank-line behavior, or comment attachment outside parser-owned `if` delimiter boundaries.
+- Assumption: once the formatter already treated comments above `else` and bare `end` as delimiter-adjacent structure, the matching parsed `end ->` case was the next smallest obvious ownership-preserving cleanup because those comments most naturally describe the trailing-target boundary line itself.
+- Lesson captured for future PRs: delimiter-adjacent comment-attachment rules can stay low-risk when they extend one parser-owned boundary family at a time, instead of trying to generalize blank-line compression across every `end`-shaped line in one step.
+- Next-step implication: the next Block 4 slice should target another explicit parser-owned delimiter/body adjacency case only if it has similarly clear ownership; otherwise Block 4 should move to a different narrow parsed-layout gap rather than broadening blank-line compression heuristics.
 - Block 4 slice: extended parsed `if` blank-line normalization to collapse blank lines between standalone comment groups and the following `else` or bare `end` delimiter. Parsed delimiter-adjacent comments now stay visually attached to the `if` boundary they annotate instead of preserving a spacer blank line that weakens that relationship.
 - Scope decision: this slice is limited to parse-success `if` regions and only to standalone comment groups immediately above `else` or bare `end`. It does not change `end ->` continuation spacing, top-level blank-line policy, or comment attachment outside parser-owned `if` delimiter boundaries.
 - Assumption: when a standalone comment group sits directly above `else` or bare `end`, preserving one or more blank lines between that comment and the delimiter is weaker than treating the comment as delimiter-adjacent structure, so deleting those spacer blank lines is a low-churn Block 4 improvement.
@@ -137,7 +142,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: tackle the next obvious parsed-region layout gap, most likely a bare `end` / `end ->` adjacency rule or another narrow delimiter-adjacent blank-line normalization case with explicit parser-owned boundaries.
+- Block 4: tackle the next obvious parsed-region layout gap only if it still has equally explicit parser-owned boundaries, most likely another narrow delimiter/body adjacency case rather than a broader blank-line compression policy.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

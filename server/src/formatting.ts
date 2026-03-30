@@ -559,6 +559,10 @@ function isBareEndLine(text: string): boolean {
   return text.trim() === "end";
 }
 
+function isEndArrowLine(text: string): boolean {
+  return /^end\s*->/.test(text.trim());
+}
+
 function setDesiredIndent(desiredIndentColumns: Map<number, number>, lineIndex: number, indentColumns: number): void {
   desiredIndentColumns.set(lineIndex, Math.max(0, indentColumns));
 }
@@ -1051,7 +1055,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       markCommentAdjacentDelimiterGap(elseLineIndex);
     }
 
-    if (isBareEndLine(getLineText(document, endLineIndex))) {
+    if (isBareEndLine(getLineText(document, endLineIndex)) || isEndArrowLine(getLineText(document, endLineIndex))) {
       markCommentAdjacentDelimiterGap(endLineIndex);
     }
 
