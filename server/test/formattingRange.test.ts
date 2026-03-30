@@ -28,4 +28,14 @@ describe("formattingRange", () => {
       endLine: 2,
     });
   });
+
+  it("excludes a leading line when the selection starts at the end of that line and continues later", () => {
+    const document = createDocument(["job /example/test(x):", "sub /data/new($)->out", "  else", "end"].join("\n"));
+    const range = Range.create(Position.create(1, document.getText(Range.create(1, 0, 2, 0)).replace(/\r?\n$/, "").length), Position.create(2, 2));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 2,
+    });
+  });
 });

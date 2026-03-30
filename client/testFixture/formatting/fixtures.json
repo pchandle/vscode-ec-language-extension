@@ -1580,5 +1580,28 @@
       " else",
       "end"
     ]
+  },
+  {
+    "name": "range formatting ignores an untouched leading line when the selection starts at line end",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "startCharacter": 21,
+      "endLine": 2,
+      "endCharacter": 2
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "sub /data/new($)->out",
+      " else",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "sub /data/new($)->out",
+      "  else",
+      "end"
+    ]
   }
 ]

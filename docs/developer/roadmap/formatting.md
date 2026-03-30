@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: extended touched-line range normalization to exclude an untouched leading line when a multi-line selection starts at the end of that line. Range formatting now trims both kinds of off-by-one line-boundary surprises: trailing lines ended at column 0 and leading lines entered only at end-of-line.
+- Scope decision: this slice is limited to multi-line range-boundary normalization for untouched leading lines, plus regression coverage for the server helper and integration fixture path. It does not change same-line zero-width selection behavior, expand selections to enclosing syntax units, or alter document-formatting behavior.
+- Assumption: completing the leading-line counterpart to the previous trailing-line fix is the smallest high-value Block 5 follow-up before deciding whether any ranges should expand beyond the touched lines model.
+- Lesson captured for future PRs: range-boundary normalization works best when leading and trailing untouched-line rules are treated symmetrically, so future selection-policy changes should evaluate both sides of the range together.
+- Next-step implication: the next Block 5 slice should move beyond raw line-boundary cleanup and clarify a delimiter-adjacent structural selection rule, most likely partial selections that start/end inside lines like `else` or `end`.
 - Block 5 slice: started selection-formatting correctness by defining range formatting as line-bounded over the lines actually touched by the selection. A range that ends at column 0 on a later line now formats through the previous line instead of unexpectedly pulling in the untouched trailing line, and the integration fixtures now cover partial-line range selections explicitly.
 - Scope decision: this slice is limited to range-boundary normalization at the server formatting entrypoint plus fixture support for partial-line selection coordinates. It does not change the formatter’s existing line-bounded policy for touched lines, expand selections to enclosing syntax units, or alter document-formatting behavior.
 - Assumption: the smallest high-value Block 5 step is to remove the surprising “trailing untouched line gets formatted” case before deciding whether future range formatting should stay line-bounded or expand to enclosing constructs.
@@ -67,7 +72,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: clarify another range-formatting boundary rule, most likely partial selections that start/end inside delimiter-adjacent structural lines or a documented decision about whether some selections should expand to enclosing syntactic units.
+- Block 5: clarify a delimiter-adjacent structural selection rule, most likely partial selections that start/end inside lines like `else` or `end`, or a documented decision about whether some selections should expand to enclosing syntactic units.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
