@@ -49,6 +49,7 @@ function applyStandaloneIfDelimiterExpansions(
   let expandedEndLine = endLine;
 
   expandedStartLine = expandThenHeaderSuffix(document, expandedStartLine, expandedEndLine);
+  expandedStartLine = expandThenBodyContentPrefix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandBareEndOwnedSuffix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandEndArrowContentPrefix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandElseBodyContentPrefix(document, expandedStartLine, expandedEndLine);
@@ -87,6 +88,10 @@ function isStandaloneThenLine(document: TextDocument, line: number): boolean {
   return getLineText(document, line).trim() === "then";
 }
 
+function isThenBoundaryLine(document: TextDocument, line: number): boolean {
+  return !isStandaloneLineComment(document, line) && /\bthen\b/.test(getLineText(document, line));
+}
+
 function isStandaloneEndLine(document: TextDocument, line: number): boolean {
   return /^end(\s|$)/.test(getLineText(document, line).trim());
 }
@@ -112,6 +117,10 @@ function isExpandableElseBodyContentLine(document: TextDocument, line: number): 
   return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isStandaloneElseLine(document, line);
 }
 
+function isExpandableThenBodyContentLine(document: TextDocument, line: number): boolean {
+  return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isThenBoundaryLine(document, line);
+}
+
 function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLine: number): number {
   let expandedStartLine = startLine;
 
@@ -132,6 +141,44 @@ function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLi
       }
 
       break;
+    }
+  }
+
+  return expandedStartLine;
+}
+
+function expandThenBodyContentPrefix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedStartLine = startLine;
+
+  for (let line = endLine; line >= expandedStartLine; line--) {
+    if (!isExpandableThenBodyContentLine(document, line)) {
+      continue;
+    }
+
+    // Only the first then-body content line can claim the nearest `then` boundary line.
+    let candidateStartLine: number | null = null;
+
+    for (let previousLine = line - 1; previousLine >= 0; previousLine--) {
+      if (isThenBoundaryLine(document, previousLine)) {
+        candidateStartLine = previousLine;
+        break;
+      }
+
+      if (isStandaloneElseLine(document, previousLine) || isStandaloneEndLine(document, previousLine)) {
+        break;
+      }
+
+      if (isBlankLine(document, previousLine) || isStandaloneLineComment(document, previousLine)) {
+        candidateStartLine = previousLine;
+        continue;
+      }
+
+      candidateStartLine = previousLine;
+      break;
+    }
+
+    if (candidateStartLine !== null && isThenBoundaryLine(document, candidateStartLine)) {
+      expandedStartLine = Math.min(expandedStartLine, candidateStartLine);
     }
   }
 

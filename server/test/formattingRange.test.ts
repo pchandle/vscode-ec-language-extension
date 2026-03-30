@@ -117,6 +117,50 @@ describe("formattingRange", () => {
     });
   });
 
+  it("expands a selected first then-body content line backward to a same-line then boundary", () => {
+    const document = createDocument(
+      ["if ready then", "sub /data/new($)->out", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(1, 1), Position.create(1, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 0,
+      endLine: 1,
+    });
+  });
+
+  it("expands a selected first then-body content line backward through blank and comment suffix lines to standalone then", () => {
+    const document = createDocument(
+      [
+        "if ready &&",
+        "available",
+        "then",
+        "",
+        "// keep then note",
+        "sub /data/new($)->out",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(5, 1), Position.create(5, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 5,
+    });
+  });
+
+  it("keeps a later then-body content line line-bounded", () => {
+    const document = createDocument(
+      ["if ready then", "sub /data/new($)->out1", "sub /data/new($)->out2", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(2, 1), Position.create(2, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 2,
+    });
+  });
+
   it("expands a multiline if-header content line forward to the standalone then suffix", () => {
     const document = createDocument(
       ["if ready &&", "available", "then", "sub /data/new($)->out", "end"].join("\n")

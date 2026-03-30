@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: extended owned-slice expansion to the first `then`-body content line by promoting a selected first body line backward to the nearest `then` boundary line, whether that boundary is same-line `if ... then` or a standalone `then`. Range formatting now treats the first selected then-body line together with its leading blank/comment suffix and the nearest `then` boundary as one small structural then slice instead of formatting only the touched body line.
+- Scope decision: this slice is limited to the first then-body content line whose nearest preceding owned boundary contains `then`. Later then-body content lines remain line-bounded, the selection does not expand to the full enclosing `if`, and document-formatting behavior is unchanged.
+- Assumption: after the first else-body and first multiline `end ->` continuation-content rules, the most defensible remaining owned-slice promotion is the matching first then-body content line, because it has the same “first body line without its boundary” weakness while still avoiding enclosing-unit expansion.
+- Lesson captured for future PRs: when a construct has both same-line and standalone boundary forms, a narrow owned-slice rule can still stay reviewable if both forms map to the same first-body-line contract and later body lines are locked down as line-bounded.
+- Next-step implication: the next Block 5 slice should make a final decision about whether any concrete partial-selection case still merits another first-owned-line rule or whether Block 5 should conclude with the current narrow contract.
 - Block 5 slice: extended owned-slice expansion to the first `else`-body content line by promoting a selected first body line backward to the standalone `else` delimiter it still belongs to. Range formatting now treats the first selected else-body line together with its leading blank/comment suffix and standalone `else` line as one small structural else slice instead of formatting only the touched body line.
 - Scope decision: this slice is limited to the first else-body content line whose nearest preceding owned boundary is a standalone `else` delimiter. Later else-body content lines remain line-bounded, the selection does not expand to the full enclosing `if`, and document-formatting behavior is unchanged.
 - Assumption: after the formatter already handled standalone `else` and the first multiline `end ->` continuation content line, the next smallest worthwhile owned-slice promotion is the matching first `else`-body content line, because leaving that line without its delimiter prefix is similarly weak while still avoiding enclosing-unit expansion.
@@ -117,7 +122,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: decide whether any remaining concrete partial-selection case still justifies another first-owned-line rule, or whether Block 5 should conclude with the current narrow range-formatting contract.
+- Block 5: decide whether any concrete partial-selection case still justifies another first-owned-line rule, or whether Block 5 should now conclude with the current narrow range-formatting contract.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

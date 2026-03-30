@@ -1230,6 +1230,98 @@ describe("formatting", () => {
     );
   });
 
+  it("formats a selected first then-body content line together with a same-line then boundary", () => {
+    const input = [
+      "if ready then",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(1, 1), Position.create(1, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 0,
+      endLine: 1,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats a selected first then-body content line together with a standalone then boundary", () => {
+    const input = [
+      "if ready &&",
+      "available",
+      "then",
+      "// keep then note",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(4, 1), Position.create(4, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 2,
+      endLine: 4,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "available",
+        "  then",
+        "  // keep then note",
+        "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("keeps a selected later then-body content line line-bounded", () => {
+    const input = [
+      "if ready then",
+      "sub /data/new($)->out1",
+      "sub /data/new($)->out2",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(2, 1), Position.create(2, 5)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 2,
+      endLine: 2,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "sub /data/new($)->out1",
+        "  sub /data/new($) -> out2",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("formats a selected multiline if-header content line together with the standalone then suffix", () => {
     const input = [
       "if ready &&",
