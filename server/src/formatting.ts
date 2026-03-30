@@ -1228,6 +1228,9 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
 
     if (isBareEndLine(getLineText(document, endLineIndex)) || isEndArrowLine(getLineText(document, endLineIndex))) {
       markCommentAdjacentDelimiterGap(endLineIndex);
+      if (isBareEndLine(getLineText(document, endLineIndex))) {
+        markContentAdjacentDelimiterGap(endLineIndex);
+      }
     }
 
     if (endLineIndex + 1 <= ifNode.range.end.line) {

@@ -128,7 +128,7 @@ describe("formatting", () => {
     const model = buildFormattingInput(input);
 
     expect(model.parseMode).to.equal("parsed");
-    expect(model.lines[3].deleteLine).to.equal(false);
+    expect(model.lines[3].deleteLine).to.equal(true);
     expect(model.lines[4].deleteLine).to.equal(true);
     expect(model.lines[5].desiredIndentColumns).to.equal(2);
   });
@@ -156,6 +156,23 @@ describe("formatting", () => {
     expect(model.lines[4].deleteLine).to.equal(true);
     expect(model.lines[8].deleteLine).to.equal(true);
     expect(model.lines[9].deleteLine).to.equal(true);
+  });
+
+  it("marks blank lines between parsed if branch content and bare end delimiters for deletion", () => {
+    const input = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "",
+        "",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[2].deleteLine).to.equal(true);
+    expect(model.lines[3].deleteLine).to.equal(true);
   });
 
   it("marks blank lines between a standalone comment group and a parsed end-arrow delimiter for deletion", () => {
@@ -1084,6 +1101,26 @@ describe("formatting", () => {
         "else",
         "  $ -> fallback",
         "  // keep end note",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed if branch content and bare end delimiters", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "",
+      "",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
         "end",
       ].join("\n")
     );
@@ -2208,6 +2245,27 @@ describe("formatting", () => {
         "else",
         "  $ -> fallback",
         "  // keep end note",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed if blocks with content-attached bare end delimiters", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "",
+      "",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 4)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
         "end",
       ].join("\n")
     );
