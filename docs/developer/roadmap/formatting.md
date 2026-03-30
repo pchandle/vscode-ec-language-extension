@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: collapsed pure blank-line gaps before parsed declaration `end` delimiters so parse-success `job` / `def` bodies now attach directly to their closing `end` when no standalone comment group occupies that closing slot. Declaration bodies no longer preserve a spacer blank line between the last body statement and the owned `end`.
+- Scope decision: this slice is limited to parse-success declaration closures whose closing delimiter is a bare `end` and whose preceding nonblank line is body content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached declaration closes beyond the already completed slice, `if` / brace closing boundaries, or broader blank-line policy before other delimiters.
+- Assumption: after finishing the explicit owned opening-family cleanup, declaration `end` closures were the next smallest parser-owned closing boundary with clear user-visible payoff because the formatter already had a declaration-specific comment-adjacent close rule and delimiter lookup.
+- Lesson captured for future PRs: after a formatter closes out one family of opening-boundary rules, the next safe structural step is often the matching close-boundary case for a single owned family, provided the close lookup already exists and the rule can stay comment-aware.
+- Next-step implication: the next Block 4 slice should either mirror this pure-blank-gap close rule for another equally explicit owned family, or move to a different small multiline-layout improvement instead of broadening close-gap removal across every delimiter at once.
 - Block 4 slice: collapsed pure blank-line gaps at parsed brace-block opens so `{` now attaches directly to the first owned block content line when no standalone comment group occupies that opening slot. Parse-success brace blocks no longer preserve a spacer blank line between the open delimiter and the first block statement.
 - Scope decision: this slice is limited to parse-success brace-block openings where the first nonblank line after `{` is block content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached brace openings beyond the already completed slice, declaration/branch/continuation openings, or broader brace interior blank-line policy.
 - Assumption: after pure blank-gap cleanup at declaration, branch, and `end ->` starts, brace-block openings were the last equally explicit owned opening family with clear parser-owned boundaries and user-visible payoff.
@@ -232,7 +237,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: move to a different small multiline-layout improvement instead of continuing the pure-blank-gap opening thread, unless another equally explicit owned opening family is discovered during implementation.
+- Block 4: either mirror the pure-blank-gap delimiter-close rule for one more equally explicit owned family, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of blank lines before closing delimiters.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

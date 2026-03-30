@@ -325,6 +325,31 @@ describe("formatting", () => {
     expect(model.lines[11].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed declaration body content and end delimiters for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "  $ -> value",
+        "",
+        "",
+        "end",
+        "",
+        "def helper(x) out:",
+        "  $ -> value",
+        "",
+        "",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[2].deleteLine).to.equal(true);
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[8].deleteLine).to.equal(true);
+    expect(model.lines[9].deleteLine).to.equal(true);
+  });
+
   it("marks blank lines between a standalone comment group and parsed brace-block close delimiters for deletion", () => {
     const input = createDocument(
       [
@@ -1315,6 +1340,36 @@ describe("formatting", () => {
         "def helper(x) out:",
         "  $ -> value",
         "  // keep end note",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed declaration body content and end delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  $ -> value",
+      "",
+      "",
+      "end",
+      "",
+      "def helper(x) out:",
+      "  $ -> value",
+      "",
+      "",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  $ -> value",
+        "end",
+        "",
+        "def helper(x) out:",
+        "  $ -> value",
         "end",
       ].join("\n")
     );
@@ -2395,6 +2450,39 @@ describe("formatting", () => {
         "def helper(x) out:",
         "  $ -> value",
         "  // keep end note",
+        "",
+        "",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed declaration bodies with content-attached end delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  $ -> value",
+      "",
+      "",
+      "end",
+      "",
+      "def helper(x) out:",
+      "  $ -> value",
+      "",
+      "",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 4)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  $ -> value",
+        "end",
+        "",
+        "def helper(x) out:",
+        "  $ -> value",
         "",
         "",
         "end",

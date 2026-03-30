@@ -705,7 +705,11 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
   ): void => {
     const bodyIndentColumns = headerIndentColumns + INDENT_SIZE;
     const endLineIndex =
-      findLineMatching(body.range.end.line + 1, document.lineCount - 1, isStandaloneEndLine) ?? body.range.end.line;
+      findLineMatching(
+        body.range.end.line + 1,
+        document.lineCount - 1,
+        (text) => isStandaloneEndLine(text) && leadingWhitespaceWidth(text) <= headerIndentColumns + 1
+      ) ?? body.range.end.line;
 
     const bodyStartLine = startLineIndex + 1;
     const bodyEndLine = endLineIndex - 1;
@@ -1000,6 +1004,25 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
   };
 
+  const markContentAdjacentDelimiterGap = (delimiterLineIndex: number): void => {
+    const blankLinesBetweenContentAndDelimiter: number[] = [];
+
+    for (let lineIndex = delimiterLineIndex - 1; lineIndex >= 0; lineIndex--) {
+      const lineText = getLineText(document, lineIndex);
+
+      if (isBlankLine(lineText)) {
+        blankLinesBetweenContentAndDelimiter.push(lineIndex);
+        continue;
+      }
+
+      if (blankLinesBetweenContentAndDelimiter.length > 0 && !isStandaloneLineComment(lineText)) {
+        blankLinesBetweenContentAndDelimiter.forEach((blankLineIndex) => blankLinesToDelete.add(blankLineIndex));
+      }
+
+      break;
+    }
+  };
+
   const markDelimiterLeadingCommentGap = (delimiterLineIndex: number): void => {
     const blankLinesBetweenDelimiterAndComment: number[] = [];
 
@@ -1042,8 +1065,13 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     startLineIndex: number,
     body: { range: Range; statements: Statement[] }
   ): void => {
+    const headerIndentColumns = leadingWhitespaceWidth(getLineText(document, startLineIndex));
     const endLineIndex =
-      findLineMatching(body.range.end.line + 1, document.lineCount - 1, isStandaloneEndLine) ?? body.range.end.line;
+      findLineMatching(
+        body.range.end.line + 1,
+        document.lineCount - 1,
+        (text) => isStandaloneEndLine(text) && leadingWhitespaceWidth(text) <= headerIndentColumns + 1
+      ) ?? body.range.end.line;
     const bodyLeadingBoundaryLineIndex =
       findLastLineMatching(
         startLineIndex,
@@ -1064,6 +1092,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
 
     if (isBareEndLine(getLineText(document, endLineIndex))) {
       markCommentAdjacentDelimiterGap(endLineIndex);
+      markContentAdjacentDelimiterGap(endLineIndex);
     }
 
     for (const nestedStatement of body.statements) {
