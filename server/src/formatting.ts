@@ -1030,6 +1030,14 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
   };
 
+  const visitDefaultsContinuation = (statement: Statement): void => {
+    if (!isDefaultsContinuationCandidate(statement) || statement.range.start.line >= statement.range.end.line) {
+      return;
+    }
+
+    markExtraBlankLinesInRange(statement.range.start.line + 1, statement.range.end.line);
+  };
+
   const visitIf = (
     ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } }
   ): void => {
@@ -1112,6 +1120,8 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       visitDelimitedBody(statement.range.start.line, statement.body);
       return;
     }
+
+    visitDefaultsContinuation(statement);
 
     const expression = statement.expression as any;
     if (expression?.kind === NodeKind.If) {

@@ -231,6 +231,26 @@ describe("formatting", () => {
     expect(model.lines[13].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks extra blank lines inside parsed multiline defaults continuation regions for deletion", () => {
+    const input = createDocument(
+      [
+        "defaults: data,",
+        "default,",
+        "",
+        "",
+        "x64,",
+        "codevalley",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[2].deleteLine).to.equal(false);
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].desiredIndentColumns).to.equal(2);
+    expect(model.lines[5].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -616,6 +636,31 @@ describe("formatting", () => {
         "  out2:",
         "  $ -> value",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses excessive blank lines inside parsed multiline defaults continuation regions", () => {
+    const input = [
+      "defaults: data,",
+      "default,",
+      "",
+      "",
+      "x64,",
+      "codevalley",
+      "sub /data/new($)->out",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  default,",
+        "",
+        "  x64,",
+        "  codevalley",
+        "sub /data/new($) -> out",
       ].join("\n")
     );
   });
@@ -1433,6 +1478,32 @@ describe("formatting", () => {
         "  out2:",
         "  $ -> value",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline defaults continuations with collapsed blank-line runs", () => {
+    const input = [
+      "defaults: data,",
+      "default,",
+      "",
+      "",
+      "x64,",
+      "codevalley",
+      "sub /data/new($)->out",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  default,",
+        "",
+        "  x64,",
+        "  codevalley",
+        "sub /data/new($)->out",
       ].join("\n")
     );
   });
