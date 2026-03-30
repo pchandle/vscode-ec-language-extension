@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed blank-line normalization into multiline invocation continuation regions for `sub`, `host`, and `join` by collapsing repeated blank lines while preserving a single blank line on parser-owned continuation lines. Parsed multiline invocations now follow the same owned-region blank-line rule already used for multiline `if` headers, declaration headers, `defaults` continuations, block bodies, and `end ->` continuation regions.
+- Scope decision: this slice is limited to parse-success multiline invocation continuation lines outside brace-block interiors and closes, matching the existing parser-owned indentation path for invocation continuations. It does not change additional-output continuation spacing, brace-block interior blank-line policy, malformed recovery behavior, or broader multiline statement compression outside invocation-owned continuation lines.
+- Assumption: after `defaults`, multiline invocation continuations were the next smallest continuation family with equally explicit parser-owned ownership and established indentation behavior, so they were a safer continuation of Block 4 than broadening into all remaining continuation forms at once.
+- Lesson captured for future PRs: when a multiline statement family already has explicit continuation ownership plus brace-boundary exclusions in indentation, blank-line normalization should reuse those same ownership and stop conditions instead of inventing a flatter line-range rule.
+- Next-step implication: the next Block 4 slice should only continue this blank-line-normalization thread if another continuation family has equally explicit parser-owned boundaries, most likely additional-output continuations; otherwise Block 4 should move to a different narrow structural layout improvement.
 - Block 4 slice: extended parsed blank-line normalization into multiline `defaults` continuation regions by collapsing repeated blank lines while preserving a single blank line. Parsed `defaults` entries now follow the same owned-region blank-line rule already used for multiline `if` headers, declaration headers, block bodies, and `end ->` continuation regions.
 - Scope decision: this slice is limited to parse-success multiline `defaults` continuation regions. It does not change malformed recovery behavior, invocation/additional-output continuation spacing, or broader multiline statement policy outside parser-owned `defaults` entries.
 - Assumption: after closing the parser-owned multiline header regions, multiline `defaults` continuations were the smallest remaining statement family with equally explicit ownership and existing indentation policy, so they were a safer continuation of Block 4 than broadening into all statement continuations at once.
@@ -157,7 +162,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: tackle the next obvious parsed-region layout gap only if another multiline continuation family has equally explicit parser-owned ownership; otherwise shift to a different narrow structural layout improvement instead of continuing generic blank-line compression.
+- Block 4: continue parsed blank-line normalization only if another multiline continuation family has equally explicit parser-owned ownership, most likely additional-output continuations; otherwise shift to a different narrow structural layout improvement instead of continuing generic blank-line compression.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

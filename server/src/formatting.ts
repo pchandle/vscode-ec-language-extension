@@ -1038,6 +1038,33 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     markExtraBlankLinesInRange(statement.range.start.line + 1, statement.range.end.line);
   };
 
+  const visitInvocationContinuation = (statement: Statement): void => {
+    if (!isInvocationContinuationCandidate(statement) || statement.range.start.line >= statement.range.end.line) {
+      return;
+    }
+
+    const braceBlocks = collectBraceBlocks(statement).filter((block) => isBraceBlock(document, block));
+    let sawBlankLine = false;
+
+    for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
+      if (isLineWithinBraceBlockInteriorOrClose(lineIndex, braceBlocks)) {
+        sawBlankLine = false;
+        continue;
+      }
+
+      if (isBlankLine(getLineText(document, lineIndex))) {
+        if (sawBlankLine) {
+          blankLinesToDelete.add(lineIndex);
+        } else {
+          sawBlankLine = true;
+        }
+        continue;
+      }
+
+      sawBlankLine = false;
+    }
+  };
+
   const visitIf = (
     ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } }
   ): void => {
@@ -1122,6 +1149,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
 
     visitDefaultsContinuation(statement);
+    visitInvocationContinuation(statement);
 
     const expression = statement.expression as any;
     if (expression?.kind === NodeKind.If) {
