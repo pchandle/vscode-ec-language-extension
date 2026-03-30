@@ -365,6 +365,35 @@ describe("formatting", () => {
     expect(model.lines[3].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed declaration headers and a following standalone comment group for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "",
+        "",
+        "  // keep body note",
+        "  $ -> value",
+        "end",
+        "",
+        "def helper(",
+        "x,",
+        "y) out:",
+        "",
+        "",
+        "  // keep body note",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[1].deleteLine).to.equal(true);
+    expect(model.lines[2].deleteLine).to.equal(true);
+    expect(model.lines[10].deleteLine).to.equal(true);
+    expect(model.lines[11].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -556,7 +585,6 @@ describe("formatting", () => {
     expect(output).to.equal(
       [
         "job /example/test(x):",
-        "",
         "  // keep body note",
         "  $ -> value",
         "end",
@@ -571,6 +599,44 @@ describe("formatting", () => {
         "  // keep block note",
         "  sub /data/new($) -> out",
         "}",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed declaration headers and following standalone comment groups", () => {
+    const input = [
+      "job /example/test(x):",
+      "",
+      "",
+      "  // keep body note",
+      "  $ -> value",
+      "end",
+      "",
+      "def helper(",
+      "x,",
+      "y) out:",
+      "",
+      "",
+      "  // keep body note",
+      "  $ -> value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  // keep body note",
+        "  $ -> value",
+        "end",
+        "",
+        "def helper(",
+        "  x,",
+        "  y) out:",
+        "  // keep body note",
+        "  $ -> value",
+        "end",
       ].join("\n")
     );
   });
@@ -1908,6 +1974,47 @@ describe("formatting", () => {
         "    // keep open note",
         "    sub /data/new($) -> out",
         "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed declaration bodies with comment-attached header boundaries", () => {
+    const input = [
+      "job /example/test(x):",
+      "",
+      "",
+      "  // keep body note",
+      "  $ -> value",
+      "end",
+      "",
+      "def helper(",
+      "x,",
+      "y) out:",
+      "",
+      "",
+      "  // keep body note",
+      "  $ -> value",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  // keep body note",
+        "  $ -> value",
+        "end",
+        "",
+        "def helper(",
+        "x,",
+        "y) out:",
+        "",
+        "",
+        "  // keep body note",
+        "  $ -> value",
         "end",
       ].join("\n")
     );

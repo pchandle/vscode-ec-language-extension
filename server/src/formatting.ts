@@ -1025,11 +1025,21 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
   ): void => {
     const endLineIndex =
       findLineMatching(body.range.end.line + 1, document.lineCount - 1, isStandaloneEndLine) ?? body.range.end.line;
+    const bodyLeadingBoundaryLineIndex =
+      findLastLineMatching(
+        startLineIndex,
+        Math.max(startLineIndex, body.range.start.line - 1),
+        (text) => !isBlankLine(text) && !isStandaloneLineComment(text)
+      ) ?? startLineIndex;
     const bodyStartLine = startLineIndex + 1;
     const bodyEndLine = endLineIndex - 1;
 
     if (bodyStartLine <= bodyEndLine) {
       markExtraBlankLinesInRange(bodyStartLine, bodyEndLine);
+    }
+
+    if (bodyLeadingBoundaryLineIndex < endLineIndex) {
+      markDelimiterLeadingCommentGap(bodyLeadingBoundaryLineIndex);
     }
 
     if (isBareEndLine(getLineText(document, endLineIndex))) {

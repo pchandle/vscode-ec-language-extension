@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: moved beyond delimiter-only cleanup to collapse blank lines between parsed `job` / `def` header boundaries and a following standalone comment group at body start. Declaration-body comments that annotate the first owned body content now stay visually attached to the declaration boundary instead of preserving spacer blank lines after the header.
+- Scope decision: this slice is limited to parse-success declaration body openings for `job` / `def`, including multiline headers whose last owned header line can still be located before the first parsed body statement. It does not change malformed recovery behavior, `if` branch openings, brace-block openings beyond the already completed brace slice, or broader declaration wrapping policy.
+- Assumption: after finishing the explicit delimiter-adjacent cleanup families, declaration body openings were the next smallest parser-owned multiline-layout improvement with clear user-visible payoff because the formatter already has stable indentation for those body comments and statements.
+- Lesson captured for future PRs: once delimiter-adjacent cleanup reaches diminishing returns, the next safe structural step is often the matching body-opening boundary for a single statement family, provided the formatter can identify that boundary without introducing heuristic ownership.
+- Next-step implication: the next Block 4 slice should either mirror this body-opening rule for another equally explicit owned family such as parsed `if` branch starts, or switch to a different narrow multiline-layout improvement instead of broadening body-opening cleanup across every construct at once.
 - Block 4 slice: extended parsed delimiter-adjacent blank-line normalization to collapse blank lines between parsed brace-block open delimiters and a following standalone comment group. Comment groups that annotate the first owned content inside a `{ ... }` block now stay visually attached to the opening boundary instead of preserving spacer blank lines after the open.
 - Scope decision: this slice is limited to parse-success brace-block openings whose `{ ... }` ownership is already explicit in the parsed formatter model. It does not change malformed recovery behavior, brace-block interior blank-line policy beyond the existing repeated-blank-line rule, brace-close behavior beyond the already completed close-adjacency slice, or broader block-opening style.
 - Assumption: once parsed brace-block close delimiters already had matching comment-attachment cleanup, the symmetric brace-block open case was the next smallest explicit boundary with similarly clear ownership and low review noise.
@@ -182,7 +187,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: pause delimiter-adjacent cleanup unless another equally explicit parser-owned boundary shows a concrete uncovered gap; otherwise move to a different narrow multiline-layout improvement rather than broadening blank-line heuristics.
+- Block 4: prefer one more narrow body-opening or multiline-layout slice for a single explicit ownership family, rather than reopening generic delimiter cleanup or broadening blank-line heuristics across every construct at once.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
