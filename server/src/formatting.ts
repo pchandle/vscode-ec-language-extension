@@ -1013,6 +1013,10 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       markExtraBlankLinesInRange(bodyStartLine, bodyEndLine);
     }
 
+    if (isBareEndLine(getLineText(document, endLineIndex))) {
+      markCommentAdjacentDelimiterGap(endLineIndex);
+    }
+
     for (const nestedStatement of body.statements) {
       visitStatement(nestedStatement);
     }

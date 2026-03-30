@@ -298,6 +298,33 @@ describe("formatting", () => {
     expect(model.lines[9].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks blank lines between a standalone comment group and parsed declaration end delimiters for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "  $ -> value",
+        "  // keep end note",
+        "",
+        "",
+        "end",
+        "",
+        "def helper(x) out:",
+        "  $ -> value",
+        "  // keep end note",
+        "",
+        "",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].deleteLine).to.equal(true);
+    expect(model.lines[10].deleteLine).to.equal(true);
+    expect(model.lines[11].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -765,6 +792,40 @@ describe("formatting", () => {
         "},",
         "",
         "  third",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between standalone comment groups and parsed declaration end delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  $ -> value",
+      "  // keep end note",
+      "",
+      "",
+      "end",
+      "",
+      "def helper(x) out:",
+      "  $ -> value",
+      "  // keep end note",
+      "",
+      "",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  $ -> value",
+        "  // keep end note",
+        "end",
+        "",
+        "def helper(x) out:",
+        "  $ -> value",
+        "  // keep end note",
+        "end",
       ].join("\n")
     );
   });
@@ -1667,6 +1728,43 @@ describe("formatting", () => {
         "},",
         "",
         "  third",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed declaration bodies with comment-attached end delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  $ -> value",
+      "  // keep end note",
+      "",
+      "",
+      "end",
+      "",
+      "def helper(x) out:",
+      "  $ -> value",
+      "  // keep end note",
+      "",
+      "",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  $ -> value",
+        "  // keep end note",
+        "end",
+        "",
+        "def helper(x) out:",
+        "  $ -> value",
+        "  // keep end note",
+        "",
+        "",
+        "end",
       ].join("\n")
     );
   });

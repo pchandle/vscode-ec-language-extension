@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed delimiter-adjacent blank-line normalization to collapse blank lines between standalone comment groups and parsed declaration `end` delimiters for `job` / `def` bodies. Declaration-end comments now stay visually attached to the closing boundary they annotate instead of preserving spacer blank lines that weaken that relationship.
+- Scope decision: this slice is limited to parse-success `job` / `def` body closures whose owned delimiter is a bare `end`. It does not change malformed recovery behavior, declaration body/interior blank-line policy beyond the existing repeated-blank-line rule, brace-block close spacing, or broader declaration layout.
+- Assumption: once parsed `if` delimiter-adjacent comments already collapse onto `else` / `end` / `end ->`, the matching declaration `end` boundary is the next smallest explicit parser-owned delimiter case with clear user-visible payoff and minimal style churn.
+- Lesson captured for future PRs: delimiter-adjacent comment-attachment cleanup remains low risk when extended one owned boundary family at a time, even across different statement kinds, as long as the formatter reuses existing parsed delimiter lookup instead of inventing broader whitespace heuristics.
+- Next-step implication: the next Block 4 slice should stay on a different narrow parser-owned layout gap, most likely another non-`if`, non-continuation delimiter/body adjacency with equally explicit ownership; otherwise Block 4 should pause before broader multiline policy work.
 - Block 4 slice: extended parsed blank-line normalization into multiline additional-output continuation regions by collapsing repeated blank lines while preserving a single blank line on parser-owned continued target and obligation lines. Parsed multiline additional-output statements now follow the same owned-region blank-line rule already used for multiline `if` headers, declaration headers, `defaults`, invocation continuations, block bodies, and `end ->` continuation regions.
 - Scope decision: this slice is limited to parse-success multiline additional-output continuation lines outside brace-block interiors and closes, matching the existing parser-owned indentation path for additional-output continuations. It does not change invocation/defaults spacing, brace-block interior blank-line policy, malformed recovery behavior, or broader multiline compression outside additional-output-owned continuation lines.
 - Assumption: after invocation continuations, multiline additional-output continuations were the next smallest remaining family with equally explicit parser-owned ownership and established indentation behavior, so they were the last obvious continuation-family extension before Block 4 should stop broadening this blank-line-normalization thread.
@@ -167,7 +172,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: shift to a different narrow structural layout improvement instead of continuing generic continuation-family blank-line compression; only reopen this thread if another parser-owned multiline region with equally explicit ownership shows clear user-visible payoff.
+- Block 4: continue only with another narrow parser-owned delimiter/body adjacency or similarly explicit structural layout gap outside the already-covered continuation families; avoid reopening generic continuation blank-line compression without a concrete uncovered ownership boundary.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
