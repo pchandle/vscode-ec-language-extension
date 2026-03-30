@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: collapsed pure blank-line gaps at parsed `job` / `def` body starts so declaration headers now attach directly to the first owned body statement when no standalone comment group occupies that opening slot. Parse-success declaration bodies no longer preserve a spacer blank line between the header boundary and the first statement.
+- Scope decision: this slice is limited to parse-success declaration body openings for `job` / `def` where the first nonblank line after the header boundary is body content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached declaration openings beyond the already completed slice, `if` / brace / continuation body starts, or broader blank-line policy inside declaration bodies.
+- Assumption: after exhausting the explicit opening-boundary comment-attachment families, declaration body starts were the smallest remaining parser-owned layout boundary where removing a pure blank spacer before the first statement is still an obvious, low-ambiguity improvement.
+- Lesson captured for future PRs: once comment-attached boundary cleanup is in place, the next safe structural tightening is often the matching pure-blank-gap case for a single owned family, provided the formatter can distinguish “comment starts body” from “body content starts body” without heuristics.
+- Next-step implication: the next Block 4 slice should either mirror this pure-blank-gap opening rule for another equally explicit owned family, such as parsed `if` branch starts, or move to a different small multiline-layout improvement instead of broadening header/body gap removal across all constructs at once.
 - Block 4 slice: extended opening-boundary blank-line cleanup into parsed multiline additional-output continuations by collapsing blank lines between the additional-output boundary line and a following standalone comment group. Additional-output-opening comments that annotate the first owned trailing target or obligation content now stay visually attached to that boundary instead of preserving spacer blank lines after it.
 - Scope decision: this slice is limited to parse-success multiline additional-output continuations whose boundary line is already explicit in the parsed statement range. It does not change malformed recovery behavior, brace-block interior blank-line policy, inline comment handling on the boundary line, or broader continuation-wrapping policy outside parsed multiline additional-output statements.
 - Assumption: after parsed multiline invocation starts, multiline additional-output starts were the last small explicit continuation-opening family with equally clear parser-owned boundaries and established standalone comment indentation.
@@ -212,7 +217,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: move to a different small multiline-layout improvement instead of continuing the opening-boundary comment-attachment thread, unless another equally explicit non-heuristic ownership family is discovered during implementation.
+- Block 4: either mirror the new pure-blank-gap body-opening rule for one more equally explicit owned family, most likely parsed `if` branch starts, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of opening blank lines.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
