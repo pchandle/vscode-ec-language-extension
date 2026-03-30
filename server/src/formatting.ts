@@ -1176,6 +1176,9 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
 
     if (endLineIndex + 1 <= ifNode.range.end.line) {
       markExtraBlankLinesInRange(endLineIndex + 1, ifNode.range.end.line);
+      if (isEndArrowLine(getLineText(document, endLineIndex))) {
+        markDelimiterLeadingCommentGap(endLineIndex);
+      }
     }
 
     for (const nestedStatement of ifNode.thenBlock.statements) {

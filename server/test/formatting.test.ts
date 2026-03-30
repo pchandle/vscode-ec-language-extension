@@ -419,6 +419,25 @@ describe("formatting", () => {
     expect(model.lines[7].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed end-arrow boundaries and a following standalone comment group for deletion", () => {
+    const input = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
+        "",
+        "",
+        "  // keep target note",
+        "  result2",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -716,7 +735,30 @@ describe("formatting", () => {
         "  sub /data/new($) -> out",
         "",
         "end -> result1,",
-        "",
+        "  // keep target note",
+        "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed end-arrow boundaries and following standalone comment groups", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "",
+      "",
+      "  // keep target note",
+      "  result2",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
         "  // keep target note",
         "  result2",
       ].join("\n")
@@ -1695,7 +1737,6 @@ describe("formatting", () => {
         "  sub /data/new($) -> out",
         "",
         "end -> result1,",
-        "",
         "  // keep target note",
         "  result2",
       ].join("\n")
@@ -2101,6 +2142,31 @@ describe("formatting", () => {
         "  // keep else note",
         "  $ -> fallback",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed end-arrow continuations with comment-attached boundaries", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "",
+      "",
+      "  // keep target note",
+      "  result2",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 2, 6)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
+        "  // keep target note",
+        "  result2",
       ].join("\n")
     );
   });
