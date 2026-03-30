@@ -438,6 +438,24 @@ describe("formatting", () => {
     expect(model.lines[4].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed defaults boundaries and a following standalone comment group for deletion", () => {
+    const input = createDocument(
+      [
+        "defaults: data,",
+        "",
+        "",
+        "  // keep defaults note",
+        "  x64,",
+        "  codevalley",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[1].deleteLine).to.equal(true);
+    expect(model.lines[2].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -936,6 +954,28 @@ describe("formatting", () => {
         "  x64,",
         "  codevalley",
         "sub /data/new($) -> out",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed defaults boundaries and following standalone comment groups", () => {
+    const input = [
+      "defaults: data,",
+      "",
+      "",
+      "  // keep defaults note",
+      "  x64,",
+      "  codevalley",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  // keep defaults note",
+        "  x64,",
+        "  codevalley",
       ].join("\n")
     );
   });
@@ -1920,6 +1960,29 @@ describe("formatting", () => {
         "  x64,",
         "  codevalley",
         "sub /data/new($)->out",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline defaults continuations with comment-attached boundaries", () => {
+    const input = [
+      "defaults: data,",
+      "",
+      "",
+      "  // keep defaults note",
+      "  x64,",
+      "  codevalley",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  // keep defaults note",
+        "  x64,",
+        "  codevalley",
       ].join("\n")
     );
   });

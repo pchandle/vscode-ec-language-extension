@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended opening-boundary blank-line cleanup into parsed multiline `defaults` continuations by collapsing blank lines between the `defaults:` boundary and a following standalone comment group. Continuation-opening comments that annotate the first owned `defaults` entries now stay visually attached to the `defaults:` boundary instead of preserving spacer blank lines after it.
+- Scope decision: this slice is limited to parse-success multiline `defaults` continuations whose boundary line is already explicit in the parsed statement range. It does not change malformed recovery behavior, inline comment handling on the `defaults:` line, or broader continuation-wrapping policy outside parsed multiline `defaults`.
+- Assumption: after multiline `if end ->` continuation starts, parsed multiline `defaults` starts were the next smallest explicit continuation-opening family because they already have parser-owned continuation lines plus established standalone comment indentation.
+- Lesson captured for future PRs: when multiple statement families already expose a concrete opening boundary plus owned continuation lines, opening-boundary cleanup can stay low risk by advancing one family at a time instead of inventing a shared continuation-start heuristic up front.
+- Next-step implication: the next Block 4 slice should either mirror this opening-boundary treatment for one more explicit continuation family, most likely multiline invocation starts, or move to a different small multiline-layout improvement rather than broadening the rule generically.
 - Block 4 slice: extended body-opening blank-line cleanup into parsed multiline `if end ->` continuation starts by collapsing blank lines between the `end ->` boundary and a following standalone comment group. Continuation-opening comments that annotate the first owned trailing-target content now stay visually attached to the `end ->` boundary instead of preserving spacer blank lines after it.
 - Scope decision: this slice is limited to parse-success multiline `if` trailing-target continuation regions whose `end ->` boundary is already located by the existing parsed layout logic. It does not change same-line `end -> result` layout, malformed recovery behavior, delimiter-adjacent cleanup before `end ->`, or broader continuation-wrapping policy outside parsed `if` trailing targets.
 - Assumption: after parsed declaration and branch body openings, multiline `if end ->` continuations were the next smallest explicit owned opening family because the formatter already treats that continuation region as parser-owned for indentation, selection expansion, and blank-line normalization.
@@ -197,7 +202,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: either continue with one more narrow opening-boundary slice for a single explicit ownership family or move to a different small multiline-layout improvement, but avoid broad generic “first comment after boundary” heuristics across every construct at once.
+- Block 4: either continue with one more narrow opening-boundary slice for a single explicit ownership family, most likely multiline invocations, or move to a different small multiline-layout improvement, but avoid broad generic “first comment after boundary” heuristics across every construct at once.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

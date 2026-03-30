@@ -1069,6 +1069,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
 
     markExtraBlankLinesInRange(statement.range.start.line + 1, statement.range.end.line);
+    markDelimiterLeadingCommentGap(statement.range.start.line);
   };
 
   const visitInvocationContinuation = (statement: Statement): void => {
