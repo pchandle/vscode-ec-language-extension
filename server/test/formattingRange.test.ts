@@ -73,6 +73,38 @@ describe("formattingRange", () => {
     });
   });
 
+  it("expands a selection touching a standalone then line backward to include the immediate header suffix", () => {
+    const document = createDocument(
+      ["if ready &&", "available", "then", "sub /data/new($)->out", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(2, 1), Position.create(2, 4));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 1,
+      endLine: 2,
+    });
+  });
+
+  it("expands a standalone then-line selection backward through blank and comment suffix lines", () => {
+    const document = createDocument(
+      [
+        "if ready &&",
+        "available",
+        "",
+        "// keep condition note",
+        "then",
+        "sub /data/new($)->out",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(4, 1), Position.create(4, 4));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 1,
+      endLine: 4,
+    });
+  });
+
   it("expands a selection touching a bare end line backward to include the immediate owned suffix", () => {
     const document = createDocument(
       ["job /example/test(x):", "  if ready then", "    sub /data/new($)->out", "    // keep note", "  end", "end"].join("\n")

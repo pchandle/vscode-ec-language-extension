@@ -33,6 +33,7 @@ export function normalizeRangeToTouchedLines(
     endLine = startLine;
   }
 
+  startLine = expandThenHeaderSuffix(document, startLine, endLine);
   startLine = expandBareEndOwnedSuffix(document, startLine, endLine);
   endLine = expandElseBodyPrefix(document, startLine, endLine);
   endLine = expandEndArrowContinuationPrefix(document, startLine, endLine);
@@ -64,6 +65,10 @@ function isStandaloneElseLine(document: TextDocument, line: number): boolean {
   return getLineText(document, line).trim() === "else";
 }
 
+function isStandaloneThenLine(document: TextDocument, line: number): boolean {
+  return getLineText(document, line).trim() === "then";
+}
+
 function isStandaloneEndLine(document: TextDocument, line: number): boolean {
   return /^end(\s|$)/.test(getLineText(document, line).trim());
 }
@@ -75,6 +80,32 @@ function isBareEndLine(document: TextDocument, line: number): boolean {
 function isEndArrowContinuationLine(document: TextDocument, line: number): boolean {
   const trimmed = getLineText(document, line).trim();
   return /^end\s*->/.test(trimmed) && (/,\s*$/.test(trimmed) || /->\s*$/.test(trimmed));
+}
+
+function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedStartLine = startLine;
+
+  for (let line = endLine; line >= expandedStartLine; line--) {
+    if (!isStandaloneThenLine(document, line)) {
+      continue;
+    }
+
+    for (let previousLine = line - 1; previousLine >= 0; previousLine--) {
+      if (isStandaloneElseLine(document, previousLine) || isStandaloneEndLine(document, previousLine)) {
+        break;
+      }
+
+      expandedStartLine = Math.min(expandedStartLine, previousLine);
+
+      if (isBlankLine(document, previousLine) || isStandaloneLineComment(document, previousLine)) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  return expandedStartLine;
 }
 
 function expandBareEndOwnedSuffix(document: TextDocument, startLine: number, endLine: number): number {

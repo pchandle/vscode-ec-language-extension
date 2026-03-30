@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: clarified the standalone `then` delimiter-adjacent selection rule by expanding a range that touches a standalone `then` line backward to include the immediate multiline-header suffix above it. Range formatting now treats `then` together with the nearest owned header-prefix slice as a small structural unit instead of formatting only the delimiter line in isolation.
+- Scope decision: this slice is limited to standalone `then` lines in multiline `if` headers. It expands only backward through blank/comment suffix lines to the first preceding content line, does not expand to the whole enclosing `if`, does not alter same-line `if ... then` headers, and does not change document-formatting behavior.
+- Assumption: a selected standalone `then` line is not useful in isolation when the immediately preceding multiline-header suffix remains untouched, so the smallest worthwhile next step is the backward counterpart to the existing `else`, bare `end`, and multiline `end ->` rules rather than a jump to full enclosing-unit expansion.
+- Lesson captured for future PRs: the narrow delimiter-expansion policy still composes coherently when each delimiter promotes only its nearest clearly owned slice, so the decision to broaden into enclosing-unit formatting can stay deferred until a real gap remains after the obvious delimiter cases are closed.
+- Next-step implication: the next Block 5 slice should decide whether the remaining structural partial-selection cases justify a documented enclosing-unit policy or whether the formatter should explicitly codify that standalone delimiter promotion stops with the current `if`-delimiter set.
 - Block 5 slice: clarified the `end ->` delimiter-adjacent selection rule by expanding a range that touches a multiline `end ->` line forward to include the immediate owned continuation prefix. Range formatting now treats an `end ->` delimiter together with its first continuation slice as a small structural unit instead of formatting only the delimiter line in isolation.
 - Scope decision: this slice is limited to `end ->` lines that clearly signal multiline continuation ownership today, specifically newline-arrow and trailing-comma forms. It expands only through blank/comment prefix lines up to the first continuation content line, does not change complete single-line `end -> result` selections, does not expand to the whole enclosing `if`, and does not alter document-formatting behavior.
 - Assumption: the smallest worthwhile counterpart to the existing `else` rule is to promote only obviously multiline `end ->` selections, because expanding every `end ->` line would incorrectly capture unrelated following statements when the target list is already complete on the same line.
@@ -87,7 +92,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: decide whether delimiter-adjacent selection handling should continue as narrow per-delimiter expansion rules or move to a more general enclosing-unit policy for structural partial selections.
+- Block 5: decide whether the formatter should stop range-expansion at the current standalone `if` delimiter rules and document the remaining contract, or move to a more general enclosing-unit policy for structural partial selections.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
