@@ -36,12 +36,12 @@ export function normalizeRangeToTouchedLines(
   const touchedStartLine = startLine;
   const touchedEndLine = endLine;
 
-  ({ startLine, endLine } = applyStandaloneIfDelimiterExpansions(document, touchedStartLine, touchedEndLine, startLine, endLine));
+  ({ startLine, endLine } = applyNonCascadingIfSliceExpansions(document, touchedStartLine, touchedEndLine, startLine, endLine));
 
   return { startLine, endLine };
 }
 
-function applyStandaloneIfDelimiterExpansions(
+function applyNonCascadingIfSliceExpansions(
   document: TextDocument,
   touchedStartLine: number,
   touchedEndLine: number,
@@ -50,7 +50,7 @@ function applyStandaloneIfDelimiterExpansions(
 ): NormalizedFormattingRange {
   // Block 5 range policy stays intentionally narrow:
   // only a few explicit if-header/delimiter cases promote the selection to their nearest owned slice.
-  // Rules trigger from the originally touched lines so expansions do not cascade into enclosing-unit behavior.
+  // The touched-line window is the contract boundary: newly expanded lines never become fresh triggers.
   let expandedStartLine = startLine;
   let expandedEndLine = endLine;
 

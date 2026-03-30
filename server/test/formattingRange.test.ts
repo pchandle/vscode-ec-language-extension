@@ -291,6 +291,28 @@ describe("formattingRange", () => {
     });
   });
 
+  it("keeps an inner end-arrow delimiter selection anchored to the inner slice instead of cascading to the enclosing if", () => {
+    const document = createDocument(
+      [
+        "if outer then",
+        "  if inner then",
+        "    sub /data/new($)->out",
+        "  end -> inner1,",
+        "  // keep target note",
+        "  inner2",
+        "else",
+        "  $ -> outerFallback",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(3, 2), Position.create(3, 8));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 3,
+      endLine: 5,
+    });
+  });
+
   it("expands a selection touching an end-arrow continuation line to include the immediate continuation line", () => {
     const document = createDocument(
       ["if ready then", "  sub /data/new($)->out", "end -> result1,", "result2"].join("\n")

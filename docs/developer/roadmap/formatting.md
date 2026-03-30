@@ -18,10 +18,15 @@ The recommended sequence is:
 - Block 2: Server-side formatter parity: completed
 - Block 3: Syntax-aware formatting core: in progress
 - Block 4: Block layout and multiline normalization: in progress
-- Block 5: Selection formatting and range correctness: in progress
+- Block 5: Selection formatting and range correctness: completed
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: concluded the range-formatting contract by naming it explicitly as a non-cascading owned-slice policy and extending nested regressions to cover both backward and forward delimiter-adjacent expansions. Range formatting now documents that the touched-line window is the hard boundary for slice promotion, even when the selected inner slice sits inside a larger `if`.
+- Scope decision: this slice does not add any new owned-slice expansion cases. It locks the existing `then` / `else` / bare `end` / multiline `end ->` and first-owned-line rules behind an explicit non-cascading contract, with nested coverage for both inner `else` bodies and inner multiline `end ->` delimiter slices. Document-formatting behavior is unchanged.
+- Assumption: after the earlier owned-slice rules and the first non-cascading regression were already in place, the smallest final Block 5 step was to conclude the contract rather than search for one more boundary case whose value had not been demonstrated.
+- Lesson captured for future PRs: a range-formatting block can be considered complete once the expansion rules, non-expansion boundaries, and anti-cascade stop condition are all explicit in both helper naming and regression coverage.
+- Next-step implication: the next formatter PR should move back to Block 4 or Block 6 work rather than reopening Block 5 without a concrete failing selection case.
 - Block 5 slice: hardened the current owned-slice contract so expansion rules trigger only from the originally touched lines, not from lines that were added by an earlier range-expansion step. Range formatting now makes that “no cascading into enclosing slices” policy explicit in the server helper, with nested-range regressions that keep an inner structural slice from growing into its enclosing `if`.
 - Scope decision: this slice does not add a new owned-slice rule. It keeps the existing standalone-delimiter and first-owned-line promotions, but freezes them as non-cascading expansions rooted only in the user’s touched lines. Document-formatting behavior is unchanged.
 - Assumption: after the narrow `then` / `else` / bare `end` / multiline `end ->` and first-owned-line rules were in place, the smallest reviewable next step was to codify their stop condition instead of adding another boundary case that would risk drifting toward enclosing-unit expansion.
@@ -127,7 +132,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: decide whether any remaining concrete partial-selection case still justifies another nearest-boundary owned-slice rule, or whether Block 5 should now conclude with the current non-cascading range-formatting contract.
+- Block 4: tackle the next obvious parsed-region layout gap, most likely a comment-aware `else` / bare `end` adjacency or another narrow delimiter-adjacent blank-line normalization rule.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
