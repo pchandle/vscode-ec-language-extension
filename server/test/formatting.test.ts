@@ -1,7 +1,9 @@
 /// <reference path="./globals.d.ts" />
 import { expect } from "chai";
+import { Position, Range } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { buildFormattingInput, formatDocument, formatDocumentRange, planFormatting } from "../src/formatting";
+import { normalizeRangeToTouchedLines } from "../src/formattingRange";
 
 function createDocument(text: string): TextDocument {
   return TextDocument.create("file:///formatting.dla", "emergent", 1, text);
@@ -1156,6 +1158,38 @@ describe("formatting", () => {
         "  default,",
         "  x64,",
         "  codevalley",
+      ].join("\n")
+    );
+  });
+
+  it("formats a selected end-arrow delimiter line together with its immediate continuation prefix", () => {
+    const input = [
+      "if ready then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "// keep target note",
+      "result2",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(2, 2), Position.create(2, 8)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 2,
+      endLine: 4,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "sub /data/new($)->out",
+        "end -> result1,",
+        "  // keep target note",
+        "  result2",
       ].join("\n")
     );
   });

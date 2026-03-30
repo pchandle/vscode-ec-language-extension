@@ -35,6 +35,7 @@ export function normalizeRangeToTouchedLines(
 
   startLine = expandBareEndOwnedSuffix(document, startLine, endLine);
   endLine = expandElseBodyPrefix(document, startLine, endLine);
+  endLine = expandEndArrowContinuationPrefix(document, startLine, endLine);
 
   return { startLine, endLine };
 }
@@ -71,6 +72,11 @@ function isBareEndLine(document: TextDocument, line: number): boolean {
   return getLineText(document, line).trim() === "end";
 }
 
+function isEndArrowContinuationLine(document: TextDocument, line: number): boolean {
+  const trimmed = getLineText(document, line).trim();
+  return /^end\s*->/.test(trimmed) && (/,\s*$/.test(trimmed) || /->\s*$/.test(trimmed));
+}
+
 function expandBareEndOwnedSuffix(document: TextDocument, startLine: number, endLine: number): number {
   let expandedStartLine = startLine;
 
@@ -102,6 +108,32 @@ function expandElseBodyPrefix(document: TextDocument, startLine: number, endLine
 
   for (let line = startLine; line <= expandedEndLine; line++) {
     if (!isStandaloneElseLine(document, line)) {
+      continue;
+    }
+
+    for (let nextLine = line + 1; nextLine < document.lineCount; nextLine++) {
+      if (isStandaloneEndLine(document, nextLine)) {
+        break;
+      }
+
+      expandedEndLine = Math.max(expandedEndLine, nextLine);
+
+      if (isBlankLine(document, nextLine) || isStandaloneLineComment(document, nextLine)) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  return expandedEndLine;
+}
+
+function expandEndArrowContinuationPrefix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedEndLine = endLine;
+
+  for (let line = startLine; line <= expandedEndLine; line++) {
+    if (!isEndArrowContinuationLine(document, line)) {
       continue;
     }
 

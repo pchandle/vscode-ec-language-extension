@@ -104,4 +104,47 @@ describe("formattingRange", () => {
       endLine: 5,
     });
   });
+
+  it("expands a selection touching an end-arrow continuation line to include the immediate continuation line", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "end -> result1,", "result2"].join("\n")
+    );
+    const range = Range.create(Position.create(2, 2), Position.create(2, 8));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 3,
+    });
+  });
+
+  it("expands an end-arrow selection through blank and comment prefixes before the first continuation line", () => {
+    const document = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "end -> result1,",
+        "",
+        "// keep target note",
+        "result2",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(2, 2), Position.create(2, 8));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 5,
+    });
+  });
+
+  it("keeps a complete single-line end-arrow selection line-bounded", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "end -> result", "sub /next($)->out2"].join("\n")
+    );
+    const range = Range.create(Position.create(2, 2), Position.create(2, 8));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 2,
+      endLine: 2,
+    });
+  });
 });
