@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed delimiter-adjacent blank-line normalization to collapse blank lines between standalone comment groups and parsed brace-block close delimiters. Comment groups that annotate a closing `}` now stay visually attached to that owned boundary instead of preserving spacer blank lines before the close.
+- Scope decision: this slice is limited to parse-success brace-block closures whose `{ ... }` ownership is already explicit in the parsed formatter model. It does not change malformed recovery behavior, brace-block interior blank-line policy beyond the existing repeated-blank-line rule, declaration or `if` delimiter behavior, or broader brace-layout style.
+- Assumption: after parsed declaration `end` closures, brace-block close delimiters were the next smallest non-`if`, non-continuation owned boundary with the same clear “comment annotates the closer” relationship and low style-churn risk.
+- Lesson captured for future PRs: delimiter-adjacent comment-attachment cleanup stays predictable when it follows already-owned close boundaries one delimiter family at a time, even when those boundaries are punctuation rather than keywords.
+- Next-step implication: the next Block 4 slice should target another equally explicit parser-owned boundary or stop broadening delimiter-adjacent blank-line cleanup before moving into larger multiline layout policy.
 - Block 4 slice: extended parsed delimiter-adjacent blank-line normalization to collapse blank lines between standalone comment groups and parsed declaration `end` delimiters for `job` / `def` bodies. Declaration-end comments now stay visually attached to the closing boundary they annotate instead of preserving spacer blank lines that weaken that relationship.
 - Scope decision: this slice is limited to parse-success `job` / `def` body closures whose owned delimiter is a bare `end`. It does not change malformed recovery behavior, declaration body/interior blank-line policy beyond the existing repeated-blank-line rule, brace-block close spacing, or broader declaration layout.
 - Assumption: once parsed `if` delimiter-adjacent comments already collapse onto `else` / `end` / `end ->`, the matching declaration `end` boundary is the next smallest explicit parser-owned delimiter case with clear user-visible payoff and minimal style churn.
@@ -172,7 +177,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: continue only with another narrow parser-owned delimiter/body adjacency or similarly explicit structural layout gap outside the already-covered continuation families; avoid reopening generic continuation blank-line compression without a concrete uncovered ownership boundary.
+- Block 4: continue only if another equally explicit parser-owned boundary still shows a concrete delimiter/body adjacency gap; otherwise pause delimiter-adjacent cleanup and move to a different narrow structural layout improvement rather than broadening blank-line heuristics.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

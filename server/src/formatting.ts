@@ -1168,6 +1168,10 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
         markExtraBlankLinesInRange(openLineIndex + 1, closeLineIndex - 1);
       }
 
+      if (closeLineIndex > openLineIndex) {
+        markCommentAdjacentDelimiterGap(closeLineIndex);
+      }
+
       for (const nestedStatement of block.statements) {
         visitStatement(nestedStatement);
       }
