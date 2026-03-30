@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: mirrored the declaration body-opening cleanup for parsed `if` branch starts by collapsing blank lines between a standalone `then` or `else` boundary and a following standalone comment group at branch start. Branch-opening comments that annotate the first owned branch content now stay visually attached to that branch boundary instead of preserving spacer blank lines after `then` or `else`.
+- Scope decision: this slice is limited to parse-success `if` branch openings whose `then` / `else` boundary line can already be located by the existing parsed layout logic. It does not change malformed recovery behavior, same-line inline comment handling, `end` / `end ->` delimiter behavior beyond the already completed slices, or broader `if` wrapping policy.
+- Assumption: after declaration body openings, parsed `if` branch starts were the next smallest explicit body-opening family with the same clear “comment annotates the first owned body content” relationship and established indentation policy.
+- Lesson captured for future PRs: once a body-opening cleanup rule proves stable for one statement family, the safest expansion is the matching owned family whose boundary lookup already exists in parsed indentation/layout code, not a generic first-comment rule across all constructs.
+- Next-step implication: the next Block 4 slice should either apply the same body-opening treatment to another equally explicit owned family or shift to a different narrow multiline-layout improvement rather than generalizing branch-opening cleanup heuristically.
 - Block 4 slice: moved beyond delimiter-only cleanup to collapse blank lines between parsed `job` / `def` header boundaries and a following standalone comment group at body start. Declaration-body comments that annotate the first owned body content now stay visually attached to the declaration boundary instead of preserving spacer blank lines after the header.
 - Scope decision: this slice is limited to parse-success declaration body openings for `job` / `def`, including multiline headers whose last owned header line can still be located before the first parsed body statement. It does not change malformed recovery behavior, `if` branch openings, brace-block openings beyond the already completed brace slice, or broader declaration wrapping policy.
 - Assumption: after finishing the explicit delimiter-adjacent cleanup families, declaration body openings were the next smallest parser-owned multiline-layout improvement with clear user-visible payoff because the formatter already has stable indentation for those body comments and statements.
@@ -187,7 +192,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: prefer one more narrow body-opening or multiline-layout slice for a single explicit ownership family, rather than reopening generic delimiter cleanup or broadening blank-line heuristics across every construct at once.
+- Block 4: either continue with one more narrow body-opening slice for another explicit ownership family or move to a different small multiline-layout improvement, but avoid broad generic “first comment after boundary” heuristics across every construct at once.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
