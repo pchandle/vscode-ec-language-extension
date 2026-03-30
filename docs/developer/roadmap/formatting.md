@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended opening-boundary blank-line cleanup into parsed multiline additional-output continuations by collapsing blank lines between the additional-output boundary line and a following standalone comment group. Additional-output-opening comments that annotate the first owned trailing target or obligation content now stay visually attached to that boundary instead of preserving spacer blank lines after it.
+- Scope decision: this slice is limited to parse-success multiline additional-output continuations whose boundary line is already explicit in the parsed statement range. It does not change malformed recovery behavior, brace-block interior blank-line policy, inline comment handling on the boundary line, or broader continuation-wrapping policy outside parsed multiline additional-output statements.
+- Assumption: after parsed multiline invocation starts, multiline additional-output starts were the last small explicit continuation-opening family with equally clear parser-owned boundaries and established standalone comment indentation.
+- Lesson captured for future PRs: once the remaining continuation-opening families are exhausted, Block 4 should move on rather than stretching the same boundary-attachment rule across weaker or more heuristic ownership cases.
+- Next-step implication: the next Block 4 slice should move to a different narrow multiline-layout improvement unless another equally explicit non-heuristic opening-boundary family still exists.
 - Block 4 slice: extended opening-boundary blank-line cleanup into parsed multiline invocation continuations by collapsing blank lines between the invocation boundary line and a following standalone comment group. Invocation-opening comments that annotate the first owned argument, target, or obligation content now stay visually attached to that boundary instead of preserving spacer blank lines after it.
 - Scope decision: this slice is limited to parse-success multiline invocation continuations for `sub`, `host`, and `join` whose boundary line is already explicit in the parsed statement range. It does not change malformed recovery behavior, brace-block interior blank-line policy, inline comment handling on the invocation boundary line, or broader continuation-wrapping policy outside parsed multiline invocations.
 - Assumption: after parsed multiline `defaults` starts, multiline invocation starts were the next smallest explicit continuation-opening family because they already have parser-owned continuation lines plus established standalone comment indentation across arguments, targets, and obligations.
@@ -207,7 +212,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: either continue with one more narrow opening-boundary slice for a single remaining explicit ownership family, if one still has clear user-visible payoff, or move to a different small multiline-layout improvement, but avoid broad generic “first comment after boundary” heuristics across every construct at once.
+- Block 4: move to a different small multiline-layout improvement instead of continuing the opening-boundary comment-attachment thread, unless another equally explicit non-heuristic ownership family is discovered during implementation.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

@@ -474,6 +474,24 @@ describe("formatting", () => {
     expect(model.lines[2].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed additional-output boundaries and a following standalone comment group for deletion", () => {
+    const input = createDocument(
+      [
+        "value -> first,",
+        "",
+        "",
+        "  // keep trailing target note",
+        "  second,",
+        "  third",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[1].deleteLine).to.equal(true);
+    expect(model.lines[2].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -1016,6 +1034,28 @@ describe("formatting", () => {
         "  // keep arg note",
         "  $,",
         "  1) -> out",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed additional-output boundaries and following standalone comment groups", () => {
+    const input = [
+      "value -> first,",
+      "",
+      "",
+      "  // keep trailing target note",
+      "  second,",
+      "  third",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "  // keep trailing target note",
+        "  second,",
+        "  third",
       ].join("\n")
     );
   });
@@ -2046,6 +2086,29 @@ describe("formatting", () => {
         "  // keep arg note",
         "  $,",
         "  1) -> out",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline additional-output continuations with comment-attached boundaries", () => {
+    const input = [
+      "value -> first,",
+      "",
+      "",
+      "  // keep trailing target note",
+      "  second,",
+      "  third",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "  // keep trailing target note",
+        "  second,",
+        "  third",
       ].join("\n")
     );
   });
