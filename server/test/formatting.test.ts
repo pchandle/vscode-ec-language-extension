@@ -133,6 +133,31 @@ describe("formatting", () => {
     expect(model.lines[5].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks blank lines between a standalone comment group and parsed else or bare end delimiters for deletion", () => {
+    const input = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "  // keep else note",
+        "",
+        "",
+        "else",
+        "  $ -> fallback",
+        "  // keep end note",
+        "",
+        "",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].deleteLine).to.equal(true);
+    expect(model.lines[8].deleteLine).to.equal(true);
+    expect(model.lines[9].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -394,6 +419,36 @@ describe("formatting", () => {
         "",
         "    // keep note",
         "  end",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between standalone comment groups and parsed else or bare end delimiters", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "  // keep else note",
+      "",
+      "",
+      "else",
+      "  $  ->fallback",
+      "  // keep end note",
+      "",
+      "",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "  // keep else note",
+        "else",
+        "  $ -> fallback",
+        "  // keep end note",
         "end",
       ].join("\n")
     );
@@ -1084,6 +1139,37 @@ describe("formatting", () => {
         "",
         "    // keep note",
         "  end",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed if blocks with comment-attached else and bare end delimiters", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($)->out",
+      "  // keep else note",
+      "",
+      "",
+      "else",
+      "  $  ->fallback",
+      "  // keep end note",
+      "",
+      "",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 10)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "  // keep else note",
+        "else",
+        "  $ -> fallback",
+        "  // keep end note",
         "end",
       ].join("\n")
     );

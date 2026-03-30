@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed `if` blank-line normalization to collapse blank lines between standalone comment groups and the following `else` or bare `end` delimiter. Parsed delimiter-adjacent comments now stay visually attached to the `if` boundary they annotate instead of preserving a spacer blank line that weakens that relationship.
+- Scope decision: this slice is limited to parse-success `if` regions and only to standalone comment groups immediately above `else` or bare `end`. It does not change `end ->` continuation spacing, top-level blank-line policy, or comment attachment outside parser-owned `if` delimiter boundaries.
+- Assumption: when a standalone comment group sits directly above `else` or bare `end`, preserving one or more blank lines between that comment and the delimiter is weaker than treating the comment as delimiter-adjacent structure, so deleting those spacer blank lines is a low-churn Block 4 improvement.
+- Lesson captured for future PRs: blank-line normalization near parsed delimiters can stay predictable when it is framed as comment attachment to a specific owned boundary, rather than as a broad “compress whitespace everywhere near control flow” rule.
+- Next-step implication: the next Block 4 slice should target another narrow parsed-region layout gap, most likely a bare `end` / `end ->` adjacency rule or another delimiter-adjacent blank-line case with similarly explicit ownership.
 - Block 5 slice: concluded the range-formatting contract by naming it explicitly as a non-cascading owned-slice policy and extending nested regressions to cover both backward and forward delimiter-adjacent expansions. Range formatting now documents that the touched-line window is the hard boundary for slice promotion, even when the selected inner slice sits inside a larger `if`.
 - Scope decision: this slice does not add any new owned-slice expansion cases. It locks the existing `then` / `else` / bare `end` / multiline `end ->` and first-owned-line rules behind an explicit non-cascading contract, with nested coverage for both inner `else` bodies and inner multiline `end ->` delimiter slices. Document-formatting behavior is unchanged.
 - Assumption: after the earlier owned-slice rules and the first non-cascading regression were already in place, the smallest final Block 5 step was to conclude the contract rather than search for one more boundary case whose value had not been demonstrated.
@@ -132,7 +137,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: tackle the next obvious parsed-region layout gap, most likely a comment-aware `else` / bare `end` adjacency or another narrow delimiter-adjacent blank-line normalization rule.
+- Block 4: tackle the next obvious parsed-region layout gap, most likely a bare `end` / `end ->` adjacency rule or another narrow delimiter-adjacent blank-line normalization case with explicit parser-owned boundaries.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

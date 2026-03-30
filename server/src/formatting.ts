@@ -555,6 +555,10 @@ function isStandaloneEndLine(text: string): boolean {
   return /^end(\s|$)/.test(text.trim());
 }
 
+function isBareEndLine(text: string): boolean {
+  return text.trim() === "end";
+}
+
 function setDesiredIndent(desiredIndentColumns: Map<number, number>, lineIndex: number, indentColumns: number): void {
   desiredIndentColumns.set(lineIndex, Math.max(0, indentColumns));
 }
@@ -973,6 +977,25 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
   };
 
+  const markCommentAdjacentDelimiterGap = (delimiterLineIndex: number): void => {
+    const blankLinesBetweenCommentAndDelimiter: number[] = [];
+
+    for (let lineIndex = delimiterLineIndex - 1; lineIndex >= 0; lineIndex--) {
+      const lineText = getLineText(document, lineIndex);
+
+      if (isBlankLine(lineText)) {
+        blankLinesBetweenCommentAndDelimiter.push(lineIndex);
+        continue;
+      }
+
+      if (blankLinesBetweenCommentAndDelimiter.length > 0 && isStandaloneLineComment(lineText)) {
+        blankLinesBetweenCommentAndDelimiter.forEach((blankLineIndex) => blankLinesToDelete.add(blankLineIndex));
+      }
+
+      break;
+    }
+  };
+
   const visitDelimitedBody = (
     startLineIndex: number,
     body: { range: Range; statements: Statement[] }
@@ -1024,6 +1047,12 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       if (elseBodyStartLine <= elseBodyEndLine) {
         markExtraBlankLinesInRange(elseBodyStartLine, elseBodyEndLine);
       }
+
+      markCommentAdjacentDelimiterGap(elseLineIndex);
+    }
+
+    if (isBareEndLine(getLineText(document, endLineIndex))) {
+      markCommentAdjacentDelimiterGap(endLineIndex);
     }
 
     if (endLineIndex + 1 <= ifNode.range.end.line) {
