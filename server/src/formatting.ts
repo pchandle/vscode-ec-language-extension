@@ -1080,6 +1080,8 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     const braceBlocks = collectBraceBlocks(statement).filter((block) => isBraceBlock(document, block));
     let sawBlankLine = false;
 
+    markDelimiterLeadingCommentGap(statement.range.start.line);
+
     for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
       if (isLineWithinBraceBlockInteriorOrClose(lineIndex, braceBlocks)) {
         sawBlankLine = false;

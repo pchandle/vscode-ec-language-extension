@@ -456,6 +456,24 @@ describe("formatting", () => {
     expect(model.lines[2].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed invocation boundaries and a following standalone comment group for deletion", () => {
+    const input = createDocument(
+      [
+        "sub /data/new(",
+        "",
+        "",
+        "  // keep arg note",
+        "  $,",
+        "  1) -> out",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[1].deleteLine).to.equal(true);
+    expect(model.lines[2].deleteLine).to.equal(true);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -976,6 +994,28 @@ describe("formatting", () => {
         "  // keep defaults note",
         "  x64,",
         "  codevalley",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed invocation boundaries and following standalone comment groups", () => {
+    const input = [
+      "sub /data/new(",
+      "",
+      "",
+      "  // keep arg note",
+      "  $,",
+      "  1) -> out",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "sub /data/new(",
+        "  // keep arg note",
+        "  $,",
+        "  1) -> out",
       ].join("\n")
     );
   });
@@ -1983,6 +2023,29 @@ describe("formatting", () => {
         "  // keep defaults note",
         "  x64,",
         "  codevalley",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline invocation continuations with comment-attached boundaries", () => {
+    const input = [
+      "sub /data/new(",
+      "",
+      "",
+      "  // keep arg note",
+      "  $,",
+      "  1) -> out",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "sub /data/new(",
+        "  // keep arg note",
+        "  $,",
+        "  1) -> out",
       ].join("\n")
     );
   });
