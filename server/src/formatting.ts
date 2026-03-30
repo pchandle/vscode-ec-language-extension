@@ -1018,6 +1018,18 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
   };
 
+  const visitDelimitedHeaderContinuation = (
+    startLineIndex: number,
+    body: { range: Range; statements: Statement[] }
+  ): void => {
+    const headerContinuationStartLine = startLineIndex + 1;
+    const headerContinuationEndLine = body.range.start.line - 1;
+
+    if (headerContinuationStartLine <= headerContinuationEndLine) {
+      markExtraBlankLinesInRange(headerContinuationStartLine, headerContinuationEndLine);
+    }
+  };
+
   const visitIf = (
     ifNode: { range: Range; thenBlock: { range: Range; statements: Statement[] }; elseBlock?: { range: Range; statements: Statement[] } }
   ): void => {
@@ -1096,6 +1108,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     }
 
     if (statement.kind === NodeKind.Job || statement.kind === NodeKind.Def) {
+      visitDelimitedHeaderContinuation(statement.range.start.line, statement.body);
       visitDelimitedBody(statement.range.start.line, statement.body);
       return;
     }

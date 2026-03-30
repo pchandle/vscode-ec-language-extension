@@ -198,6 +198,39 @@ describe("formatting", () => {
     expect(model.lines[4].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks extra blank lines inside parsed multiline job and def header continuation regions for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(",
+        "x,",
+        "",
+        "",
+        "y) out1,",
+        "out2:",
+        "  sub /data/new($)->out",
+        "end",
+        "",
+        "def helper(",
+        "x,",
+        "",
+        "",
+        "y) out1,",
+        "out2:",
+        "  $ -> value",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[2].deleteLine).to.equal(false);
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[11].deleteLine).to.equal(false);
+    expect(model.lines[12].deleteLine).to.equal(true);
+    expect(model.lines[4].desiredIndentColumns).to.equal(2);
+    expect(model.lines[13].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -538,6 +571,50 @@ describe("formatting", () => {
         "  available",
         "  then",
         "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses excessive blank lines inside parsed multiline job and def header continuation regions", () => {
+    const input = [
+      "job /example/test(",
+      "x,",
+      "",
+      "",
+      "y) out1,",
+      "out2:",
+      "  sub /data/new($)->out",
+      "end",
+      "",
+      "def helper(",
+      "x,",
+      "",
+      "",
+      "y) out1,",
+      "out2:",
+      "  $ -> value",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(",
+        "  x,",
+        "",
+        "  y) out1,",
+        "  out2:",
+        "  sub /data/new($) -> out",
+        "end",
+        "",
+        "def helper(",
+        "  x,",
+        "",
+        "  y) out1,",
+        "  out2:",
+        "  $ -> value",
         "end",
       ].join("\n")
     );
@@ -1310,6 +1387,51 @@ describe("formatting", () => {
         "  available",
         "  then",
         "  sub /data/new($) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline job and def headers with collapsed blank-line runs", () => {
+    const input = [
+      "job /example/test(",
+      "x,",
+      "",
+      "",
+      "y) out1,",
+      "out2:",
+      "  sub /data/new($)->out",
+      "end",
+      "",
+      "def helper(",
+      "x,",
+      "",
+      "",
+      "y) out1,",
+      "out2:",
+      "  $ -> value",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 15)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(",
+        "  x,",
+        "",
+        "  y) out1,",
+        "  out2:",
+        "  sub /data/new($) -> out",
+        "end",
+        "",
+        "def helper(",
+        "  x,",
+        "",
+        "  y) out1,",
+        "  out2:",
+        "  $ -> value",
         "end",
       ].join("\n")
     );
