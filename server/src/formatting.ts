@@ -1039,6 +1039,12 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
     const thenLineIndex =
       findLineMatching(ifLineIndex, thenSearchEndLine, containsThenKeyword) ?? ifLineIndex;
 
+    const headerContinuationStartLine = ifLineIndex + 1;
+    const headerContinuationEndLine = thenLineIndex;
+    if (headerContinuationStartLine <= headerContinuationEndLine) {
+      markExtraBlankLinesInRange(headerContinuationStartLine, headerContinuationEndLine);
+    }
+
     const thenBodyStartLine = thenLineIndex + 1;
     const thenBodyEndLine = (elseLineIndex ?? endLineIndex) - 1;
     if (thenBodyStartLine <= thenBodyEndLine) {

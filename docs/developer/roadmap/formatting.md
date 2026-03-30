@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: extended parsed blank-line normalization into multiline `if` header continuation regions by collapsing repeated blank lines before a standalone `then` while preserving a single blank line. Parsed multiline headers now follow the same “obvious owned region only” blank-line rule already used for block bodies and `end ->` continuation regions.
+- Scope decision: this slice is limited to parse-success multiline `if` header continuation regions before a standalone `then`. It does not change same-line `if ... then` headers, blank-line policy inside malformed recovery, or general multiline expression wrapping outside parser-owned `if` headers.
+- Assumption: once parsed `if` headers already had canonical indentation and explicit ownership up to `then`, collapsing only the second-and-later blank lines inside that owned header slice was a smaller and more coherent Block 4 step than continuing to chase weaker delimiter-adjacent whitespace cases.
+- Lesson captured for future PRs: when a multiline syntax region already has stable parser-owned indentation, the next safe normalization step is often to reuse the existing “preserve one blank line, delete the rest” rule inside that same region instead of inventing a new delimiter-specific heuristic.
+- Next-step implication: the next Block 4 slice should prefer another parser-owned multiline region with similarly explicit ownership, or else pause Block 4 blank-line work rather than broadening into ambiguous whitespace compression.
 - Block 4 slice: extended parsed `if` blank-line normalization to collapse blank lines between standalone comment groups and a following multiline `end ->` delimiter. Parsed comment groups that annotate trailing target ownership now stay visually attached to the `end ->` boundary instead of preserving spacer blank lines that weaken that association.
 - Scope decision: this slice is limited to parse-success `if` regions and only to standalone comment groups immediately above a parsed multiline `end ->` delimiter. It does not change continuation-body blank-line policy after `end ->`, top-level blank-line behavior, or comment attachment outside parser-owned `if` delimiter boundaries.
 - Assumption: once the formatter already treated comments above `else` and bare `end` as delimiter-adjacent structure, the matching parsed `end ->` case was the next smallest obvious ownership-preserving cleanup because those comments most naturally describe the trailing-target boundary line itself.
@@ -142,7 +147,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: tackle the next obvious parsed-region layout gap only if it still has equally explicit parser-owned boundaries, most likely another narrow delimiter/body adjacency case rather than a broader blank-line compression policy.
+- Block 4: tackle the next obvious parsed-region layout gap only if it has similarly explicit parser-owned ownership, preferably another multiline region rather than a weaker delimiter-adjacent whitespace heuristic.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

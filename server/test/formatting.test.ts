@@ -177,6 +177,27 @@ describe("formatting", () => {
     expect(model.lines[4].deleteLine).to.equal(true);
   });
 
+  it("marks extra blank lines inside parsed multiline if header continuation regions for deletion", () => {
+    const input = createDocument(
+      [
+        "if ready &&",
+        "",
+        "",
+        "available",
+        "then",
+        "  sub /data/new($)->out",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[1].deleteLine).to.equal(false);
+    expect(model.lines[2].deleteLine).to.equal(true);
+    expect(model.lines[3].desiredIndentColumns).to.equal(2);
+    expect(model.lines[4].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -493,6 +514,31 @@ describe("formatting", () => {
         "  // keep target note",
         "end -> result1,",
         "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("collapses excessive blank lines inside parsed multiline if header continuation regions", () => {
+    const input = [
+      "if ready &&",
+      "",
+      "",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "",
+        "  available",
+        "  then",
+        "  sub /data/new($) -> out",
+        "end",
       ].join("\n")
     );
   });
@@ -1239,6 +1285,32 @@ describe("formatting", () => {
         "  // keep target note",
         "end -> result1,",
         "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline if headers with collapsed blank-line runs", () => {
+    const input = [
+      "if ready &&",
+      "",
+      "",
+      "available",
+      "then",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready &&",
+        "",
+        "  available",
+        "  then",
+        "  sub /data/new($) -> out",
+        "end",
       ].join("\n")
     );
   });
