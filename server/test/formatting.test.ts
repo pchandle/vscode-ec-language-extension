@@ -271,6 +271,33 @@ describe("formatting", () => {
     expect(model.lines[5].desiredIndentColumns).to.equal(2);
   });
 
+  it("marks extra blank lines inside parsed multiline additional-output continuation regions for deletion", () => {
+    const input = createDocument(
+      [
+        "value -> first,",
+        "",
+        "",
+        "second,",
+        "{",
+        "1 -> inner",
+        "},",
+        "",
+        "",
+        "third",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[1].deleteLine).to.equal(false);
+    expect(model.lines[2].deleteLine).to.equal(true);
+    expect(model.lines[7].deleteLine).to.equal(false);
+    expect(model.lines[8].deleteLine).to.equal(true);
+    expect(model.lines[3].desiredIndentColumns).to.equal(2);
+    expect(model.lines[4].desiredIndentColumns).to.equal(2);
+    expect(model.lines[9].desiredIndentColumns).to.equal(2);
+  });
+
   it("records recovery mode when syntax diagnostics are present", () => {
     const input = createDocument("job /example/test(x)\n  false -> debug_flag\nend");
     const model = buildFormattingInput(input);
@@ -708,6 +735,36 @@ describe("formatting", () => {
         "    1) -> out1,",
         "    out2",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses excessive blank lines inside parsed multiline additional-output continuation regions", () => {
+    const input = [
+      "value -> first,",
+      "",
+      "",
+      "second,",
+      "{",
+      "1 -> inner",
+      "},",
+      "",
+      "",
+      "third",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "",
+        "  second,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "",
+        "  third",
       ].join("\n")
     );
   });
@@ -1579,6 +1636,37 @@ describe("formatting", () => {
         "    1) -> out1,",
         "    out2",
         "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed multiline additional-output continuations with collapsed blank-line runs", () => {
+    const input = [
+      "value -> first,",
+      "",
+      "",
+      "second,",
+      "{",
+      "1 -> inner",
+      "},",
+      "",
+      "",
+      "third",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 0, 9)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "value -> first,",
+        "",
+        "  second,",
+        "  {",
+        "  1 -> inner",
+        "},",
+        "",
+        "  third",
       ].join("\n")
     );
   });
