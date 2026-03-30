@@ -73,7 +73,7 @@ describe("formattingRange", () => {
     });
   });
 
-  it("keeps a multiline if-header content line line-bounded", () => {
+  it("expands a multiline if-header content line forward to the standalone then suffix", () => {
     const document = createDocument(
       ["if ready &&", "available", "then", "sub /data/new($)->out", "end"].join("\n")
     );
@@ -81,7 +81,27 @@ describe("formattingRange", () => {
 
     expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
       startLine: 1,
-      endLine: 1,
+      endLine: 2,
+    });
+  });
+
+  it("expands a multiline if-header content line through blank and comment suffix lines to standalone then", () => {
+    const document = createDocument(
+      [
+        "if ready &&",
+        "available",
+        "",
+        "// keep condition note",
+        "then",
+        "sub /data/new($)->out",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(1, 1), Position.create(1, 5));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 1,
+      endLine: 4,
     });
   });
 

@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: extended range expansion to the first concrete non-delimiter partial-selection case by promoting a selected multiline `if` header content line forward to the standalone `then` suffix it still owns. Range formatting now treats a selected multiline header continuation together with its trailing blank/comment suffix and standalone `then` line as one small structural header slice instead of formatting only the touched content line.
+- Scope decision: this slice is limited to multiline `if` header content lines that have a standalone `then` ahead of them. Same-line `if ... then` headers remain line-bounded, the selection does not expand to the full enclosing `if`, and document-formatting behavior is unchanged.
+- Assumption: leaving a selected multiline header continuation line without its trailing standalone `then` suffix is the first remaining partial-selection case weak enough to justify moving beyond the previously documented standalone-delimiter contract, while still keeping the policy narrower than general enclosing-unit expansion.
+- Lesson captured for future PRs: once delimiter-adjacent expansion is stable, the next safe broadening step is to promote a non-delimiter line only when it has a nearby concrete syntax boundary that clearly completes the same owned slice.
+- Next-step implication: the next Block 5 slice should decide whether any other concrete partial-selection case deserves the same owned-slice treatment or whether the formatter should stop here short of a general enclosing-unit policy.
 - Block 5 slice: documented and codified the current range-expansion contract as stopping at the standalone `if` delimiter rules already implemented (`then`, `else`, bare `end`, and multiline `end ->`). Range formatting now has explicit regression coverage for what expands and what intentionally remains line-bounded, instead of leaving the policy implied by a growing set of delimiter-specific helpers.
 - Scope decision: this slice does not introduce enclosing-unit expansion. Multiline `if` header content lines and same-line `if ... then` headers remain line-bounded, while only the current standalone delimiter forms promote the selection to their nearest owned slice. Document-formatting behavior is unchanged.
 - Assumption: after closing the obvious standalone `if` delimiter cases, the smallest reviewable next step is to freeze and document the current contract rather than broaden selection formatting into whole-construct expansion without stronger evidence that the remaining gaps are worth the added churn.
@@ -97,7 +102,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: evaluate whether a concrete remaining partial-selection case justifies moving beyond the documented standalone-`if`-delimiter contract to a more general enclosing-unit policy.
+- Block 5: evaluate whether another concrete remaining partial-selection case justifies additional owned-slice expansion, or whether range formatting should stop short of a general enclosing-unit policy.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule

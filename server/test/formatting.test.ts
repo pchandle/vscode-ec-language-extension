@@ -1162,10 +1162,11 @@ describe("formatting", () => {
     );
   });
 
-  it("keeps a selected multiline if-header content line line-bounded", () => {
+  it("formats a selected multiline if-header content line together with the standalone then suffix", () => {
     const input = [
       "if ready &&",
       "available",
+      "// keep condition note",
       "then",
       "sub /data/new($)->out",
       "end",
@@ -1175,7 +1176,7 @@ describe("formatting", () => {
     const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(1, 1), Position.create(1, 5)));
     expect(normalizedRange).to.deep.equal({
       startLine: 1,
-      endLine: 1,
+      endLine: 3,
     });
     const selectedRange = normalizedRange!;
     const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
@@ -1187,7 +1188,8 @@ describe("formatting", () => {
       [
         "if ready &&",
         "  available",
-        "then",
+        "  // keep condition note",
+        "  then",
         "sub /data/new($)->out",
         "end",
       ].join("\n")

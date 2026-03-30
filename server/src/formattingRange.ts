@@ -43,13 +43,14 @@ function applyStandaloneIfDelimiterExpansions(
   startLine: number,
   endLine: number
 ): NormalizedFormattingRange {
-  // Block 5 range policy stays intentionally narrow for now:
-  // only standalone if-delimiter lines promote the selection to their nearest owned slice.
+  // Block 5 range policy stays intentionally narrow:
+  // only a few explicit if-header/delimiter cases promote the selection to their nearest owned slice.
   let expandedStartLine = startLine;
   let expandedEndLine = endLine;
 
   expandedStartLine = expandThenHeaderSuffix(document, expandedStartLine, expandedEndLine);
   expandedStartLine = expandBareEndOwnedSuffix(document, expandedStartLine, expandedEndLine);
+  expandedEndLine = expandIfHeaderContentSuffix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandElseBodyPrefix(document, expandedStartLine, expandedEndLine);
   expandedEndLine = expandEndArrowContinuationPrefix(document, expandedStartLine, expandedEndLine);
 
@@ -97,6 +98,10 @@ function isEndArrowContinuationLine(document: TextDocument, line: number): boole
   return /^end\s*->/.test(trimmed) && (/,\s*$/.test(trimmed) || /->\s*$/.test(trimmed));
 }
 
+function isExpandableIfHeaderContentLine(document: TextDocument, line: number): boolean {
+  return !isBlankLine(document, line) && !isStandaloneLineComment(document, line) && !isStandaloneThenLine(document, line);
+}
+
 function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLine: number): number {
   let expandedStartLine = startLine;
 
@@ -121,6 +126,42 @@ function expandThenHeaderSuffix(document: TextDocument, startLine: number, endLi
   }
 
   return expandedStartLine;
+}
+
+function expandIfHeaderContentSuffix(document: TextDocument, startLine: number, endLine: number): number {
+  let expandedEndLine = endLine;
+
+  for (let line = startLine; line <= expandedEndLine; line++) {
+    if (!isExpandableIfHeaderContentLine(document, line)) {
+      continue;
+    }
+
+    let candidateEndLine: number | null = null;
+
+    for (let nextLine = line + 1; nextLine < document.lineCount; nextLine++) {
+      if (isStandaloneElseLine(document, nextLine) || isStandaloneEndLine(document, nextLine)) {
+        break;
+      }
+
+      if (isStandaloneThenLine(document, nextLine)) {
+        candidateEndLine = nextLine;
+        break;
+      }
+
+      if (isBlankLine(document, nextLine) || isStandaloneLineComment(document, nextLine)) {
+        candidateEndLine = nextLine;
+        continue;
+      }
+
+      candidateEndLine = nextLine;
+    }
+
+    if (candidateEndLine !== null && isStandaloneThenLine(document, candidateEndLine)) {
+      expandedEndLine = Math.max(expandedEndLine, candidateEndLine);
+    }
+  }
+
+  return expandedEndLine;
 }
 
 function expandBareEndOwnedSuffix(document: TextDocument, startLine: number, endLine: number): number {
