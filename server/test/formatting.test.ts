@@ -1296,6 +1296,42 @@ describe("formatting", () => {
     );
   });
 
+  it("keeps a selected later end-arrow continuation content line line-bounded", () => {
+    const input = [
+      "if ready then",
+      "sub /data/new($)->out",
+      "end -> result1,",
+      "// keep target note",
+      "result2,",
+      "result3",
+      "end",
+    ].join("\n");
+
+    const document = createDocument(input);
+    const normalizedRange = normalizeRangeToTouchedLines(document, Range.create(Position.create(5, 1), Position.create(5, 6)));
+    expect(normalizedRange).to.deep.equal({
+      startLine: 5,
+      endLine: 5,
+    });
+    const selectedRange = normalizedRange!;
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, selectedRange.startLine, selectedRange.endLine)).replace(
+      /\r\n/g,
+      "\n"
+    );
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "sub /data/new($)->out",
+        "end -> result1,",
+        "// keep target note",
+        "result2,",
+        "  result3",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("formats selected standalone comments attached to parsed multiline defaults continuations", () => {
     const input = [
       "defaults: data,",

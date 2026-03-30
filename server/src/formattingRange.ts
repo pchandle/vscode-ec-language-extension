@@ -141,6 +141,8 @@ function expandEndArrowContentPrefix(document: TextDocument, startLine: number, 
       continue;
     }
 
+    // Only the first continuation content line can claim the multiline `end ->` delimiter as its nearest owned boundary.
+    // Once another nontrivia continuation content line appears, the selection stays line-bounded.
     let candidateStartLine: number | null = null;
 
     for (let previousLine = line - 1; previousLine >= 0; previousLine--) {

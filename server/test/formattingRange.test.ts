@@ -225,6 +225,38 @@ describe("formattingRange", () => {
     });
   });
 
+  it("keeps a later end-arrow continuation content line line-bounded", () => {
+    const document = createDocument(
+      ["if ready then", "  sub /data/new($)->out", "end -> result1,", "result2,", "result3", "end"].join("\n")
+    );
+    const range = Range.create(Position.create(4, 1), Position.create(4, 6));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 4,
+      endLine: 4,
+    });
+  });
+
+  it("keeps a later end-arrow continuation content line line-bounded across comment-separated continuation lines", () => {
+    const document = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($)->out",
+        "end -> result1,",
+        "// keep target note",
+        "result2,",
+        "result3",
+        "end",
+      ].join("\n")
+    );
+    const range = Range.create(Position.create(5, 1), Position.create(5, 6));
+
+    expect(normalizeRangeToTouchedLines(document, range)).to.deep.equal({
+      startLine: 5,
+      endLine: 5,
+    });
+  });
+
   it("expands an end-arrow selection through blank and comment prefixes before the first continuation line", () => {
     const document = createDocument(
       [

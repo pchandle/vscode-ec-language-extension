@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 5 slice: documented and codified the stopping point for multiline `end ->` continuation-content expansion. Range formatting now treats only the first continuation content line as eligible to pull in the multiline `end ->` delimiter prefix; later continuation content lines remain line-bounded, with regression coverage for both direct and comment-separated continuation cases.
+- Scope decision: this slice does not add another owned-slice expansion rule. It freezes the current `end ->` continuation policy at the first continuation content line, leaves later continuation lines line-bounded, does not change same-line `end -> result` behavior, and does not alter document-formatting behavior.
+- Assumption: after promoting the first continuation content line to its delimiter prefix, broadening that same rule to later continuation lines would be a materially larger step toward enclosing-unit selection behavior, so the smaller reviewable move is to document and test the stop point explicitly.
+- Lesson captured for future PRs: once an owned-slice expansion rule is introduced for the first line in a structural region, explicit tests for the next line that does not expand are necessary to keep the rule from drifting into an accidental enclosing-unit policy.
+- Next-step implication: the next Block 5 slice should decide whether any remaining concrete partial-selection case still has enough user value to justify another owned-slice rule, or whether Block 5 should now conclude with the current narrow contract.
 - Block 5 slice: extended range expansion to the matching multiline `end ->` continuation-content case by promoting a selected first continuation content line backward to the `end ->` delimiter it still belongs to. Range formatting now treats the first selected continuation target together with its leading blank/comment suffix and multiline `end ->` delimiter as one small structural continuation slice instead of formatting only the touched continuation line.
 - Scope decision: this slice is limited to the first multiline `end ->` continuation content line whose nearest preceding owned boundary is a multiline `end ->` delimiter. It does not expand same-line `end -> result` selections, does not jump backward across another nontrivia content line, does not expand to the full enclosing `if`, and does not change document-formatting behavior.
 - Assumption: once multiline header-content selection gained its standalone `then` suffix, the next smallest worthwhile non-delimiter counterpart is the first continuation-content line after a multiline `end ->` delimiter, because leaving that line without its delimiter prefix is similarly weak but still narrower than general enclosing-unit expansion.
@@ -107,7 +112,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 5: evaluate whether any remaining concrete partial-selection case still justifies owned-slice expansion, or whether range formatting should now stop short of a general enclosing-unit policy.
+- Block 5: decide whether any remaining concrete partial-selection case still justifies another owned-slice rule, or whether Block 5 should conclude with the current narrow range-formatting contract.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
