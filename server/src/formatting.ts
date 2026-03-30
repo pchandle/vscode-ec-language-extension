@@ -1205,6 +1205,7 @@ function collectParsedBlankLinesToDelete(document: TextDocument, program: Progra
       markExtraBlankLinesInRange(endLineIndex + 1, ifNode.range.end.line);
       if (isEndArrowLine(getLineText(document, endLineIndex))) {
         markDelimiterLeadingCommentGap(endLineIndex);
+        markDelimiterLeadingContentGap(endLineIndex);
       }
     }
 

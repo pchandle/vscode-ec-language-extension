@@ -94,7 +94,7 @@ describe("formatting", () => {
     expect(model.lines[4].desiredIndentColumns).to.equal(4);
   });
 
-  it("marks extra blank lines after parsed if end-target continuations for deletion", () => {
+  it("marks blank lines after parsed if end-target boundaries for deletion", () => {
     const input = createDocument(
       [
         "if ready then",
@@ -108,7 +108,7 @@ describe("formatting", () => {
     const model = buildFormattingInput(input);
 
     expect(model.parseMode).to.equal("parsed");
-    expect(model.lines[3].deleteLine).to.equal(false);
+    expect(model.lines[3].deleteLine).to.equal(true);
     expect(model.lines[4].deleteLine).to.equal(true);
     expect(model.lines[5].desiredIndentColumns).to.equal(2);
   });
@@ -478,6 +478,24 @@ describe("formatting", () => {
         "",
         "",
         "  // keep target note",
+        "  result2",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].deleteLine).to.equal(true);
+  });
+
+  it("marks blank lines between parsed end-arrow boundaries and following continuation content for deletion", () => {
+    const input = createDocument(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
+        "",
+        "",
         "  result2",
       ].join("\n")
     );
@@ -924,6 +942,28 @@ describe("formatting", () => {
         "  sub /data/new($) -> out",
         "end -> result1,",
         "  // keep target note",
+        "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed end-arrow boundaries and following continuation content", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "",
+      "",
+      "  result2",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
         "  result2",
       ].join("\n")
     );
@@ -2525,6 +2565,29 @@ describe("formatting", () => {
         "  sub /data/new($) -> out",
         "end -> result1,",
         "  // keep target note",
+        "  result2",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed end-arrow continuations with content-attached boundaries", () => {
+    const input = [
+      "if ready then",
+      "  sub /data/new($) -> out",
+      "end -> result1,",
+      "",
+      "",
+      "  result2",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 2, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "if ready then",
+        "  sub /data/new($) -> out",
+        "end -> result1,",
         "  result2",
       ].join("\n")
     );

@@ -22,6 +22,11 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: not started
 
 ### Last Completed Step
+- Block 4 slice: collapsed pure blank-line gaps at parsed multiline `end ->` continuation starts so the `end ->` boundary now attaches directly to the first owned continuation line when no standalone comment group occupies that opening slot. Parse-success trailing-target continuations no longer preserve a spacer blank line between `end ->` and the first continuation target.
+- Scope decision: this slice is limited to parse-success multiline `if` trailing-target continuation openings where the first nonblank line after `end ->` is continuation content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached `end ->` openings beyond the already completed slice, branch/declaration/brace openings, or broader continuation blank-line policy.
+- Assumption: after pure blank-gap cleanup at declaration and `if` branch starts, multiline `end ->` continuation starts were the next smallest equally explicit owned opening family because the formatter already treats that region as a parser-owned continuation slice.
+- Lesson captured for future PRs: once body-opening blank-gap cleanup reaches both block and continuation families, the next safe step should be chosen by a concrete remaining owned boundary with clear payoff, not by generalizing blank-gap removal across all constructs.
+- Next-step implication: the next Block 4 slice should either apply the pure-blank-gap opening rule to one last equally explicit owned family, if one still clearly exists, or move to a different small multiline-layout improvement instead of broadening opening-gap removal heuristically.
 - Block 4 slice: collapsed pure blank-line gaps at parsed `if` branch starts so `then` / `else` boundaries now attach directly to the first owned branch statement when no standalone comment group occupies that opening slot. Parse-success branch bodies no longer preserve a spacer blank line between the branch boundary and the first statement.
 - Scope decision: this slice is limited to parse-success `if` branch openings where the first nonblank line after `then` or `else` is branch content rather than a standalone comment. It does not change malformed recovery behavior, comment-attached branch openings beyond the already completed slice, declaration/brace/continuation body starts, or broader blank-line policy inside branches.
 - Assumption: after declaration body-start blank gaps, parsed `if` branch starts were the next smallest equally explicit owned family because the formatter already has stable branch-boundary lookup and body ownership for both `then` and `else`.
@@ -222,7 +227,7 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: either apply the pure-blank-gap opening rule to one more equally explicit owned family, if another still has clear user-visible payoff, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of opening blank lines.
+- Block 4: either apply the pure-blank-gap opening rule to one last equally explicit owned family, if another still has clear user-visible payoff, or move to a different small multiline-layout improvement, but avoid broad cross-construct removal of opening blank lines.
 - Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
 
 ### Roadmap Update Rule
