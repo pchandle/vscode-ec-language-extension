@@ -370,6 +370,25 @@ describe("formatting", () => {
     expect(model.lines[5].deleteLine).to.equal(true);
   });
 
+  it("marks blank lines between parsed brace-block body content and close delimiters for deletion", () => {
+    const input = createDocument(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    sub /data/new($) -> out",
+        "",
+        "",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+    const model = buildFormattingInput(input);
+
+    expect(model.parseMode).to.equal("parsed");
+    expect(model.lines[3].deleteLine).to.equal(true);
+    expect(model.lines[4].deleteLine).to.equal(true);
+  });
+
   it("marks blank lines between parsed brace-block open delimiters and a following standalone comment group for deletion", () => {
     const input = createDocument(
       [
@@ -1395,6 +1414,30 @@ describe("formatting", () => {
         "  value -> {",
         "    sub /data/new($) -> out",
         "    // keep close note",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("collapses blank lines between parsed brace-block body content and close delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "    sub /data/new($) -> out",
+      "",
+      "",
+      "  }",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    sub /data/new($) -> out",
         "  }",
         "end",
       ].join("\n")
@@ -2511,6 +2554,31 @@ describe("formatting", () => {
         "  value -> {",
         "    sub /data/new($) -> out",
         "    // keep close note",
+        "  }",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("formats selected parsed brace blocks with content-attached close delimiters", () => {
+    const input = [
+      "job /example/test(x):",
+      "  value -> {",
+      "    sub /data/new($) -> out",
+      "",
+      "",
+      "  }",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 2, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> {",
+        "    sub /data/new($) -> out",
         "  }",
         "end",
       ].join("\n")
