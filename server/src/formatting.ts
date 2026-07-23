@@ -720,7 +720,7 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     setCommentGroupIndent(anchorLineIndex + 1, 1);
   };
 
-  const setInvocationContinuationCommentIndent = (anchorLineIndexes: number[], indentColumns: number): void => {
+  const setContinuationCommentIndent = (anchorLineIndexes: number[], indentColumns: number): void => {
     for (let anchorIndex = 1; anchorIndex < anchorLineIndexes.length; anchorIndex++) {
       const previousAnchorLineIndex = anchorLineIndexes[anchorIndex - 1];
       const nextAnchorLineIndex = anchorLineIndexes[anchorIndex];
@@ -745,6 +745,26 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
           setDesiredIndent(desiredIndentColumns, commentLineIndex, indentColumns);
         }
       }
+    }
+  };
+
+  const setPostStatementCommentIndent = (statementEndLineIndex: number, indentColumns: number): void => {
+    const commentLineIndexes: number[] = [];
+
+    for (let lineIndex = statementEndLineIndex + 1; lineIndex < document.lineCount; lineIndex++) {
+      const text = getLineText(document, lineIndex);
+      if (isBlankLine(text)) {
+        continue;
+      }
+      if (isStandaloneLineComment(text)) {
+        commentLineIndexes.push(lineIndex);
+        continue;
+      }
+      break;
+    }
+
+    for (const commentLineIndex of commentLineIndexes) {
+      setDesiredIndent(desiredIndentColumns, commentLineIndex, indentColumns);
     }
   };
 
@@ -810,19 +830,23 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     }
 
     if (isDefaultsContinuationCandidate(statement)) {
+      const continuationAnchorLineIndexes = [statement.range.start.line];
       for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
-        if (!isBlankLine(getLineText(document, lineIndex))) {
+        const text = getLineText(document, lineIndex);
+        if (!isBlankLine(text) && !isStandaloneLineComment(text)) {
           setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
-          setAttachedStandaloneCommentIndent(lineIndex, statementIndentColumns + INDENT_SIZE);
+          continuationAnchorLineIndexes.push(lineIndex);
         }
       }
+      setContinuationCommentIndent(continuationAnchorLineIndexes, statementIndentColumns + INDENT_SIZE);
+      setPostStatementCommentIndent(statement.range.end.line, statementIndentColumns);
       return;
     }
 
     const braceBlocks = collectBraceBlocks(statement).filter((block) => isBraceBlock(document, block));
 
     if (isAdditionalOutputContinuationCandidate(statement)) {
-      const continuationLineIndexes = new Set<number>();
+      const continuationLineIndexes = new Set<number>([statement.range.start.line]);
 
       for (const target of statement.targets) {
         if (target.range.start.line > statement.range.start.line) {
@@ -846,11 +870,21 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       });
 
       for (const lineIndex of continuationLineIndexes) {
-        if (!isBlankLine(getLineText(document, lineIndex))) {
+        const text = getLineText(document, lineIndex);
+        if (
+          lineIndex !== statement.range.start.line &&
+          !isBlankLine(text) &&
+          !isStandaloneLineComment(text)
+        ) {
           setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
-          setAttachedStandaloneCommentIndent(lineIndex, statementIndentColumns + INDENT_SIZE);
         }
       }
+
+      setContinuationCommentIndent(
+        [...continuationLineIndexes].sort((left, right) => left - right),
+        statementIndentColumns + INDENT_SIZE
+      );
+      setPostStatementCommentIndent(statement.range.end.line, statementIndentColumns);
 
       return;
     }
@@ -870,7 +904,8 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
     }
 
-    setInvocationContinuationCommentIndent(continuationAnchorLineIndexes, statementIndentColumns + INDENT_SIZE);
+    setContinuationCommentIndent(continuationAnchorLineIndexes, statementIndentColumns + INDENT_SIZE);
+    setPostStatementCommentIndent(statement.range.end.line, statementIndentColumns);
   };
 
   const visitIf = (

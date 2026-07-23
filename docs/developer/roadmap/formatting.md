@@ -22,6 +22,8 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: in progress
 
 ### Last Completed Step
+- Block 6 slice: refined parsed continuation-comment ownership so standalone comment groups after a completed multiline statement align to the enclosing body rather than inheriting continuation indentation. Comments between parser-owned continuation anchors remain at continuation depth.
+- Scope decision: this applies only to parsed multiline invocation, `defaults`, and additional-output/obligation continuations. It does not alter recovery-mode behavior, parser ownership, comment text, wrapping, or blank-line deletion policy.
 - Block 6 milestone: added a local-only formatter corpus runner for `.dla` and `.dlp` files. It records formatting churn, parse-mode results, formatted copies for changed files, and second-pass idempotence without modifying source corpus files or formatter policy.
 - Scope decision: parsed and recovery-mode files are reported separately because real corpora may include incomplete or malformed expressions. Ordinary churn is review evidence, while execution failures and non-idempotence fail the validation command.
 - Next-step implication: review the largest corpus diffs and select only one concrete, repeatable formatter-policy family for a later bounded PR; do not infer a new rule from synthetic fixtures alone.

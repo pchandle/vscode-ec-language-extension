@@ -67,7 +67,7 @@ defaults: behaviour, default, x64, codevalley
 - `Format Document`
 - `Format Selection`
 
-Formatting currently normalizes spacing (commas, `->`, repeated spaces, trailing spaces).
+Formatting normalizes spacing (commas, `->`, repeated spaces, trailing spaces) and aligns standalone comments following completed multiline statements with their enclosing block.
 
 ## 4. Workflow: Write Spec-Aware Expressions with IntelliSense
 

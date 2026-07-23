@@ -724,7 +724,7 @@
       "  {",
       "  1 -> inner",
       "},",
-      "  // keep trailing target note",
+      "// keep trailing target note",
       "  third"
     ]
   },
@@ -1305,7 +1305,7 @@
       "  {",
       "  1 -> inner",
       "},",
-      "  // keep trailing target note",
+      "// keep trailing target note",
       "  third"
     ]
   },
@@ -1766,6 +1766,56 @@
       "",
       "    // keep note",
       "  end",
+      "end"
+    ]
+  },
+  {
+    "name": "document aligns post-invocation standalone comments with the enclosing body",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "$,",
+      "1) -> out",
+      "    // starts a new body section",
+      "sub /data/next($)->next",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  sub /data/new(",
+      "    $,",
+      "    1) -> out",
+      "  // starts a new body section",
+      "  sub /data/next($) -> next",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting aligns selected post-invocation standalone comments with the enclosing body",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 4
+    },
+    "inputLines": [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "$,",
+      "1) -> out",
+      "    // starts a new body section",
+      "sub /data/next($)->next",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(x):",
+      "  sub /data/new(",
+      "    $,",
+      "    1) -> out",
+      "  // starts a new body section",
+      "sub /data/next($)->next",
       "end"
     ]
   }

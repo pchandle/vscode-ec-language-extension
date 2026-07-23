@@ -628,7 +628,7 @@ describe("formatting", () => {
         "value -> first,",
         "",
         "",
-        "  // keep trailing target note",
+        "// keep trailing target note",
         "  second,",
         "  third",
       ].join("\n")
@@ -1649,6 +1649,32 @@ describe("formatting", () => {
     );
   });
 
+  it("keeps standalone comments after parsed multiline defaults at the enclosing indentation", () => {
+    const input = [
+      "defaults: data,",
+      "default,",
+      "x64,",
+      "codevalley",
+      "",
+      "  // starts a new top-level section",
+      "sub /data/new($)->out",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "defaults: data,",
+        "  default,",
+        "  x64,",
+        "  codevalley",
+        "",
+        "// starts a new top-level section",
+        "sub /data/new($) -> out",
+      ].join("\n")
+    );
+  });
+
   it("canonically indents standalone comments attached to parsed multiline if headers and trailing end targets", () => {
     const input = [
       "if ready &&",
@@ -1787,8 +1813,34 @@ describe("formatting", () => {
         "  {",
         "  1 -> inner",
         "},",
-        "  // keep trailing target note",
+        "// keep trailing target note",
         "  third",
+      ].join("\n")
+    );
+  });
+
+  it("keeps standalone comments after parsed multiline output continuations at the enclosing indentation", () => {
+    const input = [
+      "job /example/test(x):",
+      "value -> first,",
+      "second",
+      "",
+      "    // starts a new body section",
+      "sub /data/new($)->out",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  value -> first,",
+        "    second",
+        "",
+        "  // starts a new body section",
+        "  sub /data/new($) -> out",
+        "end",
       ].join("\n")
     );
   });
@@ -3618,7 +3670,7 @@ describe("formatting", () => {
         "  {",
         "  1 -> inner",
         "},",
-        "  // keep trailing target note",
+        "// keep trailing target note",
         "  third",
       ].join("\n")
     );
