@@ -720,6 +720,34 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
     setCommentGroupIndent(anchorLineIndex + 1, 1);
   };
 
+  const setInvocationContinuationCommentIndent = (anchorLineIndexes: number[], indentColumns: number): void => {
+    for (let anchorIndex = 1; anchorIndex < anchorLineIndexes.length; anchorIndex++) {
+      const previousAnchorLineIndex = anchorLineIndexes[anchorIndex - 1];
+      const nextAnchorLineIndex = anchorLineIndexes[anchorIndex];
+      const commentLineIndexes: number[] = [];
+      let onlyTriviaBetweenAnchors = true;
+
+      for (let lineIndex = previousAnchorLineIndex + 1; lineIndex < nextAnchorLineIndex; lineIndex++) {
+        const text = getLineText(document, lineIndex);
+        if (isStandaloneLineComment(text)) {
+          commentLineIndexes.push(lineIndex);
+          continue;
+        }
+
+        if (!isBlankLine(text)) {
+          onlyTriviaBetweenAnchors = false;
+          break;
+        }
+      }
+
+      if (onlyTriviaBetweenAnchors) {
+        for (const commentLineIndex of commentLineIndexes) {
+          setDesiredIndent(desiredIndentColumns, commentLineIndex, indentColumns);
+        }
+      }
+    }
+  };
+
   const visitDelimitedBody = (
     startLineIndex: number,
     body: { range: Range; statements: Statement[] },
@@ -827,8 +855,10 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
       return;
     }
 
+    const continuationAnchorLineIndexes = [statement.range.start.line];
     for (let lineIndex = statement.range.start.line + 1; lineIndex <= statement.range.end.line; lineIndex++) {
-      if (isBlankLine(getLineText(document, lineIndex))) {
+      const text = getLineText(document, lineIndex);
+      if (isBlankLine(text) || isStandaloneLineComment(text)) {
         continue;
       }
 
@@ -836,9 +866,11 @@ function collectParsedIndentation(document: TextDocument, program: ProgramNode):
         continue;
       }
 
+      continuationAnchorLineIndexes.push(lineIndex);
       setDesiredIndent(desiredIndentColumns, lineIndex, statementIndentColumns + INDENT_SIZE);
-      setAttachedStandaloneCommentIndent(lineIndex, statementIndentColumns + INDENT_SIZE);
     }
+
+    setInvocationContinuationCommentIndent(continuationAnchorLineIndexes, statementIndentColumns + INDENT_SIZE);
   };
 
   const visitIf = (

@@ -2103,6 +2103,58 @@ describe("formatting", () => {
     );
   });
 
+  it("keeps standalone comments after parsed multiline invocations at block indentation", () => {
+    const input = [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "$,",
+      "1) -> sub_out",
+      "// starts a new section after sub",
+      "sub_out -> next",
+      "host /example/protocol(",
+      "$,",
+      "signal) -> host_out",
+      "",
+      "// starts a new section after host",
+      "host_out -> next",
+      "join /example/protocol(",
+      "$,",
+      "signal) -> join_out",
+      "",
+      "// starts a new section after join",
+      "join_out -> next",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  sub /data/new(",
+        "    $,",
+        "    1) -> sub_out",
+        "  // starts a new section after sub",
+        "  sub_out -> next",
+        "  host /example/protocol(",
+        "    $,",
+        "    signal) -> host_out",
+        "",
+        "  // starts a new section after host",
+        "  host_out -> next",
+        "  join /example/protocol(",
+        "    $,",
+        "    signal) -> join_out",
+        "",
+        "  // starts a new section after join",
+        "  join_out -> next",
+        "end",
+      ].join("\n")
+    );
+
+    expect(formatDocument(createDocument(output))).to.deep.equal([]);
+  });
+
   it("returns no edits for already formatted input", () => {
     const input = [
       "job /example/test(a, b):",
@@ -3771,6 +3823,33 @@ describe("formatting", () => {
         "}",
       ].join("\n")
     );
+  });
+
+  it("keeps trailing standalone comments at block indentation when formatting a selected multiline invocation", () => {
+    const input = [
+      "job /example/test(x):",
+      "sub /data/new(",
+      "$,",
+      "1) -> out",
+      "// starts a new section",
+      "out -> next",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 5)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x):",
+        "  sub /data/new(",
+        "    $,",
+        "    1) -> out",
+        "  // starts a new section",
+        "  out -> next",
+        "end",
+      ].join("\n")
+    );
+    expect(formatDocument(createDocument(output))).to.deep.equal([]);
   });
 
   it("plans decisions with parse-mode metadata without changing parity behavior", () => {
