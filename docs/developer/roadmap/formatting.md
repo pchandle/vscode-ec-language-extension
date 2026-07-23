@@ -17,11 +17,14 @@ The recommended sequence is:
 - Block 1: Foundation and safety rails: in progress
 - Block 2: Server-side formatter parity: completed
 - Block 3: Syntax-aware formatting core: in progress
-- Block 4: Block layout and multiline normalization: in progress
+- Block 4: Block layout and multiline normalization: completed
 - Block 5: Selection formatting and range correctness: completed
-- Block 6: Polish, hardening, and adoption: not started
+- Block 6: Polish, hardening, and adoption: in progress
 
 ### Last Completed Step
+- Block 4 closure milestone: validated the existing parser-owned structural-layout feature family through representative VS Code formatter fixtures. The fixtures combine declarations, nested `if` / `else` / `end` blocks, brace obligations, multiline headers and invocations, standalone comments, and blank-line normalization; they assert both formatted output and provider-level idempotence.
+- Scope decision: this closure does not introduce automatic wrapping or reflow, alter parse-recovery behavior, or extend formatting into syntax regions without explicit parser ownership. It packages the already-established structural-layout rules as one completed capability rather than adding another delimiter-specific rule.
+- Exit condition met: representative document and range fixtures pass without formatter-policy changes, so Block 4 is complete. Block 6 now begins with corpus-backed hardening and noisy-diff evaluation.
 - Block 4 slice: collapsed pure blank-line gaps before parsed `if` bare `end` delimiters so parse-success `if` branches now attach directly to their owned closing `end` when no standalone comment group occupies that slot. Parsed `if` blocks no longer preserve a spacer blank line between the last branch statement and a bare closing delimiter.
 - Scope decision: this slice is limited to parse-success `if` closures whose closing delimiter is a bare `end` and whose preceding nonblank line is branch content rather than a standalone comment. It does not change malformed recovery behavior, `else` or `end ->` delimiter behavior, comment-attached `if` closes beyond the already completed slice, declaration / brace closing boundaries, or broader blank-line policy before other delimiters.
 - Assumption: after declaration and brace close cleanup, parsed `if` bare `end` closures were the next smallest equally explicit owned close family because the formatter already had stable parsed lookup for that delimiter plus matching comment-adjacent close behavior.
@@ -247,12 +250,15 @@ The recommended sequence is:
 - Validation lesson captured for future PRs: `npm test` exercises the bundled extension artifacts (`client/dist/extension.js` and `server/dist/server.js`), so formatter changes may require rebuilding the relevant bundle before integration results reflect current source edits.
 
 ### Next Recommended PR
-- Block 4: move to a different small multiline-layout improvement, unless another equally explicit owned close family with existing parsed lookup still has clear payoff; avoid broad cross-construct removal of blank lines before closing delimiters or bundling unlike `if` boundary shapes together.
-- Keep broad multiline layout, blank-line normalization, and general line-wrapping policy deferred until the formatter has explicit ownership rules for the remaining continuation-heavy statement forms and non-brace boundaries.
+- Block 6: run the formatter against a representative `.dla` / `.dlp` corpus, record noisy-diff and idempotence results, and turn only concrete failures into the next bounded formatter policy family.
+- Preserve authors’ existing line breaks: automatic wrapping/reflow, parser/recovery changes, unrelated syntax families, and new style-policy decisions remain separate milestones.
 
 ### Roadmap Update Rule
 - Each roadmap PR should update this section.
-- Mark completed work precisely and name the next recommended PR-sized slice.
+- Define the selected milestone before implementation: intended user-visible outcome, included construct family, explicit exclusions, acceptance criteria, and completion/exit condition.
+- A milestone may group two to four related variants only when they share parser ownership, formatter policy, fixture family, and validation path.
+- Keep parser/recovery changes, automatic wrapping, unrelated statement families, and new style-policy decisions in separate milestones.
+- Mark completed work precisely and name the next recommended coherent vertical slice.
 - If implementation choices narrow or expand scope, record that decision here before finalizing the PR.
 
 ## Current State
