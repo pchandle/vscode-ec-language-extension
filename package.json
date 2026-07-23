@@ -629,6 +629,8 @@
     "build:server": "tsc -p server/tsconfig.json && tsc -p server/tsconfig.test.json",
     "validate:corpus": "npm run build:server && node ./scripts/validate-dla-corpus.js",
     "validate:corpus:baseline": "npm run build:server && node ./scripts/validate-dla-corpus.js --update-baseline",
+    "validate:formatting-corpus": "npm run build:server && node ./scripts/validate-formatting-corpus.js",
+    "test:formatting-corpus": "npm run build:server && node ./scripts/test-validate-formatting-corpus.js",
     "sync:spec-cache": "bash ./scripts/sync-spec-cache.sh",
     "hydrate:spec-cache": "npm run build:server && node ./scripts/hydrate-spec-cache.js",
     "triage:diagnostics": "node ./scripts/triage-diagnostics.js --limit 20",

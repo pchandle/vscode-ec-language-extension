@@ -22,6 +22,9 @@ The recommended sequence is:
 - Block 6: Polish, hardening, and adoption: in progress
 
 ### Last Completed Step
+- Block 6 milestone: added a local-only formatter corpus runner for `.dla` and `.dlp` files. It records formatting churn, parse-mode results, formatted copies for changed files, and second-pass idempotence without modifying source corpus files or formatter policy.
+- Scope decision: parsed and recovery-mode files are reported separately because real corpora may include incomplete or malformed expressions. Ordinary churn is review evidence, while execution failures and non-idempotence fail the validation command.
+- Next-step implication: review the largest corpus diffs and select only one concrete, repeatable formatter-policy family for a later bounded PR; do not infer a new rule from synthetic fixtures alone.
 - Block 4 closure milestone: validated the existing parser-owned structural-layout feature family through representative VS Code formatter fixtures. The fixtures combine declarations, nested `if` / `else` / `end` blocks, brace obligations, multiline headers and invocations, standalone comments, and blank-line normalization; they assert both formatted output and provider-level idempotence.
 - Scope decision: this closure does not introduce automatic wrapping or reflow, alter parse-recovery behavior, or extend formatting into syntax regions without explicit parser ownership. It packages the already-established structural-layout rules as one completed capability rather than adding another delimiter-specific rule.
 - Exit condition met: representative document and range fixtures pass without formatter-policy changes, so Block 4 is complete. Block 6 now begins with corpus-backed hardening and noisy-diff evaluation.
