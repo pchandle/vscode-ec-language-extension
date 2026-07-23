@@ -207,6 +207,28 @@ function collectProtectedRanges(
   return protectedRanges;
 }
 
+function collectStringLiteralRanges(
+  document: TextDocument,
+  tokens: Token[]
+): Map<number, FormattingCharacterRange[]> {
+  const protectedRanges = new Map<number, FormattingCharacterRange[]>();
+
+  for (const token of tokens) {
+    if (token.kind !== TokenKind.String) {
+      continue;
+    }
+
+    for (let lineIndex = token.range.start.line; lineIndex <= token.range.end.line; lineIndex++) {
+      const lineLength = getLineText(document, lineIndex).length;
+      const startCharacter = lineIndex === token.range.start.line ? clampCharacter(token.range.start.character, lineLength) : 0;
+      const endCharacter = lineIndex === token.range.end.line ? clampCharacter(token.range.end.character, lineLength) : lineLength;
+      addProtectedRange(protectedRanges, lineIndex, startCharacter, endCharacter);
+    }
+  }
+
+  return protectedRanges;
+}
+
 function mergeCharacterRanges(ranges: FormattingCharacterRange[]): FormattingCharacterRange[] {
   if (ranges.length <= 1) {
     return ranges.slice();
@@ -1376,6 +1398,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
     parseMode === "parsed" ? collectParsedBlankLinesToDelete(document, program) : new Set<number>();
   const diagnosticLines = collectDiagnosticLines(diagnostics);
   const syntaxProtectedRanges = parseMode === "recovery" ? collectProtectedRanges(document, tokens, diagnostics) : new Map<number, FormattingCharacterRange[]>();
+  const stringLiteralRanges = collectStringLiteralRanges(document, tokens);
   const adjacentStandaloneCommentRanges =
     parseMode === "recovery" ? collectAdjacentStandaloneCommentRanges(document, syntaxProtectedRanges) : new Map<number, FormattingCharacterRange[]>();
   const blockCommentRanges = collectBlockCommentRanges(document);
@@ -1391,6 +1414,7 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       isBlankLine(originalText) ? [] : (syntaxProtectedRanges.get(lineIndex) ?? []);
     const lineProtectedRanges = [
       ...syntaxLineProtectedRanges,
+      ...(stringLiteralRanges.get(lineIndex) ?? []),
       ...(adjacentStandaloneCommentRanges.get(lineIndex) ?? []),
       ...(blockCommentRanges.get(lineIndex) ?? []),
     ];
@@ -1429,8 +1453,9 @@ export function planFormatting(input: FormattingInput, request: FormattingReques
   for (let lineIndex = request.startLine; lineIndex <= request.endLine; lineIndex++) {
     const line = input.lines[lineIndex];
     const deleteLine = Boolean(line.deleteLine && line.lineIndex < request.endLine);
+    const preservesLeadingContent = line.protectedRanges.some((range) => range.startCharacter === 0) && !line.allowIndentOnProtectedLine;
     const formattedText = line.safeToFormat
-      ? isFullyProtectedLine(line.originalText, line.protectedRanges) && !line.allowIndentOnProtectedLine
+      ? (isFullyProtectedLine(line.originalText, line.protectedRanges) || preservesLeadingContent) && !line.allowIndentOnProtectedLine
         ? formatLineWithProtectedRanges(line.originalText, line.protectedRanges)
         : applyDesiredIndentation(formatLineWithProtectedRanges(line.originalText, line.protectedRanges), line.desiredIndentColumns)
       : line.originalText;

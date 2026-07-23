@@ -682,6 +682,46 @@ describe("formatting", () => {
     );
   });
 
+  it("preserves parsed delimiter literals while formatting surrounding syntax", () => {
+    const input = [
+      "job /example/test(a,b):",
+      "  sub /data/write($,\",\",len(\",\"))  ->out",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a, b):",
+        "  sub /data/write($,\",\", len(\",\")) -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("preserves multiline string payloads while formatting surrounding syntax", () => {
+    const input = [
+      "job /example/test():",
+      "  \"  <g transform='translate(-1,-2)'>",
+      "    value,  -> keep",
+      "  </g>\"  ->payload",
+      "end",
+    ].join("\n");
+
+    const output = applyEdits(createDocument(input), input);
+
+    expect(output).to.equal(
+      [
+        "job /example/test():",
+        "  \"  <g transform='translate(-1,-2)'>",
+        "    value,  -> keep",
+        "  </g>\" -> payload",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("preserves inline block comment text while formatting the safe prefix", () => {
     const input = [
       "job /example/test(a,b):",
@@ -3822,6 +3862,37 @@ describe("formatting", () => {
       [
         "job /example/test(a, b)",
         "  value1, value2 -> out2",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("preserves string literals while formatting safe recovery syntax", () => {
+    const document = createDocument("job /example/test(a,b)\n  sub /data/write($,\",\")  ->out\nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(a, b)",
+        "  sub /data/write($,\",\") -> out",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("preserves string literals when formatting a selected range", () => {
+    const input = [
+      "job /example/test():",
+      "  sub /data/write($,\",\")  ->out",
+      "end",
+    ].join("\n");
+    const document = createDocument(input);
+    const output = TextDocument.applyEdits(document, formatDocumentRange(document, 1, 1)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test():",
+        "  sub /data/write($,\",\") -> out",
         "end",
       ].join("\n")
     );
