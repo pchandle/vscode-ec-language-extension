@@ -1,5 +1,54 @@
 [
   {
+    "name": "document preserves inline comment text while formatting parsed code",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "job /example/test(a,b):",
+      "  value1  ,value2  ->out2  // 1,000,000; 999,999; 1,000",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a, b):",
+      "  value1, value2 -> out2 // 1,000,000; 999,999; 1,000",
+      "end"
+    ]
+  },
+  {
+    "name": "range formatting preserves inline comment text",
+    "file": "test.dla",
+    "kind": "range",
+    "range": {
+      "startLine": 1,
+      "endLine": 1
+    },
+    "inputLines": [
+      "job /example/test(a,b):",
+      "  value1  ,value2  ->out2  // 1,000",
+      "end"
+    ],
+    "expectedLines": [
+      "job /example/test(a,b):",
+      "  value1, value2 -> out2 // 1,000",
+      "end"
+    ]
+  },
+  {
+    "name": "recovery formatting preserves inline comment text",
+    "file": "test.dla",
+    "kind": "document",
+    "inputLines": [
+      "sub /broken/test(a,b)->",
+      "  value1  ,value2  ->out2  // 999,999",
+      "end"
+    ],
+    "expectedLines": [
+      "sub /broken/test(a, b) ->",
+      "  value1, value2 -> out2 // 999,999",
+      "end"
+    ]
+  },
+  {
     "name": "document spacing cleanup for basic autopilot lines",
     "file": "test.dla",
     "kind": "document",
@@ -134,7 +183,7 @@
     ],
     "expectedLines": [
       "job /example/test(x)",
-      "  value1, value2 -> out2  // keep   comment spacing",
+      "  value1, value2 -> out2 // keep   comment spacing",
       "end"
     ]
   },
@@ -743,7 +792,7 @@
     ],
     "expectedLines": [
       "job /example/test(x)",
-      "  value1, value2 -> out2  // keep   comment spacing",
+      "  value1, value2 -> out2 // keep   comment spacing",
       "end"
     ]
   },

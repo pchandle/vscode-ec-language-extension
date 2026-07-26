@@ -431,26 +431,15 @@ function collectAdjacentStandaloneCommentRanges(
 }
 
 function findAttachedCommentRange(
-  text: string,
-  protectedRanges: FormattingCharacterRange[]
+  text: string
 ): FormattingCharacterRange | null {
   const commentStart = findLineCommentStart(text);
   if (commentStart === null) {
     return null;
   }
 
-  const hasProtectedSyntaxBeforeComment = protectedRanges.some((range) => range.endCharacter <= commentStart);
-  if (!hasProtectedSyntaxBeforeComment) {
-    return null;
-  }
-
-  let attachedStart = commentStart;
-  while (attachedStart > 0 && (text[attachedStart - 1] === " " || text[attachedStart - 1] === "\t")) {
-    attachedStart--;
-  }
-
   return {
-    startCharacter: attachedStart,
+    startCharacter: commentStart,
     endCharacter: text.length,
   };
 }
@@ -497,10 +486,12 @@ function formatLineWithProtectedRanges(text: string, protectedRanges: Formatting
 
   mergedRanges.forEach((range, index) => {
     if (cursor < range.startCharacter) {
-      formatted += formatSegment(text.slice(cursor, range.startCharacter), {
+      const isLineComment = text.slice(range.startCharacter).startsWith("//");
+      const prefix = formatSegment(text.slice(cursor, range.startCharacter), {
         preserveLeadingWhitespace: false,
-        preserveTrailingWhitespace: true,
+        preserveTrailingWhitespace: !isLineComment,
       });
+      formatted += isLineComment && prefix.length > 0 && !/\s$/.test(prefix) ? `${prefix} ` : prefix;
     }
     formatted += text.slice(range.startCharacter, range.endCharacter);
     cursor = range.endCharacter;
@@ -1486,8 +1477,8 @@ export function buildFormattingInput(document: TextDocument): FormattingInput {
       ...(blockCommentRanges.get(lineIndex) ?? []),
     ];
     const attachedCommentRange =
-      parseMode === "recovery" && !isStandaloneLineComment(originalText)
-        ? findAttachedCommentRange(originalText, lineProtectedRanges)
+      !isStandaloneLineComment(originalText)
+        ? findAttachedCommentRange(originalText)
         : null;
     lines.push({
       lineIndex,
