@@ -35,7 +35,7 @@ export type RemoteContractSpec = {
 export type RemoteProtocolSpec = ProtocolSpecification & {
   name: string;
   description?: string;
-  policy?: number;
+  policy?: number | string;
 };
 
 type RemoteSpec = RemoteContractSpec | RemoteProtocolSpec;

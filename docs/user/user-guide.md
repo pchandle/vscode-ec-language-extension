@@ -195,6 +195,8 @@ If no `.pdd` matches `protocolDesignVersion`, extension warns and can open raw t
 3. Choose output path (`.pspec`).
 4. If file exists, you can review diff before overwrite.
 
+Each mode must have a non-empty **Collaboration label**. Export uses that label as the public name of every topic in the mode; it also creates the protocol's implicit `<self>` host/join endpoints.
+
 ## 9. Workflow: Validate an Existing Workspace with Bulk Expression Validation
 
 Use this for corpus-scale triage across many files.

@@ -93,8 +93,10 @@ export function buildPreview(design: PdesDesign, pdd: PddDefinition | null | und
 
   const errors: string[] = [];
   const modeTopicIds: string[][] = [];
-  const allIds: { id: string; constraint?: TopicConstraint }[] = [];
-  const counter: Record<string, number> = {};
+  const hostIds: { id: string; constraint?: TopicConstraint }[] = [];
+  const joinIds: { id: string; constraint?: TopicConstraint }[] = [];
+  const hostCounter: Record<string, number> = {};
+  const joinCounter: Record<string, number> = {};
 
   const hostTemplates: string[] = [];
   const joinTemplates: string[] = [];
@@ -106,6 +108,13 @@ export function buildPreview(design: PdesDesign, pdd: PddDefinition | null | und
       modeTopicIds.push([]);
       return;
     }
+    const collaborationLabel = mode.collaborationLabel?.trim() ?? "";
+    if (!collaborationLabel) {
+      errors.push(`Mode #${modeIdx + 1} (${mode.modeTemplate}) requires a non-blank collaboration label.`);
+      modeTopicIds.push([]);
+      return;
+    }
+
     const ids: string[] = [];
     (mode.topics || []).forEach((topicInstance, topicIdx) => {
       const templateTopic = template.topics?.[topicIdx];
@@ -113,25 +122,31 @@ export function buildPreview(design: PdesDesign, pdd: PddDefinition | null | und
         errors.push(`Topic #${topicIdx + 1} missing template in mode ${template.name}`);
         return;
       }
-      const id = normalizeIdentifier(topicInstance.name ?? templateTopic.name ?? `topic${topicIdx + 1}`, counter);
+      const id = normalizeIdentifier(collaborationLabel, templateTopic.role === "host" ? hostCounter : joinCounter);
       ids.push(id);
-      allIds.push({ id, constraint: templateTopic.constraint });
+      (templateTopic.role === "host" ? hostIds : joinIds).push({ id, constraint: templateTopic.constraint });
     });
     modeTopicIds.push(ids);
     hostTemplates.push(...(template.hostMacroTemplates ?? []));
     joinTemplates.push(...(template.joinMacroTemplates ?? []));
   });
 
-  const { req, ob } = topicIdLists(allIds);
-  const defParams = [...req, ...ob];
+  if (errors.length) {
+    return { hostMacro: "", joinMacro: "", errors };
+  }
+
+  const hostTopicIds = topicIdLists(hostIds);
+  const joinTopicIds = topicIdLists(joinIds);
+  const hostDefParams = [...hostTopicIds.req, ...hostTopicIds.ob];
+  const joinDefParams = [...joinTopicIds.req, ...joinTopicIds.ob];
 
   const hostMacro =
     pdd.hostMacroGlobal && pdd.hostMacroGlobal.def
-      ? buildMacro(pdd.hostMacroGlobal, hostTemplates, defParams, modeTopicIds)
+      ? buildMacro(pdd.hostMacroGlobal, hostTemplates, hostDefParams, modeTopicIds)
       : "";
   const joinMacro =
     pdd.joinMacroGlobal && pdd.joinMacroGlobal.def
-      ? buildMacro(pdd.joinMacroGlobal, joinTemplates, defParams, modeTopicIds)
+      ? buildMacro(pdd.joinMacroGlobal, joinTemplates, joinDefParams, modeTopicIds)
       : "";
 
   return { hostMacro, joinMacro, errors };

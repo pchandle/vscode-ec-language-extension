@@ -32560,6 +32560,9 @@
       "use strict";
       var isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu);
       var isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u);
+      var isHexPair = RegExp.prototype.test.bind(/^[\da-f]{2}$/iu);
+      var isUnreserved = RegExp.prototype.test.bind(/^[\da-z\-._~]$/iu);
+      var isPathCharacter = RegExp.prototype.test.bind(/^[\da-z\-._~!$&'()*+,;=:@/]$/iu);
       function stringArrayToHexStripped(input) {
         let acc = "";
         let code = 0;
@@ -32752,27 +32755,77 @@
         }
         return output.join("");
       }
-      function normalizeComponentEncoding(component, esc) {
-        const func = esc !== true ? escape : unescape;
-        if (component.scheme !== void 0) {
-          component.scheme = func(component.scheme);
+      var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
+      var HOST_DELIM_RE = /[@/?#:]/g;
+      var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
+      function reescapeHostDelimiters(host, isIP) {
+        const re2 = isIP ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
+        re2.lastIndex = 0;
+        return host.replace(re2, (ch) => HOST_DELIMS[ch]);
+      }
+      function normalizePercentEncoding(input, decodeUnreserved = false) {
+        if (input.indexOf("%") === -1) {
+          return input;
         }
-        if (component.userinfo !== void 0) {
-          component.userinfo = func(component.userinfo);
+        let output = "";
+        for (let i2 = 0; i2 < input.length; i2++) {
+          if (input[i2] === "%" && i2 + 2 < input.length) {
+            const hex = input.slice(i2 + 1, i2 + 3);
+            if (isHexPair(hex)) {
+              const normalizedHex = hex.toUpperCase();
+              const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
+              if (decodeUnreserved && isUnreserved(decoded)) {
+                output += decoded;
+              } else {
+                output += "%" + normalizedHex;
+              }
+              i2 += 2;
+              continue;
+            }
+          }
+          output += input[i2];
         }
-        if (component.host !== void 0) {
-          component.host = func(component.host);
+        return output;
+      }
+      function normalizePathEncoding(input) {
+        let output = "";
+        for (let i2 = 0; i2 < input.length; i2++) {
+          if (input[i2] === "%" && i2 + 2 < input.length) {
+            const hex = input.slice(i2 + 1, i2 + 3);
+            if (isHexPair(hex)) {
+              const normalizedHex = hex.toUpperCase();
+              const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
+              if (decoded !== "." && isUnreserved(decoded)) {
+                output += decoded;
+              } else {
+                output += "%" + normalizedHex;
+              }
+              i2 += 2;
+              continue;
+            }
+          }
+          if (isPathCharacter(input[i2])) {
+            output += input[i2];
+          } else {
+            output += escape(input[i2]);
+          }
         }
-        if (component.path !== void 0) {
-          component.path = func(component.path);
+        return output;
+      }
+      function escapePreservingEscapes(input) {
+        let output = "";
+        for (let i2 = 0; i2 < input.length; i2++) {
+          if (input[i2] === "%" && i2 + 2 < input.length) {
+            const hex = input.slice(i2 + 1, i2 + 3);
+            if (isHexPair(hex)) {
+              output += "%" + hex.toUpperCase();
+              i2 += 2;
+              continue;
+            }
+          }
+          output += escape(input[i2]);
         }
-        if (component.query !== void 0) {
-          component.query = func(component.query);
-        }
-        if (component.fragment !== void 0) {
-          component.fragment = func(component.fragment);
-        }
-        return component;
+        return output;
       }
       function recomposeAuthority(component) {
         const uriTokens = [];
@@ -32787,7 +32840,7 @@
             if (ipV6res.isIPV6 === true) {
               host = `[${ipV6res.escapedHost}]`;
             } else {
-              host = component.host;
+              host = reescapeHostDelimiters(host, false);
             }
           }
           uriTokens.push(host);
@@ -32801,7 +32854,10 @@
       module2.exports = {
         nonSimpleDomain,
         recomposeAuthority,
-        normalizeComponentEncoding,
+        reescapeHostDelimiters,
+        normalizePercentEncoding,
+        normalizePathEncoding,
+        escapePreservingEscapes,
         removeDotSegments,
         isIPv4,
         isUUID,
@@ -33025,12 +33081,12 @@
   var require_fast_uri = __commonJS({
     "node_modules/fast-uri/index.js"(exports2, module2) {
       "use strict";
-      var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizeComponentEncoding, isIPv4, nonSimpleDomain } = require_utils();
+      var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
       var { SCHEMES, getSchemeHandler } = require_schemes();
       function normalize(uri, options) {
         if (typeof uri === "string") {
           uri = /** @type {T} */
-          serialize(parse(uri, options), options);
+          normalizeString(uri, options);
         } else if (typeof uri === "object") {
           uri = /** @type {T} */
           parse(serialize(uri, options), options);
@@ -33097,19 +33153,9 @@
         return target;
       }
       function equal(uriA, uriB, options) {
-        if (typeof uriA === "string") {
-          uriA = unescape(uriA);
-          uriA = serialize(normalizeComponentEncoding(parse(uriA, options), true), { ...options, skipEscape: true });
-        } else if (typeof uriA === "object") {
-          uriA = serialize(normalizeComponentEncoding(uriA, true), { ...options, skipEscape: true });
-        }
-        if (typeof uriB === "string") {
-          uriB = unescape(uriB);
-          uriB = serialize(normalizeComponentEncoding(parse(uriB, options), true), { ...options, skipEscape: true });
-        } else if (typeof uriB === "object") {
-          uriB = serialize(normalizeComponentEncoding(uriB, true), { ...options, skipEscape: true });
-        }
-        return uriA.toLowerCase() === uriB.toLowerCase();
+        const normalizedA = normalizeComparableURI(uriA, options);
+        const normalizedB = normalizeComparableURI(uriB, options);
+        return normalizedA !== void 0 && normalizedB !== void 0 && normalizedA.toLowerCase() === normalizedB.toLowerCase();
       }
       function serialize(cmpts, opts) {
         const component = {
@@ -33134,12 +33180,12 @@
         if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(component, options);
         if (component.path !== void 0) {
           if (!options.skipEscape) {
-            component.path = escape(component.path);
+            component.path = escapePreservingEscapes(component.path);
             if (component.scheme !== void 0) {
               component.path = component.path.split("%3A").join(":");
             }
           } else {
-            component.path = unescape(component.path);
+            component.path = normalizePercentEncoding(component.path);
           }
         }
         if (options.reference !== "suffix" && component.scheme) {
@@ -33174,7 +33220,17 @@
         return uriTokens.join("");
       }
       var URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u;
-      function parse(uri, opts) {
+      var AUTHORITY_PREFIX = /^(?:[^#/:?]+:)?\/\/([^/?#]*)/;
+      function getParseError(parsed, matches) {
+        if (matches[2] !== void 0 && parsed.path && parsed.path[0] !== "/") {
+          return 'URI path must start with "/" when authority is present.';
+        }
+        if (typeof parsed.port === "number" && (parsed.port < 0 || parsed.port > 65535)) {
+          return "URI port is malformed.";
+        }
+        return void 0;
+      }
+      function parseWithStatus(uri, opts) {
         const options = Object.assign({}, opts);
         const parsed = {
           scheme: void 0,
@@ -33185,6 +33241,7 @@
           query: void 0,
           fragment: void 0
         };
+        let malformedAuthorityOrPort = false;
         let isIP = false;
         if (options.reference === "suffix") {
           if (options.scheme) {
@@ -33192,6 +33249,11 @@
           } else {
             uri = "//" + uri;
           }
+        }
+        const authorityMatch = uri.match(AUTHORITY_PREFIX);
+        if (authorityMatch !== null && authorityMatch[1].indexOf("\\") !== -1) {
+          parsed.error = "URI authority must not contain a literal backslash.";
+          malformedAuthorityOrPort = true;
         }
         const matches = uri.match(URI_PARSE);
         if (matches) {
@@ -33204,6 +33266,11 @@
           parsed.fragment = matches[8];
           if (isNaN(parsed.port)) {
             parsed.port = matches[5];
+          }
+          const parseError = getParseError(parsed, matches);
+          if (parseError !== void 0) {
+            parsed.error = parsed.error || parseError;
+            malformedAuthorityOrPort = true;
           }
           if (parsed.host) {
             const ipv4result = isIPv4(parsed.host);
@@ -33231,7 +33298,7 @@
           if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
             if (parsed.host && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
               try {
-                parsed.host = URL.domainToASCII(parsed.host.toLowerCase());
+                parsed.host = new URL("http://" + parsed.host).hostname;
               } catch (e2) {
                 parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e2;
               }
@@ -33243,14 +33310,18 @@
                 parsed.scheme = unescape(parsed.scheme);
               }
               if (parsed.host !== void 0) {
-                parsed.host = unescape(parsed.host);
+                parsed.host = reescapeHostDelimiters(unescape(parsed.host), isIP);
               }
             }
             if (parsed.path) {
-              parsed.path = escape(unescape(parsed.path));
+              parsed.path = normalizePathEncoding(parsed.path);
             }
             if (parsed.fragment) {
-              parsed.fragment = encodeURI(decodeURIComponent(parsed.fragment));
+              try {
+                parsed.fragment = encodeURI(decodeURIComponent(parsed.fragment));
+              } catch {
+                parsed.error = parsed.error || "URI malformed";
+              }
             }
           }
           if (schemeHandler && schemeHandler.parse) {
@@ -33259,7 +33330,29 @@
         } else {
           parsed.error = parsed.error || "URI can not be parsed.";
         }
-        return parsed;
+        return { parsed, malformedAuthorityOrPort };
+      }
+      function parse(uri, opts) {
+        return parseWithStatus(uri, opts).parsed;
+      }
+      function normalizeString(uri, opts) {
+        return normalizeStringWithStatus(uri, opts).normalized;
+      }
+      function normalizeStringWithStatus(uri, opts) {
+        const { parsed, malformedAuthorityOrPort } = parseWithStatus(uri, opts);
+        return {
+          normalized: malformedAuthorityOrPort ? uri : serialize(parsed, opts),
+          malformedAuthorityOrPort
+        };
+      }
+      function normalizeComparableURI(uri, opts) {
+        if (typeof uri === "string") {
+          const { normalized, malformedAuthorityOrPort } = normalizeStringWithStatus(uri, opts);
+          return malformedAuthorityOrPort ? void 0 : normalized;
+        }
+        if (typeof uri === "object") {
+          return serialize(uri, opts);
+        }
       }
       var fastUri = {
         SCHEMES,
@@ -38055,19 +38148,12 @@
     if (!length) {
       return true;
     }
-    var isRootPrimitive = object == null || typeof object !== "object" && typeof object !== "function";
     while (++index < length) {
-      var key = path[index];
-      if (typeof key !== "string") {
-        continue;
-      }
+      var key = toKey_default(path[index]);
       if (key === "__proto__" && !hasOwnProperty15.call(object, "__proto__")) {
         return false;
       }
-      if (key === "constructor" && index + 1 < length && typeof path[index + 1] === "string" && path[index + 1] === "prototype") {
-        if (isRootPrimitive && index === 0) {
-          continue;
-        }
+      if ((key === "constructor" || key === "prototype") && index < length - 1) {
         return false;
       }
     }
@@ -44252,14 +44338,22 @@
     }
     const errors = [];
     const modeTopicIds = [];
-    const allIds = [];
-    const counter = {};
+    const hostIds = [];
+    const joinIds = [];
+    const hostCounter = {};
+    const joinCounter = {};
     const hostTemplates = [];
     const joinTemplates = [];
     design.modes?.forEach((mode, modeIdx) => {
       const template = (pdd.modeTemplates || []).find((t) => t.name === mode.modeTemplate);
       if (!template) {
         errors.push(`No mode template found for "${mode.modeTemplate}"`);
+        modeTopicIds.push([]);
+        return;
+      }
+      const collaborationLabel = mode.collaborationLabel?.trim() ?? "";
+      if (!collaborationLabel) {
+        errors.push(`Mode #${modeIdx + 1} (${mode.modeTemplate}) requires a non-blank collaboration label.`);
         modeTopicIds.push([]);
         return;
       }
@@ -44270,18 +44364,23 @@
           errors.push(`Topic #${topicIdx + 1} missing template in mode ${template.name}`);
           return;
         }
-        const id = normalizeIdentifier(topicInstance.name ?? templateTopic.name ?? `topic${topicIdx + 1}`, counter);
+        const id = normalizeIdentifier(collaborationLabel, templateTopic.role === "host" ? hostCounter : joinCounter);
         ids.push(id);
-        allIds.push({ id, constraint: templateTopic.constraint });
+        (templateTopic.role === "host" ? hostIds : joinIds).push({ id, constraint: templateTopic.constraint });
       });
       modeTopicIds.push(ids);
       hostTemplates.push(...template.hostMacroTemplates ?? []);
       joinTemplates.push(...template.joinMacroTemplates ?? []);
     });
-    const { req, ob } = topicIdLists(allIds);
-    const defParams = [...req, ...ob];
-    const hostMacro = pdd.hostMacroGlobal && pdd.hostMacroGlobal.def ? buildMacro(pdd.hostMacroGlobal, hostTemplates, defParams, modeTopicIds) : "";
-    const joinMacro = pdd.joinMacroGlobal && pdd.joinMacroGlobal.def ? buildMacro(pdd.joinMacroGlobal, joinTemplates, defParams, modeTopicIds) : "";
+    if (errors.length) {
+      return { hostMacro: "", joinMacro: "", errors };
+    }
+    const hostTopicIds = topicIdLists(hostIds);
+    const joinTopicIds = topicIdLists(joinIds);
+    const hostDefParams = [...hostTopicIds.req, ...hostTopicIds.ob];
+    const joinDefParams = [...joinTopicIds.req, ...joinTopicIds.ob];
+    const hostMacro = pdd.hostMacroGlobal && pdd.hostMacroGlobal.def ? buildMacro(pdd.hostMacroGlobal, hostTemplates, hostDefParams, modeTopicIds) : "";
+    const joinMacro = pdd.joinMacroGlobal && pdd.joinMacroGlobal.def ? buildMacro(pdd.joinMacroGlobal, joinTemplates, joinDefParams, modeTopicIds) : "";
     return { hostMacro, joinMacro, errors };
   }
 
@@ -46318,7 +46417,7 @@
   (function(module2, exports2) {
     "use strict";
     exports2.contractSpec = validate10;
-    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Contract)", "$ref": "#/$defs/supplierSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "type": "integer" }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "contractSpec" };
+    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Contract)", "$ref": "#/$defs/supplierSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "contractSpec" };
     const schema12 = { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false };
     const schema13 = { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" };
     const schema14 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
@@ -47984,7 +48083,15 @@
             "const": "protocol"
           },
           "policy": {
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ]
           },
           "name": {
             "$ref": "#/$defs/classification4"
@@ -48010,13 +48117,14 @@
   (function(module2, exports2) {
     "use strict";
     exports2.protocolSpec = validate10;
-    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Protocol)", "$ref": "#/$defs/protocolSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "type": "integer" }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "protocolSpec" };
-    const schema12 = { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "type": "integer" }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false };
+    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Protocol)", "$ref": "#/$defs/protocolSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "protocolSpec" };
+    const schema12 = { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false };
     const schema13 = { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" };
-    const pattern0 = new RegExp("^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", "u");
+    const pattern0 = new RegExp("^-?\\d+$", "u");
+    const pattern1 = new RegExp("^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", "u");
     const schema14 = { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false };
     const schema15 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
-    const pattern1 = new RegExp("^[\\w .(),-]+$", "u");
+    const pattern2 = new RegExp("^[\\w .(),-]+$", "u");
     function validate12(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       let vErrors = null;
       let errors = 0;
@@ -48377,7 +48485,7 @@
                 if (data1.name !== void 0) {
                   let data14 = data1.name;
                   if (typeof data14 === "string") {
-                    if (!pattern1.test(data14)) {
+                    if (!pattern2.test(data14)) {
                       const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data14 };
                       if (vErrors === null) {
                         vErrors = [err26];
@@ -48794,7 +48902,7 @@
                 if (data21.name !== void 0) {
                   let data34 = data21.name;
                   if (typeof data34 === "string") {
-                    if (!pattern1.test(data34)) {
+                    if (!pattern2.test(data34)) {
                       const err57 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data34 };
                       if (vErrors === null) {
                         vErrors = [err57];
@@ -49000,8 +49108,11 @@
         }
         if (data.policy !== void 0) {
           let data1 = data.policy;
+          const _errs4 = errors;
+          let valid1 = false;
+          const _errs5 = errors;
           if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)))) {
-            const err8 = { instancePath: instancePath + "/policy", schemaPath: "#/properties/policy/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema12.properties.policy.type, parentSchema: schema12.properties.policy, data: data1 };
+            const err8 = { instancePath: instancePath + "/policy", schemaPath: "#/properties/policy/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema12.properties.policy.anyOf[0].type, parentSchema: schema12.properties.policy.anyOf[0], data: data1 };
             if (vErrors === null) {
               vErrors = [err8];
             } else {
@@ -49009,25 +49120,69 @@
             }
             errors++;
           }
+          var _valid0 = _errs5 === errors;
+          valid1 = valid1 || _valid0;
+          if (!valid1) {
+            const _errs7 = errors;
+            if (typeof data1 === "string") {
+              if (!pattern0.test(data1)) {
+                const err9 = { instancePath: instancePath + "/policy", schemaPath: "#/properties/policy/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema12.properties.policy.anyOf[1], data: data1 };
+                if (vErrors === null) {
+                  vErrors = [err9];
+                } else {
+                  vErrors.push(err9);
+                }
+                errors++;
+              }
+            } else {
+              const err10 = { instancePath: instancePath + "/policy", schemaPath: "#/properties/policy/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.policy.anyOf[1].type, parentSchema: schema12.properties.policy.anyOf[1], data: data1 };
+              if (vErrors === null) {
+                vErrors = [err10];
+              } else {
+                vErrors.push(err10);
+              }
+              errors++;
+            }
+            var _valid0 = _errs7 === errors;
+            valid1 = valid1 || _valid0;
+          }
+          if (!valid1) {
+            const err11 = { instancePath: instancePath + "/policy", schemaPath: "#/properties/policy/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema12.properties.policy.anyOf, parentSchema: schema12.properties.policy, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err11];
+            } else {
+              vErrors.push(err11);
+            }
+            errors++;
+          } else {
+            errors = _errs4;
+            if (vErrors !== null) {
+              if (_errs4) {
+                vErrors.length = _errs4;
+              } else {
+                vErrors = null;
+              }
+            }
+          }
         }
         if (data.name !== void 0) {
           let data2 = data.name;
           if (typeof data2 === "string") {
-            if (!pattern0.test(data2)) {
-              const err9 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification4/pattern", keyword: "pattern", params: { pattern: "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, message: 'must match pattern "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$"', schema: "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", parentSchema: schema13, data: data2 };
+            if (!pattern1.test(data2)) {
+              const err12 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification4/pattern", keyword: "pattern", params: { pattern: "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, message: 'must match pattern "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$"', schema: "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", parentSchema: schema13, data: data2 };
               if (vErrors === null) {
-                vErrors = [err9];
+                vErrors = [err12];
               } else {
-                vErrors.push(err9);
+                vErrors.push(err12);
               }
               errors++;
             }
           } else {
-            const err10 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification4/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema13.type, parentSchema: schema13, data: data2 };
+            const err13 = { instancePath: instancePath + "/name", schemaPath: "#/$defs/classification4/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema13.type, parentSchema: schema13, data: data2 };
             if (vErrors === null) {
-              vErrors = [err10];
+              vErrors = [err13];
             } else {
-              vErrors.push(err10);
+              vErrors.push(err13);
             }
             errors++;
           }
@@ -49035,11 +49190,11 @@
         if (data.description !== void 0) {
           let data3 = data.description;
           if (typeof data3 !== "string") {
-            const err11 = { instancePath: instancePath + "/description", schemaPath: "#/properties/description/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.description.type, parentSchema: schema12.properties.description, data: data3 };
+            const err14 = { instancePath: instancePath + "/description", schemaPath: "#/properties/description/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.description.type, parentSchema: schema12.properties.description, data: data3 };
             if (vErrors === null) {
-              vErrors = [err11];
+              vErrors = [err14];
             } else {
-              vErrors.push(err11);
+              vErrors.push(err14);
             }
             errors++;
           }
@@ -49057,11 +49212,11 @@
           }
         }
       } else {
-        const err12 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema12.type, parentSchema: schema12, data };
+        const err15 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema12.type, parentSchema: schema12, data };
         if (vErrors === null) {
-          vErrors = [err12];
+          vErrors = [err15];
         } else {
-          vErrors.push(err12);
+          vErrors.push(err15);
         }
         errors++;
       }
@@ -49079,103 +49234,33 @@
       validate10.errors = vErrors;
       return errors === 0;
     }
-    exports2["4287aa76"] = validate16;
-    const schema17 = { "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "anyOf": [{ "required": ["type"] }, { "required": ["protocol"] }], "$id": "4287aa76" };
+    exports2["12b25410"] = validate16;
+    const schema17 = { "type": "integer", "$id": "12b25410" };
     function validate16(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
       let errors = 0;
-      const _errs0 = errors;
-      let valid0 = false;
-      const _errs1 = errors;
-      if (data && typeof data == "object" && !Array.isArray(data)) {
-        if (data.type === void 0) {
-          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema17.anyOf[0].required, parentSchema: schema17.anyOf[0], data };
-          if (vErrors === null) {
-            vErrors = [err0];
-          } else {
-            vErrors.push(err0);
-          }
-          errors++;
-        }
-      }
-      var _valid0 = _errs1 === errors;
-      valid0 = valid0 || _valid0;
-      if (!valid0) {
-        const _errs2 = errors;
-        if (data && typeof data == "object" && !Array.isArray(data)) {
-          if (data.protocol === void 0) {
-            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema17.anyOf[1].required, parentSchema: schema17.anyOf[1], data };
-            if (vErrors === null) {
-              vErrors = [err1];
-            } else {
-              vErrors.push(err1);
-            }
-            errors++;
-          }
-        }
-        var _valid0 = _errs2 === errors;
-        valid0 = valid0 || _valid0;
-      }
-      if (!valid0) {
-        const err2 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema17.anyOf, parentSchema: schema17, data };
+      if (!(typeof data == "number" && (!(data % 1) && !isNaN(data)))) {
+        const err0 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema17.type, parentSchema: schema17, data };
         if (vErrors === null) {
-          vErrors = [err2];
+          vErrors = [err0];
         } else {
-          vErrors.push(err2);
+          vErrors.push(err0);
         }
         errors++;
-      } else {
-        errors = _errs0;
-        if (vErrors !== null) {
-          if (_errs0) {
-            vErrors.length = _errs0;
-          } else {
-            vErrors = null;
-          }
-        }
-      }
-      if (data && typeof data == "object" && !Array.isArray(data)) {
-        if (data.type !== void 0) {
-          let data0 = data.type;
-          if ("abstraction" !== data0) {
-            const err3 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema17.properties.type, data: data0 };
-            if (vErrors === null) {
-              vErrors = [err3];
-            } else {
-              vErrors.push(err3);
-            }
-            errors++;
-          }
-        }
-        if (data.protocol !== void 0) {
-          let data1 = data.protocol;
-          if (typeof data1 !== "string") {
-            const err4 = { instancePath: instancePath + "/protocol", schemaPath: "#/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema17.properties.protocol.type, parentSchema: schema17.properties.protocol, data: data1 };
-            if (vErrors === null) {
-              vErrors = [err4];
-            } else {
-              vErrors.push(err4);
-            }
-            errors++;
-          }
-        }
       }
       validate16.errors = vErrors;
       return errors === 0;
     }
-    exports2["17a0aba3"] = validate17;
-    const schema18 = { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "17a0aba3" };
+    exports2["-624ef6ae"] = validate17;
+    const schema18 = { "type": "string", "pattern": "^-?\\d+$", "$id": "-624ef6ae" };
     function validate17(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
       let errors = 0;
-      const _errs0 = errors;
-      let valid0 = false;
-      const _errs1 = errors;
-      if (data && typeof data == "object" && !Array.isArray(data)) {
-        if (data.type === void 0) {
-          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema18.anyOf[0].required, parentSchema: schema18.anyOf[0], data };
+      if (typeof data === "string") {
+        if (!pattern0.test(data)) {
+          const err0 = { instancePath, schemaPath: "#/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema18, data };
           if (vErrors === null) {
             vErrors = [err0];
           } else {
@@ -49183,130 +49268,20 @@
           }
           errors++;
         }
-      }
-      var _valid0 = _errs1 === errors;
-      valid0 = valid0 || _valid0;
-      if (!valid0) {
-        const _errs2 = errors;
-        if (data && typeof data == "object" && !Array.isArray(data)) {
-          if (data.minimum === void 0) {
-            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema18.anyOf[1].required, parentSchema: schema18.anyOf[1], data };
-            if (vErrors === null) {
-              vErrors = [err1];
-            } else {
-              vErrors.push(err1);
-            }
-            errors++;
-          }
-        }
-        var _valid0 = _errs2 === errors;
-        valid0 = valid0 || _valid0;
-        if (!valid0) {
-          const _errs3 = errors;
-          if (data && typeof data == "object" && !Array.isArray(data)) {
-            if (data.maximum === void 0) {
-              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema18.anyOf[2].required, parentSchema: schema18.anyOf[2], data };
-              if (vErrors === null) {
-                vErrors = [err2];
-              } else {
-                vErrors.push(err2);
-              }
-              errors++;
-            }
-          }
-          var _valid0 = _errs3 === errors;
-          valid0 = valid0 || _valid0;
-          if (!valid0) {
-            const _errs4 = errors;
-            if (data && typeof data == "object" && !Array.isArray(data)) {
-              if (data.hint === void 0) {
-                const err3 = { instancePath, schemaPath: "#/anyOf/3/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema18.anyOf[3].required, parentSchema: schema18.anyOf[3], data };
-                if (vErrors === null) {
-                  vErrors = [err3];
-                } else {
-                  vErrors.push(err3);
-                }
-                errors++;
-              }
-            }
-            var _valid0 = _errs4 === errors;
-            valid0 = valid0 || _valid0;
-          }
-        }
-      }
-      if (!valid0) {
-        const err4 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema18.anyOf, parentSchema: schema18, data };
+      } else {
+        const err1 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema18.type, parentSchema: schema18, data };
         if (vErrors === null) {
-          vErrors = [err4];
+          vErrors = [err1];
         } else {
-          vErrors.push(err4);
+          vErrors.push(err1);
         }
         errors++;
-      } else {
-        errors = _errs0;
-        if (vErrors !== null) {
-          if (_errs0) {
-            vErrors.length = _errs0;
-          } else {
-            vErrors = null;
-          }
-        }
-      }
-      if (data && typeof data == "object" && !Array.isArray(data)) {
-        if (data.type !== void 0) {
-          let data0 = data.type;
-          if ("integer" !== data0) {
-            const err5 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema18.properties.type, data: data0 };
-            if (vErrors === null) {
-              vErrors = [err5];
-            } else {
-              vErrors.push(err5);
-            }
-            errors++;
-          }
-        }
-        if (data.minimum !== void 0) {
-          let data1 = data.minimum;
-          if (!(typeof data1 == "number") && typeof data1 !== "string") {
-            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/type", keyword: "type", params: { type: schema18.properties.minimum.type }, message: "must be number,string", schema: schema18.properties.minimum.type, parentSchema: schema18.properties.minimum, data: data1 };
-            if (vErrors === null) {
-              vErrors = [err6];
-            } else {
-              vErrors.push(err6);
-            }
-            errors++;
-          }
-        }
-        if (data.maximum !== void 0) {
-          let data2 = data.maximum;
-          if (!(typeof data2 == "number") && typeof data2 !== "string") {
-            const err7 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/type", keyword: "type", params: { type: schema18.properties.maximum.type }, message: "must be number,string", schema: schema18.properties.maximum.type, parentSchema: schema18.properties.maximum, data: data2 };
-            if (vErrors === null) {
-              vErrors = [err7];
-            } else {
-              vErrors.push(err7);
-            }
-            errors++;
-          }
-        }
-        if (data.hint !== void 0) {
-          let data3 = data.hint;
-          if (!(typeof data3 == "number") && typeof data3 !== "string") {
-            const err8 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema18.properties.hint.type }, message: "must be number,string", schema: schema18.properties.hint.type, parentSchema: schema18.properties.hint, data: data3 };
-            if (vErrors === null) {
-              vErrors = [err8];
-            } else {
-              vErrors.push(err8);
-            }
-            errors++;
-          }
-        }
       }
       validate17.errors = vErrors;
       return errors === 0;
     }
-    exports2["318105ed"] = validate18;
-    const schema19 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "318105ed" };
+    exports2["4287aa76"] = validate18;
+    const schema19 = { "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "anyOf": [{ "required": ["type"] }, { "required": ["protocol"] }], "$id": "4287aa76" };
     function validate18(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -49330,8 +49305,8 @@
       if (!valid0) {
         const _errs2 = errors;
         if (data && typeof data == "object" && !Array.isArray(data)) {
-          if (data.length === void 0) {
-            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema19.anyOf[1].required, parentSchema: schema19.anyOf[1], data };
+          if (data.protocol === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema19.anyOf[1].required, parentSchema: schema19.anyOf[1], data };
             if (vErrors === null) {
               vErrors = [err1];
             } else {
@@ -49342,29 +49317,13 @@
         }
         var _valid0 = _errs2 === errors;
         valid0 = valid0 || _valid0;
-        if (!valid0) {
-          const _errs3 = errors;
-          if (data && typeof data == "object" && !Array.isArray(data)) {
-            if (data.hint === void 0) {
-              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema19.anyOf[2].required, parentSchema: schema19.anyOf[2], data };
-              if (vErrors === null) {
-                vErrors = [err2];
-              } else {
-                vErrors.push(err2);
-              }
-              errors++;
-            }
-          }
-          var _valid0 = _errs3 === errors;
-          valid0 = valid0 || _valid0;
-        }
       }
       if (!valid0) {
-        const err3 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema19.anyOf, parentSchema: schema19, data };
+        const err2 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema19.anyOf, parentSchema: schema19, data };
         if (vErrors === null) {
-          vErrors = [err3];
+          vErrors = [err2];
         } else {
-          vErrors.push(err3);
+          vErrors.push(err2);
         }
         errors++;
       } else {
@@ -49380,8 +49339,20 @@
       if (data && typeof data == "object" && !Array.isArray(data)) {
         if (data.type !== void 0) {
           let data0 = data.type;
-          if ("string" !== data0) {
-            const err4 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema19.properties.type, data: data0 };
+          if ("abstraction" !== data0) {
+            const err3 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema19.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err3];
+            } else {
+              vErrors.push(err3);
+            }
+            errors++;
+          }
+        }
+        if (data.protocol !== void 0) {
+          let data1 = data.protocol;
+          if (typeof data1 !== "string") {
+            const err4 = { instancePath: instancePath + "/protocol", schemaPath: "#/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema19.properties.protocol.type, parentSchema: schema19.properties.protocol, data: data1 };
             if (vErrors === null) {
               vErrors = [err4];
             } else {
@@ -49390,36 +49361,12 @@
             errors++;
           }
         }
-        if (data.length !== void 0) {
-          let data1 = data.length;
-          if (!(typeof data1 == "number") && typeof data1 !== "string") {
-            const err5 = { instancePath: instancePath + "/length", schemaPath: "#/properties/length/type", keyword: "type", params: { type: schema19.properties.length.type }, message: "must be number,string", schema: schema19.properties.length.type, parentSchema: schema19.properties.length, data: data1 };
-            if (vErrors === null) {
-              vErrors = [err5];
-            } else {
-              vErrors.push(err5);
-            }
-            errors++;
-          }
-        }
-        if (data.hint !== void 0) {
-          let data2 = data.hint;
-          if (!(typeof data2 == "number") && typeof data2 !== "string") {
-            const err6 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema19.properties.hint.type }, message: "must be number,string", schema: schema19.properties.hint.type, parentSchema: schema19.properties.hint, data: data2 };
-            if (vErrors === null) {
-              vErrors = [err6];
-            } else {
-              vErrors.push(err6);
-            }
-            errors++;
-          }
-        }
       }
       validate18.errors = vErrors;
       return errors === 0;
     }
-    exports2["2c01de3a"] = validate19;
-    const schema20 = { "properties": { "type": { "const": "boolean" } }, "anyOf": [{ "required": ["type"] }], "$id": "2c01de3a" };
+    exports2["17a0aba3"] = validate19;
+    const schema20 = { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "17a0aba3" };
     function validate19(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -49441,11 +49388,59 @@
       var _valid0 = _errs1 === errors;
       valid0 = valid0 || _valid0;
       if (!valid0) {
-        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema20.anyOf, parentSchema: schema20, data };
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.minimum === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema20.anyOf[1].required, parentSchema: schema20.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+        if (!valid0) {
+          const _errs3 = errors;
+          if (data && typeof data == "object" && !Array.isArray(data)) {
+            if (data.maximum === void 0) {
+              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema20.anyOf[2].required, parentSchema: schema20.anyOf[2], data };
+              if (vErrors === null) {
+                vErrors = [err2];
+              } else {
+                vErrors.push(err2);
+              }
+              errors++;
+            }
+          }
+          var _valid0 = _errs3 === errors;
+          valid0 = valid0 || _valid0;
+          if (!valid0) {
+            const _errs4 = errors;
+            if (data && typeof data == "object" && !Array.isArray(data)) {
+              if (data.hint === void 0) {
+                const err3 = { instancePath, schemaPath: "#/anyOf/3/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema20.anyOf[3].required, parentSchema: schema20.anyOf[3], data };
+                if (vErrors === null) {
+                  vErrors = [err3];
+                } else {
+                  vErrors.push(err3);
+                }
+                errors++;
+              }
+            }
+            var _valid0 = _errs4 === errors;
+            valid0 = valid0 || _valid0;
+          }
+        }
+      }
+      if (!valid0) {
+        const err4 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema20.anyOf, parentSchema: schema20, data };
         if (vErrors === null) {
-          vErrors = [err1];
+          vErrors = [err4];
         } else {
-          vErrors.push(err1);
+          vErrors.push(err4);
         }
         errors++;
       } else {
@@ -49461,12 +49456,48 @@
       if (data && typeof data == "object" && !Array.isArray(data)) {
         if (data.type !== void 0) {
           let data0 = data.type;
-          if ("boolean" !== data0) {
-            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema20.properties.type, data: data0 };
+          if ("integer" !== data0) {
+            const err5 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema20.properties.type, data: data0 };
             if (vErrors === null) {
-              vErrors = [err2];
+              vErrors = [err5];
             } else {
-              vErrors.push(err2);
+              vErrors.push(err5);
+            }
+            errors++;
+          }
+        }
+        if (data.minimum !== void 0) {
+          let data1 = data.minimum;
+          if (!(typeof data1 == "number") && typeof data1 !== "string") {
+            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/type", keyword: "type", params: { type: schema20.properties.minimum.type }, message: "must be number,string", schema: schema20.properties.minimum.type, parentSchema: schema20.properties.minimum, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+        if (data.maximum !== void 0) {
+          let data2 = data.maximum;
+          if (!(typeof data2 == "number") && typeof data2 !== "string") {
+            const err7 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/type", keyword: "type", params: { type: schema20.properties.maximum.type }, message: "must be number,string", schema: schema20.properties.maximum.type, parentSchema: schema20.properties.maximum, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err7];
+            } else {
+              vErrors.push(err7);
+            }
+            errors++;
+          }
+        }
+        if (data.hint !== void 0) {
+          let data3 = data.hint;
+          if (!(typeof data3 == "number") && typeof data3 !== "string") {
+            const err8 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema20.properties.hint.type }, message: "must be number,string", schema: schema20.properties.hint.type, parentSchema: schema20.properties.hint, data: data3 };
+            if (vErrors === null) {
+              vErrors = [err8];
+            } else {
+              vErrors.push(err8);
             }
             errors++;
           }
@@ -49475,8 +49506,8 @@
       validate19.errors = vErrors;
       return errors === 0;
     }
-    exports2["1d36f00b"] = validate20;
-    const schema21 = { "properties": { "type": { "const": "site" } }, "anyOf": [{ "required": ["type"] }], "$id": "1d36f00b" };
+    exports2["318105ed"] = validate20;
+    const schema21 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "318105ed" };
     function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -49498,7 +49529,177 @@
       var _valid0 = _errs1 === errors;
       valid0 = valid0 || _valid0;
       if (!valid0) {
-        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema21.anyOf, parentSchema: schema21, data };
+        const _errs2 = errors;
+        if (data && typeof data == "object" && !Array.isArray(data)) {
+          if (data.length === void 0) {
+            const err1 = { instancePath, schemaPath: "#/anyOf/1/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema21.anyOf[1].required, parentSchema: schema21.anyOf[1], data };
+            if (vErrors === null) {
+              vErrors = [err1];
+            } else {
+              vErrors.push(err1);
+            }
+            errors++;
+          }
+        }
+        var _valid0 = _errs2 === errors;
+        valid0 = valid0 || _valid0;
+        if (!valid0) {
+          const _errs3 = errors;
+          if (data && typeof data == "object" && !Array.isArray(data)) {
+            if (data.hint === void 0) {
+              const err2 = { instancePath, schemaPath: "#/anyOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema21.anyOf[2].required, parentSchema: schema21.anyOf[2], data };
+              if (vErrors === null) {
+                vErrors = [err2];
+              } else {
+                vErrors.push(err2);
+              }
+              errors++;
+            }
+          }
+          var _valid0 = _errs3 === errors;
+          valid0 = valid0 || _valid0;
+        }
+      }
+      if (!valid0) {
+        const err3 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema21.anyOf, parentSchema: schema21, data };
+        if (vErrors === null) {
+          vErrors = [err3];
+        } else {
+          vErrors.push(err3);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("string" !== data0) {
+            const err4 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema21.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err4];
+            } else {
+              vErrors.push(err4);
+            }
+            errors++;
+          }
+        }
+        if (data.length !== void 0) {
+          let data1 = data.length;
+          if (!(typeof data1 == "number") && typeof data1 !== "string") {
+            const err5 = { instancePath: instancePath + "/length", schemaPath: "#/properties/length/type", keyword: "type", params: { type: schema21.properties.length.type }, message: "must be number,string", schema: schema21.properties.length.type, parentSchema: schema21.properties.length, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err5];
+            } else {
+              vErrors.push(err5);
+            }
+            errors++;
+          }
+        }
+        if (data.hint !== void 0) {
+          let data2 = data.hint;
+          if (!(typeof data2 == "number") && typeof data2 !== "string") {
+            const err6 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema21.properties.hint.type }, message: "must be number,string", schema: schema21.properties.hint.type, parentSchema: schema21.properties.hint, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err6];
+            } else {
+              vErrors.push(err6);
+            }
+            errors++;
+          }
+        }
+      }
+      validate20.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["2c01de3a"] = validate21;
+    const schema22 = { "properties": { "type": { "const": "boolean" } }, "anyOf": [{ "required": ["type"] }], "$id": "2c01de3a" };
+    function validate21(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema22.anyOf[0].required, parentSchema: schema22.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema22.anyOf, parentSchema: schema22, data };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      } else {
+        errors = _errs0;
+        if (vErrors !== null) {
+          if (_errs0) {
+            vErrors.length = _errs0;
+          } else {
+            vErrors = null;
+          }
+        }
+      }
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type !== void 0) {
+          let data0 = data.type;
+          if ("boolean" !== data0) {
+            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema22.properties.type, data: data0 };
+            if (vErrors === null) {
+              vErrors = [err2];
+            } else {
+              vErrors.push(err2);
+            }
+            errors++;
+          }
+        }
+      }
+      validate21.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["1d36f00b"] = validate22;
+    const schema23 = { "properties": { "type": { "const": "site" } }, "anyOf": [{ "required": ["type"] }], "$id": "1d36f00b" };
+    function validate22(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      const _errs0 = errors;
+      let valid0 = false;
+      const _errs1 = errors;
+      if (data && typeof data == "object" && !Array.isArray(data)) {
+        if (data.type === void 0) {
+          const err0 = { instancePath, schemaPath: "#/anyOf/0/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema23.anyOf[0].required, parentSchema: schema23.anyOf[0], data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      }
+      var _valid0 = _errs1 === errors;
+      valid0 = valid0 || _valid0;
+      if (!valid0) {
+        const err1 = { instancePath, schemaPath: "#/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema23.anyOf, parentSchema: schema23, data };
         if (vErrors === null) {
           vErrors = [err1];
         } else {
@@ -49519,7 +49720,7 @@
         if (data.type !== void 0) {
           let data0 = data.type;
           if ("site" !== data0) {
-            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema21.properties.type, data: data0 };
+            const err2 = { instancePath: instancePath + "/type", schemaPath: "#/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema23.properties.type, data: data0 };
             if (vErrors === null) {
               vErrors = [err2];
             } else {
@@ -49529,7 +49730,7 @@
           }
         }
       }
-      validate20.errors = vErrors;
+      validate22.errors = vErrors;
       return errors === 0;
     }
   })(module_protocolSpec, module_protocolSpec.exports);
@@ -49755,7 +49956,15 @@
             "const": "protocol"
           },
           "policy": {
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ]
           },
           "name": {
             "$ref": "#/$defs/classification4"

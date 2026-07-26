@@ -93,7 +93,12 @@
       "required": ["type", "policy", "name", "description", "host", "join"],
       "properties": {
         "type": { "const": "protocol" },
-        "policy": { "type": "integer" },
+        "policy": {
+          "anyOf": [
+            { "type": "integer" },
+            { "type": "string", "pattern": "^-?\\d+$" }
+          ]
+        },
         "name": { "$ref": "#/$defs/classification4" },
         "description": { "type": "string" },
         "host": { "$ref": "#/$defs/role" },

@@ -2,12 +2,12 @@
   "protocolDesignVersion": 1,
   "hostMacroGlobal": {
 	"def": "def (acs, $TOPICS, self, trigger, debug_msg) :",
-	"header": "sub /behaviour/add/collaboration-endpoint/host/x64@codevalley( acs, self, trigger, debug_msg) -> {",
+	"header": "sub /behaviour/add/collaboration-endpoint/host/x64@codevalley(acs, self, trigger, debug_msg) -> {",
 	"footer": "}\nend"
   },
   "joinMacroGlobal": {
-	"def": "def (acs, $TOPICS, self, trigger, debug_msg) :",
-	"header": "sub /behaviour/add/collaboration-endpoint/join/x64@codevalley( acs, self, trigger, debug_msg) -> {",
+	"def": "def (acs, self, $TOPICS, trigger, debug_msg) :",
+	"header": "sub /behaviour/add/collaboration-endpoint/join/x64@codevalley(acs, self, trigger, debug_msg) -> {",
 	"footer": "}\nend"
   },
   "modeTemplates": [

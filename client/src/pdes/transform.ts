@@ -19,7 +19,7 @@ export type PspecRole = {
 
 export type Pspec = {
   type: "protocol";
-  policy: number;
+  policy: string;
   name: string;
   description: string;
   host: PspecRole;
@@ -90,8 +90,10 @@ export function transformPdesToPspec(
   }
 
   const modeTopicIds: string[][] = [];
-  const allIds: TopicIdResult[] = [];
-  const counter: Record<string, number> = {};
+  const hostIds: TopicIdResult[] = [];
+  const joinIds: TopicIdResult[] = [];
+  const hostCounter: Record<string, number> = {};
+  const joinCounter: Record<string, number> = {};
 
   const hostRequirements: any[] = [];
   const hostObligations: any[] = [];
@@ -108,6 +110,13 @@ export function transformPdesToPspec(
       modeTopicIds.push([]);
       return;
     }
+    const collaborationLabel = mode.collaborationLabel?.trim() ?? "";
+    if (!collaborationLabel) {
+      errors.push({ message: `Mode #${modeIdx + 1} (${mode.modeTemplate}) requires a non-blank collaboration label.` });
+      modeTopicIds.push([]);
+      return;
+    }
+
     const ids: string[] = [];
     (mode.topics || []).forEach((topicInstance, topicIdx) => {
       const templateTopic = template.topics?.[topicIdx];
@@ -115,15 +124,16 @@ export function transformPdesToPspec(
         errors.push({ message: `Topic #${topicIdx + 1} missing template in mode ${template.name}` });
         return;
       }
-      const id = normalizeIdentifier(topicInstance.name ?? templateTopic.name ?? `topic${topicIdx + 1}`, counter);
+      const id = normalizeIdentifier(collaborationLabel, templateTopic.role === "host" ? hostCounter : joinCounter);
       ids.push(id);
-      allIds.push({
+      const topicId: TopicIdResult = {
         id,
         templateRole: templateTopic.role,
         templateConstraint: templateTopic.constraint,
         templateType: templateTopic.type,
-      });
-      const specTopic: any = { type: templateTopic.type, name: topicInstance.name ?? "" };
+      };
+      (templateTopic.role === "host" ? hostIds : joinIds).push(topicId);
+      const specTopic: any = { type: templateTopic.type, name: collaborationLabel };
       Object.assign(specTopic, topicInstance.properties ?? {});
       const target =
         templateTopic.role === "host"
@@ -140,28 +150,37 @@ export function transformPdesToPspec(
     modeJoinTemplates.push(...(template.joinMacroTemplates ?? []).map((tpl) => tpl));
   });
 
-  const { req, ob } = topicIdLists(allIds);
-  const defParams = [...req, ...ob];
+  if (errors.length) {
+    return { errors };
+  }
+
+  hostObligations.push({ type: "abstraction", name: "<self>", protocol: design.classification });
+  joinRequirements.push({ type: "abstraction", name: "<self>", protocol: design.classification });
+
+  const hostTopicIds = topicIdLists(hostIds);
+  const joinTopicIds = topicIdLists(joinIds);
+  const hostDefParams = [...hostTopicIds.req, ...hostTopicIds.ob];
+  const joinDefParams = [...joinTopicIds.req, ...joinTopicIds.ob];
 
   const hostMacro =
     pdd.hostMacroGlobal && pdd.hostMacroGlobal.def
-      ? buildMacro(pdd.hostMacroGlobal, modeHostTemplates, defParams, modeTopicIds)
+      ? buildMacro(pdd.hostMacroGlobal, modeHostTemplates, hostDefParams, modeTopicIds)
       : undefined;
   const joinMacro =
     pdd.joinMacroGlobal && pdd.joinMacroGlobal.def
-      ? buildMacro(pdd.joinMacroGlobal, modeJoinTemplates, defParams, modeTopicIds)
+      ? buildMacro(pdd.joinMacroGlobal, modeJoinTemplates, joinDefParams, modeTopicIds)
       : undefined;
 
-  const policyNumber =
+  const policy =
     typeof design.policy === "string" && /^-?\d+$/.test(design.policy.trim())
-      ? parseInt(design.policy.trim(), 10)
+      ? String(parseInt(design.policy.trim(), 10))
       : typeof design.policy === "number"
-      ? Math.trunc(design.policy)
-      : 0;
+      ? String(Math.trunc(design.policy))
+      : "0";
 
   const pspec: Pspec = {
     type: "protocol",
-    policy: policyNumber,
+    policy,
     name: design.classification,
     description: design.description ?? "",
     host: {

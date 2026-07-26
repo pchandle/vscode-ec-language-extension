@@ -226,7 +226,15 @@
           "const": "protocol"
         },
         "policy": {
-          "type": "integer"
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "pattern": "^-?\\d+$"
+            }
+          ]
         },
         "name": {
           "$ref": "#/$defs/classification4"

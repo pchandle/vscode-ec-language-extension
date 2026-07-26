@@ -222,7 +222,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     if (Array.isArray(clone.description)) {
       clone.description = clone.description.join("\n");
     }
-    if (clone.policy && typeof clone.policy === "string" && /^-?\d+$/.test(clone.policy)) {
+    if (clone.type !== "protocol" && clone.policy && typeof clone.policy === "string" && /^-?\d+$/.test(clone.policy)) {
       clone.policy = parseInt(clone.policy, 10);
     }
     if (clone.host && typeof clone.host === "object" && Array.isArray(clone.host.macro)) {
