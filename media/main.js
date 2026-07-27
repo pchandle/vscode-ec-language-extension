@@ -59576,6 +59576,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
     const [pddPath, setPddPath] = (0, import_react27.useState)();
     const [protocolCompletions, setProtocolCompletions] = (0, import_react27.useState)([]);
     const [contractCompletions, setContractCompletions] = (0, import_react27.useState)([]);
+    const [canCreatePdes, setCanCreatePdes] = (0, import_react27.useState)(false);
+    const [canExportPspec, setCanExportPspec] = (0, import_react27.useState)(false);
     const [hostErrors, setHostErrors] = (0, import_react27.useState)([]);
     const [parseError, setParseError] = (0, import_react27.useState)();
     const [formErrors, setFormErrors] = (0, import_react27.useState)([]);
@@ -59605,6 +59607,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
           setFormErrors([]);
           setProtocolCompletions([]);
           setContractCompletions(message.contractCompletions ?? []);
+          setCanCreatePdes(Boolean(message.canCreatePdes));
+          setCanExportPspec(false);
         } else if (message.type === "pdesState") {
           setEditorMode("pdes");
           setSchema(void 0);
@@ -59619,6 +59623,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
           setParseError(message.parseError);
           setFormErrors([]);
           setProtocolCompletions(message.protocolCompletions ?? []);
+          setCanCreatePdes(false);
+          setCanExportPspec(Boolean(message.canExportPspec));
         } else if (message.type === "pddState") {
           setEditorMode("pdd");
           setSchema(void 0);
@@ -59634,6 +59640,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
           setFormErrors([]);
           setProtocolCompletions([]);
           setContractCompletions([]);
+          setCanCreatePdes(false);
+          setCanExportPspec(false);
         } else if (message.type === "componentManagerGraph") {
           setComponentGraph(message);
         } else if (message.type === "componentManagerSidebar") {
@@ -59886,7 +59894,19 @@ ${diagnosticSummary}` : topic.displayName, children: [
         ),
         /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)("header", { style: styles5.header, children: [
           /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.title, children: "Protocol Design" }),
-          /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.headerActions, children: hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.okBadge, children: "Valid" }) })
+          /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)("div", { style: styles5.headerActions, children: [
+            canExportPspec ? /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+              "button",
+              {
+                type: "button",
+                style: styles5.smallButton,
+                title: "Export this valid protocol design as a protocol specification",
+                onClick: () => vscode.postMessage({ type: "exportPspec", value: pdesData ?? {} }),
+                children: "Export .pspec"
+              }
+            ) : null,
+            hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.errorBadge, children: "Errors" }) : /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.okBadge, children: "Valid" })
+          ] })
         ] }),
         parseError ? /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)("div", { style: styles5.bannerError, children: [
           "Unable to parse JSON: ",
@@ -59973,8 +59993,18 @@ ${diagnosticSummary}` : topic.displayName, children: [
         }
       ),
       /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)("header", { style: styles5.header, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.title, children: "Contract Specification" }),
+        /* @__PURE__ */ (0, import_jsx_runtime54.jsx)("div", { style: styles5.title, children: formData?.type === "protocol" ? "Protocol Specification" : "Contract Specification" }),
         /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)("div", { style: styles5.headerActions, children: [
+          canCreatePdes ? /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+            "button",
+            {
+              type: "button",
+              style: styles5.smallButton,
+              title: "Create a protocol design in the same directory",
+              onClick: () => vscode.postMessage({ type: "createPdes" }),
+              children: "Create .pdes"
+            }
+          ) : null,
           hostErrors.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
             "button",
             {

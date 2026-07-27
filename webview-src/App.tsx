@@ -45,6 +45,8 @@ export default function App() {
   const [pddPath, setPddPath] = useState<string | undefined>();
   const [protocolCompletions, setProtocolCompletions] = useState<string[]>([]);
   const [contractCompletions, setContractCompletions] = useState<string[]>([]);
+  const [canCreatePdes, setCanCreatePdes] = useState(false);
+  const [canExportPspec, setCanExportPspec] = useState(false);
   const [hostErrors, setHostErrors] = useState<string[]>([]);
   const [parseError, setParseError] = useState<string | undefined>();
   const [formErrors, setFormErrors] = useState<RJSFValidationError[]>([]);
@@ -75,6 +77,8 @@ export default function App() {
         setFormErrors([]);
         setProtocolCompletions([]);
         setContractCompletions((message as any).contractCompletions ?? []);
+        setCanCreatePdes(Boolean(message.canCreatePdes));
+        setCanExportPspec(false);
       } else if (message.type === "pdesState") {
         setEditorMode("pdes");
         setSchema(undefined);
@@ -89,6 +93,8 @@ export default function App() {
         setParseError(message.parseError);
         setFormErrors([]);
         setProtocolCompletions((message as any).protocolCompletions ?? []);
+        setCanCreatePdes(false);
+        setCanExportPspec(Boolean(message.canExportPspec));
       } else if (message.type === "pddState") {
         setEditorMode("pdd");
         setSchema(undefined);
@@ -104,6 +110,8 @@ export default function App() {
         setFormErrors([]);
         setProtocolCompletions([]);
         setContractCompletions([]);
+        setCanCreatePdes(false);
+        setCanExportPspec(false);
       } else if (message.type === "componentManagerGraph") {
         setComponentGraph(message as unknown as ComponentGraphState);
       } else if (message.type === "componentManagerSidebar") {
@@ -384,6 +392,16 @@ const formContext = useMemo(
         <header style={styles.header}>
           <div style={styles.title}>Protocol Design</div>
           <div style={styles.headerActions}>
+            {canExportPspec ? (
+              <button
+                type="button"
+                style={styles.smallButton}
+                title="Export this valid protocol design as a protocol specification"
+                onClick={() => vscode.postMessage({ type: "exportPspec", value: pdesData ?? {} } as WebviewMessage)}
+              >
+                Export .pspec
+              </button>
+            ) : null}
             {hostErrors.length > 0 ? <div style={styles.errorBadge}>Errors</div> : <div style={styles.okBadge}>Valid</div>}
           </div>
         </header>
@@ -472,8 +490,18 @@ const formContext = useMemo(
         }}
       />
       <header style={styles.header}>
-        <div style={styles.title}>Contract Specification</div>
+        <div style={styles.title}>{(formData as any)?.type === "protocol" ? "Protocol Specification" : "Contract Specification"}</div>
         <div style={styles.headerActions}>
+          {canCreatePdes ? (
+            <button
+              type="button"
+              style={styles.smallButton}
+              title="Create a protocol design in the same directory"
+              onClick={() => vscode.postMessage({ type: "createPdes" } as WebviewMessage)}
+            >
+              Create .pdes
+            </button>
+          ) : null}
           {hostErrors.length > 0 ? (
             <button
               type="button"

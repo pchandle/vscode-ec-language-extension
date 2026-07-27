@@ -6,6 +6,7 @@ export type HostMessage =
       errors: string[];
       parseError?: string;
       contractCompletions?: string[];
+      canCreatePdes?: boolean;
     }
   | {
       type: "pdesState";
@@ -15,6 +16,7 @@ export type HostMessage =
       errors: string[];
       parseError?: string;
       protocolCompletions?: string[];
+      canExportPspec: boolean;
     }
   | {
       type: "pddState";
@@ -44,6 +46,13 @@ export type WebviewMessage =
     }
   | {
       type: "updateDoc";
+      value: unknown;
+    }
+  | {
+      type: "createPdes";
+    }
+  | {
+      type: "exportPspec";
       value: unknown;
     }
   | {

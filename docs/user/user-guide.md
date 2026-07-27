@@ -212,6 +212,12 @@ If no `.pdd` matches `protocolDesignVersion`, extension warns and can open raw t
 
 Each mode must have a non-empty **Collaboration label**. Export uses that label as the public name of every topic in the mode; it also creates the protocol's implicit `<self>` host/join endpoints.
 
+### 8.4 Migrate a legacy `.pspec` to `.pdes`
+
+Open the legacy `.pspec` in the Protocol Specification Editor and choose **Create `.pdes`**. The action is available only when a same-named `.pdes` file does not already exist in that directory; migration never overwrites an existing design.
+
+The migration review selects a protocol design definition, proposes modes from the legacy topics and macros, and previews the new design. Review every inferred mode before creating the file. When a legacy mode used different topic names, choose its **Collaboration label** explicitly: a `.pdes` exports one public label for all topics in that mode. The original topic names remain as editor labels so that the migration can be reviewed and refined after opening the new design.
+
 ## 9. Workflow: Validate an Existing Workspace with Bulk Expression Validation
 
 Use this for corpus-scale triage across many files.

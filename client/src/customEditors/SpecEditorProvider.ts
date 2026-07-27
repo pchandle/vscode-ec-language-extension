@@ -6,7 +6,10 @@ import Ajv, { AnySchema, ErrorObject, ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import { findNodeAtLocation, parseTree, Node as JsonNode } from "jsonc-parser";
 
-type WebviewIncomingMessage = { type: "ready" } | { type: "updateDoc"; value: unknown };
+type WebviewIncomingMessage =
+  | { type: "ready" }
+  | { type: "updateDoc"; value: unknown }
+  | { type: "createPdes" };
 
 type WebviewStateMessage = {
   type: "state";
@@ -15,6 +18,7 @@ type WebviewStateMessage = {
   errors: string[];
   parseError?: string;
   contractCompletions?: string[];
+  canCreatePdes?: boolean;
 };
 
 export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
@@ -26,7 +30,8 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     private readonly context: vscode.ExtensionContext,
     private readonly schema: AnySchema,
     private readonly diagnostics: vscode.DiagnosticCollection,
-    private readonly expectedType: "supplier" | "protocol"
+    private readonly expectedType: "supplier" | "protocol",
+    private readonly onCreatePdes?: (document: vscode.TextDocument) => Promise<void>
   ) {
     this.validator = new Ajv({ allErrors: true, strict: true, allowUnionTypes: true });
     addFormats(this.validator);
@@ -58,6 +63,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
         errors: validation.messages,
         parseError: parseResult.parseError,
         contractCompletions,
+        canCreatePdes: this.canCreatePdes(document),
       };
       void webviewPanel.webview.postMessage(message);
     };
@@ -74,8 +80,23 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
       updateWebview();
     });
 
+    let directoryWatcher: fs.FSWatcher | undefined;
+    if (this.expectedType === "protocol" && document.uri.scheme === "file") {
+      try {
+        const targetName = `${path.basename(document.uri.fsPath, path.extname(document.uri.fsPath))}.pdes`;
+        directoryWatcher = fs.watch(path.dirname(document.uri.fsPath), (_event, filename) => {
+          if (!filename || filename.toString().toLowerCase() === targetName.toLowerCase()) {
+            updateWebview();
+          }
+        });
+      } catch (error) {
+        console.warn("Unable to watch protocol-design migration target", error);
+      }
+    }
+
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
+      directoryWatcher?.close();
       this.diagnostics.delete(document.uri);
     });
 
@@ -83,12 +104,25 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel.webview.onDidReceiveMessage((e: WebviewIncomingMessage) => {
       if (e.type === "updateDoc") {
         void this.updateTextDocument(document, e.value);
+      } else if (e.type === "createPdes" && this.onCreatePdes) {
+        void this.onCreatePdes(document);
       } else if (e.type === "ready") {
         updateWebview();
       }
     });
 
     updateWebview();
+  }
+
+  private canCreatePdes(document: vscode.TextDocument): boolean {
+    if (this.expectedType !== "protocol" || document.uri.scheme !== "file" || !document.uri.fsPath.toLowerCase().endsWith(".pspec")) {
+      return false;
+    }
+    const target = path.join(
+      path.dirname(document.uri.fsPath),
+      `${path.basename(document.uri.fsPath, path.extname(document.uri.fsPath))}.pdes`
+    );
+    return !fs.existsSync(target);
   }
 
   private parseDocument(document: vscode.TextDocument): {

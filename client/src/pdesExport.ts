@@ -23,6 +23,16 @@ async function exportActivePdes(context: vscode.ExtensionContext) {
     return;
   }
 
+  await exportPdesDocument(context, uri, text);
+}
+
+/** Exports a supplied .pdes snapshot, including unsaved custom-editor changes. */
+export async function exportPdesDocument(
+  context: vscode.ExtensionContext,
+  uri: vscode.Uri,
+  text: string
+): Promise<void> {
+
   let parsed: PdesDesign;
   try {
     parsed = parseJsonc(text) as PdesDesign;

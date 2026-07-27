@@ -9,7 +9,8 @@ import { SpecEditorProvider, loadSchema } from "./customEditors/SpecEditorProvid
 import { PdesEditorProvider, loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { PddEditorProvider, loadPddSchema } from "./customEditors/PddEditorProvider";
 import { registerPdesVersionCheck } from "./pdesVersionCheck";
-import { registerExportProtocolSpec } from "./pdesExport";
+import { exportPdesDocument, registerExportProtocolSpec } from "./pdesExport";
+import { registerPspecMigration } from "./pspecMigration";
 import { workspace, ExtensionContext } from "vscode";
 import { loadPddCandidates } from "./pddLoader";
 import { registerBulkExpressionValidation } from "./bulkExpressionValidation";
@@ -767,6 +768,7 @@ function registerSpecificationEditors(context: vscode.ExtensionContext) {
     webviewOptions: { retainContextWhenHidden: true },
     supportsMultipleEditorsPerDocument: true,
   };
+  const migratePspec = registerPspecMigration(context);
 
   if (contractSchema) {
     const contractProvider = new SpecEditorProvider(context, contractSchema, diagnostics, "supplier");
@@ -774,7 +776,7 @@ function registerSpecificationEditors(context: vscode.ExtensionContext) {
   }
 
   if (protocolSchema) {
-    const protocolProvider = new SpecEditorProvider(context, protocolSchema, diagnostics, "protocol");
+    const protocolProvider = new SpecEditorProvider(context, protocolSchema, diagnostics, "protocol", migratePspec);
     context.subscriptions.push(vscode.window.registerCustomEditorProvider("protocolSpecEditor", protocolProvider, options));
   }
 
@@ -798,7 +800,9 @@ function registerPdesEditor(context: vscode.ExtensionContext) {
 
   let provider: PdesEditorProvider;
   try {
-    provider = new PdesEditorProvider(context, schema, diagnostics);
+    provider = new PdesEditorProvider(context, schema, diagnostics, async (document, value) => {
+      await exportPdesDocument(context, document.uri, JSON.stringify(value));
+    });
   } catch (err: any) {
     console.error("Failed to initialize Protocol Design Editor", err);
     void vscode.window.showErrorMessage(

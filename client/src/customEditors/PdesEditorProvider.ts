@@ -13,6 +13,10 @@ type HostMessage =
   | {
       type: "updateDoc";
       value: unknown;
+    }
+  | {
+      type: "exportPspec";
+      value: unknown;
     };
 
 type WebviewMessage = {
@@ -23,6 +27,7 @@ type WebviewMessage = {
   errors: string[];
   parseError?: string;
   protocolCompletions?: string[];
+  canExportPspec: boolean;
 };
 
 export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
@@ -32,7 +37,8 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly schema: any,
-    private readonly diagnostics: vscode.DiagnosticCollection
+    private readonly diagnostics: vscode.DiagnosticCollection,
+    private readonly onExportPspec?: (document: vscode.TextDocument, value: unknown) => Promise<void>
   ) {
     this.validator = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
     addFormats(this.validator);
@@ -66,6 +72,7 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
         errors: validation.messages,
         parseError: parsed.parseError,
         protocolCompletions,
+        canExportPspec: !parsed.parseError && validation.messages.length === 0,
       };
       void webviewPanel.webview.postMessage(message);
     };
@@ -84,12 +91,19 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel.webview.onDidReceiveMessage((e: HostMessage) => {
       if (e.type === "updateDoc") {
         void this.updateTextDocument(document, e.value);
+      } else if (e.type === "exportPspec" && this.onExportPspec) {
+        void this.exportCurrentDesign(document, e.value);
       } else if (e.type === "ready") {
         updateWebview();
       }
     });
 
     updateWebview();
+  }
+
+  private async exportCurrentDesign(document: vscode.TextDocument, value: unknown): Promise<void> {
+    await this.updateTextDocument(document, value);
+    await this.onExportPspec?.(document, value);
   }
 
   private parseDocument(document: vscode.TextDocument): {
