@@ -13,6 +13,7 @@ import { registerExportProtocolSpec } from "./pdesExport";
 import { workspace, ExtensionContext } from "vscode";
 import { loadPddCandidates } from "./pddLoader";
 import { registerBulkExpressionValidation } from "./bulkExpressionValidation";
+import { registerComponentManager } from "./componentManager";
 
 import * as vscode from "vscode";
 
@@ -536,6 +537,7 @@ export async function activate(context: ExtensionContext) {
   registerPddEditor(context);
   registerExportProtocolSpec(context);
   registerBulkExpressionValidation(context, client);
+  registerComponentManager(context, client);
   registerSupplierQuickFixes(context);
 
   validateFilenameFormats();

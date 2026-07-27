@@ -83,13 +83,19 @@ but muted. The graph does not need an explanatory label on every muted node.
 
 ### Direct relationship rule
 
-A line is shown only where a selected protocol statement directly uses the
-same label as a topic in that job's requirement or obligation header. V1 does
-not infer dataflow through local statements, functions, or macros.
+A line is shown only for the semantic collaboration `<self>` endpoint of a
+selected managed protocol. A `join` statement contributes the label at the
+unique `<self>` slot in join requirements and matches it only to the job's
+requirement header; a `host` statement does the same from host obligations to
+the job's obligation header. Other role labels are not graph relationships.
+Missing, invalid, out-of-range, or ambiguous self labels produce no line; V1
+does not infer dataflow through local statements, functions, or macros.
 
-Each job node has collapsible **Requirements** and **Obligations** groups.
-Each group contains the corresponding contract topics/labels. Protocol lines
-terminate at the exact participating topic row.
+Each job node has **Requirements** and **Obligations** groups. In compact
+form, a group shows only its self-bound topic; expanding it reveals the
+remaining contract topics. A group without hidden topics is a static label,
+not an inactive expand/collapse control. Protocol lines terminate at the exact
+self-bound topic row.
 
 ## Component Manager user interface
 
@@ -212,4 +218,3 @@ legacy-only, is ambiguous, or has no valid self-topic mapping.
 - Guided `.pspec` to `.pdes` migration.
 - Graph-source editing, persisted graph layout, and automatic saving of source.
 - Automatic changes to closed expressions.
-

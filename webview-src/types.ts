@@ -21,6 +21,21 @@ export type HostMessage =
       value: unknown | null;
       errors: string[];
       parseError?: string;
+    }
+  | {
+      type: "componentManagerGraph";
+      selectedProtocol: string;
+      protocol?: unknown;
+      jobs: unknown[];
+      counts: { directUseJobs: number; hostJobs: number; joinJobs: number };
+    }
+  | {
+      type: "componentManagerSidebar";
+      status: { indexing: boolean; processed: number; total: number };
+      protocols: unknown[];
+      contracts: unknown[];
+      diagnostics: unknown[];
+      directories: string[];
     };
 
 export type WebviewMessage =
@@ -30,6 +45,10 @@ export type WebviewMessage =
   | {
       type: "updateDoc";
       value: unknown;
+    }
+  | {
+      type: "componentManagerOpenSource";
+      source: unknown;
     };
 
 export type TopicRole = "host" | "join";

@@ -279,6 +279,22 @@
         }
       },
       {
+        "title": "Component Manager",
+        "properties": {
+          "componentManager.componentDirectories": {
+            "scope": "window",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "default": [],
+            "markdownDescription": "Workspace-scoped folder URIs recursively indexed by Component Manager. Folders may be outside the workspace. Component Manager indexes managed `.pdes`, legacy `.pspec`, `.cspec`, and files using `emergent.autopilotExtension`.",
+            "order": 295
+          }
+        }
+      },
+      {
         "title": "Diagnostics & Tracing",
         "properties": {
           "emergent.maxNumberOfProblems": {
@@ -352,7 +368,24 @@
         "path": "./conf/emergent.tmSnippets.json"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "emergent-component-manager",
+          "title": "Component Manager",
+          "icon": "media/ec_icon_256x256-dark.svg"
+        }
+      ]
+    },
     "views": {
+      "emergent-component-manager": [
+        {
+          "id": "emergent.componentManager",
+          "name": "Component Manager",
+          "type": "webview",
+          "icon": "media/ec_icon_256x256-dark.svg"
+        }
+      ],
       "explorer": [
         {
           "id": "emergent.bulkExpressionValidation",
@@ -480,6 +513,22 @@
           "light": "media/ec_icon_256x256-light.svg",
           "dark": "media/ec_icon_256x256-dark.svg"
         }
+      },
+      {
+        "command": "emergent.refreshComponentManager",
+        "title": "Emergent: Refresh Component Manager",
+        "category": "Emergent",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "emergent.openComponentManagerGraph",
+        "title": "Emergent: Open Component Manager Graph",
+        "category": "Emergent"
+      },
+      {
+        "command": "emergent.openComponentManagerSource",
+        "title": "Emergent: Open Component Manager Source",
+        "category": "Emergent"
       }
     ],
     "keybindings": [
@@ -523,6 +572,11 @@
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "emergent.refreshComponentManager",
+          "when": "view == emergent.componentManager",
+          "group": "navigation@1"
+        },
         {
           "command": "emergent.startBulkExpressionValidation",
           "when": "view == emergent.bulkExpressionValidation",
@@ -647,6 +701,7 @@
     "@typescript-eslint/eslint-plugin": "^5.30.0",
     "@typescript-eslint/parser": "^5.30.0",
     "@vscode/test-electron": "^2.1.2",
+    "@xyflow/react": "^12.11.2",
     "chai": "^4.3.7",
     "esbuild": "^0.27.0",
     "eslint": "^8.13.0",

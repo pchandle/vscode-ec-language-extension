@@ -4,7 +4,8 @@
 		"rootDir": ".",
 		"outDir": "out/test",
 		"declaration": false,
-		"noEmit": false
+		"noEmit": false,
+		"types": ["node", "mocha"]
 	},
 	"include": ["test", "src", "lang"],
 	"exclude": ["node_modules", ".vscode-test"]

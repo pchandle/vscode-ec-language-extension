@@ -57,6 +57,14 @@ This guide explains all user-facing configuration keys, their defaults, and when
 | `protocolDesign.definitionPaths` | `[]` | Candidate `.pdd` files. Relative paths resolve from first workspace folder. |
 | `protocolDesign.activeDefinition` | `""` | Explicit active `.pdd` override. `.pdd` files open in the Protocol Design Definition Editor by default. |
 
+## Component Manager
+
+| Key | Default | Notes |
+|---|---|---|
+| `componentManager.componentDirectories` | `[]` | Workspace-scoped folder URI list recursively indexed by Component Manager. Directories may be outside the workspace. It indexes `.pdes`, legacy `.pspec`, `.cspec`, and files using `emergent.autopilotExtension`. |
+
+Component Manager deliberately ignores `emergent.pilotExtension` and `emergent.bulkValidationMode`.
+
 ## Diagnostics & Tracing
 
 | Key | Default | Notes |

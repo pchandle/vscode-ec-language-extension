@@ -22,7 +22,7 @@
 | AC-03 | Two `.pdes` files share a classification | Index completes | A duplicate-protocol error links both files and blocks managed protocol updates. |
 | AC-04 | A `.dla` has exactly one job but a nonconforming filename | Index completes | A filename diagnostic reports the expected configured-format filename. |
 | AC-05 | A `.dla` has more than one job | Index completes | Each job is rendered as a node, grouped by file, and the file receives a structural diagnostic. |
-| AC-06 | A selected protocol is directly used by two open jobs | User opens its graph | Lines terminate only on matching job topic labels; unrelated open jobs are visible but muted. |
+| AC-06 | A selected managed protocol is used by two open jobs through valid self slots | User opens its graph | Lines terminate only on the matching job topic labels selected by the role's semantic `<self>` slot; non-self labels are not highlighted or wired. |
 | AC-07 | A job's matching `.cspec` is missing | Job is indexed | The diagnostic links to the expression folder and contract synchronisation is disabled. |
 | AC-08 | A valid managed protocol adds a role topic | Its `.pdes` is saved | Each matching open statement receives only the newly generated label and remains unsaved/undoable. |
 | AC-09 | A managed protocol reorders topics | Its `.pdes` is saved | Existing labels move with the matched topics. |
@@ -44,4 +44,3 @@
   authority, including its derived `<self>` topics and macro mapping.
 - No Component Manager rule may rely on `self` being at a fixed position;
   resolve the semantic `<self>` topic instead.
-

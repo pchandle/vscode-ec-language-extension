@@ -17,6 +17,8 @@ import { PdesEditor } from "./pdes/PdesEditor";
 import { PddEditor } from "./pdd/PddEditor";
 import { SafeTextareaWidget } from "./widgets/SafeTextareaWidget";
 import { getValidatorForSchema, validateWithPrecompiledValidator } from "./validation/validatorMap";
+import { ComponentManagerGraph, ComponentGraphState } from "./componentManager/ComponentManagerGraph";
+import { ComponentManagerSidebar, ComponentManagerSidebarState } from "./componentManager/ComponentManagerSidebar";
 
 type FormData = Record<string, unknown> | null | undefined;
 
@@ -53,6 +55,8 @@ export default function App() {
   const liveFormDataRef = useRef<FormData>({});
   const [formVersion, setFormVersion] = useState(0);
   const [editorMode, setEditorMode] = useState<"schema" | "pdes" | "pdd">("schema");
+  const [componentGraph, setComponentGraph] = useState<ComponentGraphState | undefined>();
+  const [componentSidebar, setComponentSidebar] = useState<ComponentManagerSidebarState | undefined>();
 
   useEffect(() => {
     const handler = (event: MessageEvent<HostMessage>) => {
@@ -100,6 +104,10 @@ export default function App() {
         setFormErrors([]);
         setProtocolCompletions([]);
         setContractCompletions([]);
+      } else if (message.type === "componentManagerGraph") {
+        setComponentGraph(message as unknown as ComponentGraphState);
+      } else if (message.type === "componentManagerSidebar") {
+        setComponentSidebar(message as unknown as ComponentManagerSidebarState);
       }
     };
 
@@ -353,6 +361,13 @@ const formContext = useMemo(
     }, delayMs);
   };
 
+  if (componentSidebar) {
+    return <ComponentManagerSidebar state={componentSidebar} />;
+  }
+
+  if (componentGraph) {
+    return <ComponentManagerGraph state={componentGraph} />;
+  }
   if (editorMode === "pdes") {
     return (
       <div style={styles.container}>

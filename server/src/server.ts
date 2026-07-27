@@ -41,6 +41,7 @@ import { getTypeHoverMarkdown, shouldSuppressTypeHoverAtPosition } from './typeH
 import { parseText } from './lang/parser';
 import { ProgramNode, Statement } from './lang/ast';
 import { normalizeContractClassification, normalizeProtocolClassification } from './lang/normalization';
+import { analyseComponentManagerExpression, ComponentManagerExpressionAnalysis } from './componentManagerAnalysis';
 import { collectReferencedClassifications } from './specReferenceCollector';
 import { formatDocument, formatDocumentRange } from './formatting';
 import { normalizeRangeToTouchedLines } from './formattingRange';
@@ -682,6 +683,9 @@ const getSpecCachePathRequest = new RequestType<null, string, void>('emergent/ge
 const reloadSpecCacheRequest = new RequestType<null, boolean, void>('emergent/reloadSpecCache');
 const findWorkspaceDiagnosticsRequest = new RequestType<BulkValidationScanParams, BulkValidationScanResult, void>('emergent/findWorkspaceDiagnostics');
 const validateDocumentRequest = new RequestType<{ uri: string; clearOthers?: boolean }, boolean, void>('emergent/validateDocument');
+const componentManagerAnalysisRequest = new RequestType<{ text: string }, ComponentManagerExpressionAnalysis, void>(
+	'emergent/componentManager/analyseExpression'
+);
 
 type ContractTerm = { name?: string; type: string; protocol?: string; hint?: string; length?: number; minimum?: number; maximum?: number };
 
@@ -936,6 +940,10 @@ connection.onRequest(validateDocumentRequest, async (params): Promise<boolean> =
 	clearScheduledValidation(params.uri);
 	await validateTextDocument(document);
 	return true;
+});
+
+connection.onRequest(componentManagerAnalysisRequest, (params): ComponentManagerExpressionAnalysis => {
+	return analyseComponentManagerExpression(params.text ?? '');
 });
 
 connection.onHover(async (params): Promise<Hover | null> => {
