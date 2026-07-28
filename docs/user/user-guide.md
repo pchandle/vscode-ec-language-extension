@@ -187,6 +187,8 @@ Generated template includes:
 - `policy`
 - `modes`
 
+The specification editors save edits automatically after a short pause. If the same file is changed from another editor pane or externally, that newer document version is loaded into the editor.
+
 ### 8.2 Configure protocol design definitions (`.pdd`)
 
 Used to drive version-aware design editing and transformation.

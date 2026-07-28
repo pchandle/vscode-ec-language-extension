@@ -19,6 +19,7 @@ import { SafeTextareaWidget } from "./widgets/SafeTextareaWidget";
 import { getValidatorForSchema, validateWithPrecompiledValidator } from "./validation/validatorMap";
 import { ComponentManagerGraph, ComponentGraphState } from "./componentManager/ComponentManagerGraph";
 import { ComponentManagerSidebar, ComponentManagerSidebarState } from "./componentManager/ComponentManagerSidebar";
+import { nextDraftRevision, shouldApplyHostState } from "./customEditorSync";
 
 type FormData = Record<string, unknown> | null | undefined;
 
@@ -52,6 +53,7 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<RJSFValidationError[]>([]);
   const [collapsedState, setCollapsedState] = useState<Record<string, Record<string, boolean>>>({});
   const pendingUpdate = useRef<number | undefined>(undefined);
+  const draftRevision = useRef(0);
   const validationTimer = useRef<number | undefined>(undefined);
   const [extraErrors, setExtraErrors] = useState<ErrorSchema | undefined>();
   const liveFormDataRef = useRef<FormData>({});
@@ -60,10 +62,44 @@ export default function App() {
   const [componentGraph, setComponentGraph] = useState<ComponentGraphState | undefined>();
   const [componentSidebar, setComponentSidebar] = useState<ComponentManagerSidebarState | undefined>();
 
+  const applyIncomingDocumentState = (ackRevision?: number): boolean => {
+    if (!shouldApplyHostState(draftRevision.current, ackRevision)) {
+      return false;
+    }
+    if (ackRevision === undefined) {
+      if (pendingUpdate.current) {
+        window.clearTimeout(pendingUpdate.current);
+        pendingUpdate.current = undefined;
+      }
+      draftRevision.current = nextDraftRevision(draftRevision.current);
+    }
+    return true;
+  };
+
+  const queueDocumentUpdate = (value: unknown) => {
+    liveFormDataRef.current = value as FormData;
+    draftRevision.current = nextDraftRevision(draftRevision.current);
+    const revision = draftRevision.current;
+    if (pendingUpdate.current) {
+      window.clearTimeout(pendingUpdate.current);
+    }
+    pendingUpdate.current = window.setTimeout(() => {
+      vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current, revision } as WebviewMessage);
+      pendingUpdate.current = undefined;
+    }, 250);
+  };
+
   useEffect(() => {
     const handler = (event: MessageEvent<HostMessage>) => {
       const message = event.data;
       if (message.type === "state") {
+        if (message.preserveDraft) {
+          setCanCreatePdes(Boolean(message.canCreatePdes));
+          return;
+        }
+        if (!applyIncomingDocumentState(message.ackRevision)) {
+          return;
+        }
         setEditorMode("schema");
         setSchema(message.schema);
         const nextValue = message.value ?? {};
@@ -80,6 +116,9 @@ export default function App() {
         setCanCreatePdes(Boolean(message.canCreatePdes));
         setCanExportPspec(false);
       } else if (message.type === "pdesState") {
+        if (!applyIncomingDocumentState(message.ackRevision)) {
+          return;
+        }
         setEditorMode("pdes");
         setSchema(undefined);
         setFormData(undefined);
@@ -96,6 +135,9 @@ export default function App() {
         setCanCreatePdes(false);
         setCanExportPspec(Boolean(message.canExportPspec));
       } else if (message.type === "pddState") {
+        if (!applyIncomingDocumentState(message.ackRevision)) {
+          return;
+        }
         setEditorMode("pdd");
         setSchema(undefined);
         setFormData(undefined);
@@ -311,16 +353,8 @@ const formContext = useMemo(
   const [errorsCollapsed, setErrorsCollapsed] = useState(true);
 
   const onChange = (data: IChangeEvent) => {
-    liveFormDataRef.current = data.formData;
     setFormData(data.formData);
-    // Defer validation; handled by debounced effect
-    if (pendingUpdate.current) {
-      window.clearTimeout(pendingUpdate.current);
-    }
-    pendingUpdate.current = window.setTimeout(() => {
-      vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current } as WebviewMessage);
-      pendingUpdate.current = undefined;
-    }, 250);
+    queueDocumentUpdate(data.formData);
   };
 
   const onBlur = () => {
@@ -397,7 +431,13 @@ const formContext = useMemo(
                 type="button"
                 style={styles.smallButton}
                 title="Export this valid protocol design as a protocol specification"
-                onClick={() => vscode.postMessage({ type: "exportPspec", value: pdesData ?? {} } as WebviewMessage)}
+                onClick={() =>
+                  vscode.postMessage({
+                    type: "exportPspec",
+                    value: pdesData ?? {},
+                    revision: draftRevision.current,
+                  } as WebviewMessage)
+                }
               >
                 Export .pspec
               </button>
@@ -422,15 +462,8 @@ const formContext = useMemo(
           pddPath={pddPath}
           protocolCompletions={protocolCompletions}
           onChange={(next) => {
-            liveFormDataRef.current = next;
             setPdesData(next);
-            if (pendingUpdate.current) {
-              window.clearTimeout(pendingUpdate.current);
-            }
-            pendingUpdate.current = window.setTimeout(() => {
-              vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current } as WebviewMessage);
-              pendingUpdate.current = undefined;
-            }, 250);
+            queueDocumentUpdate(next);
           }}
         />
       </div>
@@ -461,15 +494,8 @@ const formContext = useMemo(
           parseError={parseError}
           hostErrors={hostErrors}
           onChange={(next) => {
-            liveFormDataRef.current = next;
             setPdd(next);
-            if (pendingUpdate.current) {
-              window.clearTimeout(pendingUpdate.current);
-            }
-            pendingUpdate.current = window.setTimeout(() => {
-              vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current } as WebviewMessage);
-              pendingUpdate.current = undefined;
-            }, 250);
+            queueDocumentUpdate(next);
           }}
         />
       </div>

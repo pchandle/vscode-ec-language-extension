@@ -13,12 +13,14 @@ import {
   printParseErrorCode,
 } from "jsonc-parser";
 import { collectPddSemanticDiagnostics } from "./pddValidation";
+import { DocumentUpdateCoordinator } from "./DocumentUpdateCoordinator";
 
 type HostMessage =
   | { type: "ready" }
   | {
       type: "updateDoc";
       value: unknown;
+      revision: number;
     };
 
 type WebviewMessage = {
@@ -26,10 +28,12 @@ type WebviewMessage = {
   value: unknown | null;
   errors: string[];
   parseError?: string;
+  ackRevision?: number;
 };
 
 export class PddEditorProvider implements vscode.CustomTextEditorProvider {
   private readonly validator;
+  private readonly sync = new DocumentUpdateCoordinator();
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -49,7 +53,8 @@ export class PddEditorProvider implements vscode.CustomTextEditorProvider {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    const updateWebview = () => {
+    const documentKey = document.uri.toString();
+    const updateWebview = (ackRevision?: number) => {
       const parsed = this.parseDocument(document);
       const validation = this.validateDocument(document, parsed);
       this.diagnostics.set(document.uri, validation.diagnostics);
@@ -59,24 +64,29 @@ export class PddEditorProvider implements vscode.CustomTextEditorProvider {
         value: parsed.value ?? null,
         errors: validation.messages,
         parseError: parsed.parseError,
+        ackRevision,
       };
       void webviewPanel.webview.postMessage(message);
     };
+    const panel = this.sync.register(documentKey, updateWebview);
 
     const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.uri.toString() === document.uri.toString()) {
-        updateWebview();
+      if (event.document.uri.toString() === documentKey) {
+        this.sync.handleDocumentChange(documentKey, event.document.version);
       }
     });
 
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
+      panel.dispose();
       this.diagnostics.delete(document.uri);
     });
 
     webviewPanel.webview.onDidReceiveMessage((e: HostMessage) => {
       if (e.type === "updateDoc") {
-        void this.updateTextDocument(document, e.value);
+        void this.sync.enqueue(documentKey, panel.panelId, e.revision, () => document.version, () =>
+          this.updateTextDocument(document, e.value)
+        );
       } else if (e.type === "ready") {
         updateWebview();
       }

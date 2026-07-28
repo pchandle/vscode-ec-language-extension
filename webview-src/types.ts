@@ -7,6 +7,8 @@ export type HostMessage =
       parseError?: string;
       contractCompletions?: string[];
       canCreatePdes?: boolean;
+      ackRevision?: number;
+      preserveDraft?: boolean;
     }
   | {
       type: "pdesState";
@@ -17,12 +19,14 @@ export type HostMessage =
       parseError?: string;
       protocolCompletions?: string[];
       canExportPspec: boolean;
+      ackRevision?: number;
     }
   | {
       type: "pddState";
       value: unknown | null;
       errors: string[];
       parseError?: string;
+      ackRevision?: number;
     }
   | {
       type: "componentManagerGraph";
@@ -47,6 +51,7 @@ export type WebviewMessage =
   | {
       type: "updateDoc";
       value: unknown;
+      revision: number;
     }
   | {
       type: "createPdes";
@@ -54,6 +59,7 @@ export type WebviewMessage =
   | {
       type: "exportPspec";
       value: unknown;
+      revision: number;
     }
   | {
       type: "componentManagerOpenSource";

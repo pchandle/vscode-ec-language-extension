@@ -7,16 +7,19 @@ import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { parse as parseJsonc, Node as JsonNode, findNodeAtLocation, parseTree } from "jsonc-parser";
 import { findPddForVersion } from "../pddLoader";
+import { DocumentUpdateCoordinator } from "./DocumentUpdateCoordinator";
 
 type HostMessage =
   | { type: "ready" }
   | {
       type: "updateDoc";
       value: unknown;
+      revision: number;
     }
   | {
       type: "exportPspec";
       value: unknown;
+      revision: number;
     };
 
 type WebviewMessage = {
@@ -28,11 +31,13 @@ type WebviewMessage = {
   parseError?: string;
   protocolCompletions?: string[];
   canExportPspec: boolean;
+  ackRevision?: number;
 };
 
 export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
   private readonly validator: Ajv;
   private readonly validateFn;
+  private readonly sync = new DocumentUpdateCoordinator();
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -56,7 +61,8 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    const updateWebview = () => {
+    const documentKey = document.uri.toString();
+    const updateWebview = (ackRevision?: number) => {
       const parsed = this.parseDocument(document);
       const validation = this.validateDocument(document, parsed);
       this.diagnostics.set(document.uri, validation.diagnostics);
@@ -73,37 +79,41 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
         parseError: parsed.parseError,
         protocolCompletions,
         canExportPspec: !parsed.parseError && validation.messages.length === 0,
+        ackRevision,
       };
       void webviewPanel.webview.postMessage(message);
     };
+    const panel = this.sync.register(documentKey, updateWebview);
 
     const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.uri.toString() === document.uri.toString()) {
-        updateWebview();
+      if (event.document.uri.toString() === documentKey) {
+        this.sync.handleDocumentChange(documentKey, event.document.version);
       }
     });
 
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
+      panel.dispose();
       this.diagnostics.delete(document.uri);
     });
 
     webviewPanel.webview.onDidReceiveMessage((e: HostMessage) => {
       if (e.type === "updateDoc") {
-        void this.updateTextDocument(document, e.value);
+        void this.sync.enqueue(documentKey, panel.panelId, e.revision, () => document.version, () =>
+          this.updateTextDocument(document, e.value)
+        );
       } else if (e.type === "exportPspec" && this.onExportPspec) {
-        void this.exportCurrentDesign(document, e.value);
+        void this.sync
+          .enqueue(documentKey, panel.panelId, e.revision, () => document.version, () =>
+            this.updateTextDocument(document, e.value)
+          )
+          .then(() => this.onExportPspec?.(document, e.value));
       } else if (e.type === "ready") {
         updateWebview();
       }
     });
 
     updateWebview();
-  }
-
-  private async exportCurrentDesign(document: vscode.TextDocument, value: unknown): Promise<void> {
-    await this.updateTextDocument(document, value);
-    await this.onExportPspec?.(document, value);
   }
 
   private parseDocument(document: vscode.TextDocument): {

@@ -59555,6 +59555,14 @@ ${diagnosticSummary}` : topic.displayName, children: [
     ] });
   }
 
+  // webview-src/customEditorSync.ts
+  function shouldApplyHostState(currentRevision, ackRevision) {
+    return ackRevision === void 0 || ackRevision === currentRevision;
+  }
+  function nextDraftRevision(currentRevision) {
+    return currentRevision + 1;
+  }
+
   // webview-src/App.tsx
   var import_jsx_runtime54 = __toESM(require_jsx_runtime());
   var TrashIcon2 = /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", children: [
@@ -59583,6 +59591,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
     const [formErrors, setFormErrors] = (0, import_react27.useState)([]);
     const [collapsedState, setCollapsedState] = (0, import_react27.useState)({});
     const pendingUpdate = (0, import_react27.useRef)(void 0);
+    const draftRevision = (0, import_react27.useRef)(0);
     const validationTimer = (0, import_react27.useRef)(void 0);
     const [extraErrors, setExtraErrors] = (0, import_react27.useState)();
     const liveFormDataRef = (0, import_react27.useRef)({});
@@ -59590,10 +59599,42 @@ ${diagnosticSummary}` : topic.displayName, children: [
     const [editorMode, setEditorMode] = (0, import_react27.useState)("schema");
     const [componentGraph, setComponentGraph] = (0, import_react27.useState)();
     const [componentSidebar, setComponentSidebar] = (0, import_react27.useState)();
+    const applyIncomingDocumentState = (ackRevision) => {
+      if (!shouldApplyHostState(draftRevision.current, ackRevision)) {
+        return false;
+      }
+      if (ackRevision === void 0) {
+        if (pendingUpdate.current) {
+          window.clearTimeout(pendingUpdate.current);
+          pendingUpdate.current = void 0;
+        }
+        draftRevision.current = nextDraftRevision(draftRevision.current);
+      }
+      return true;
+    };
+    const queueDocumentUpdate = (value) => {
+      liveFormDataRef.current = value;
+      draftRevision.current = nextDraftRevision(draftRevision.current);
+      const revision = draftRevision.current;
+      if (pendingUpdate.current) {
+        window.clearTimeout(pendingUpdate.current);
+      }
+      pendingUpdate.current = window.setTimeout(() => {
+        vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current, revision });
+        pendingUpdate.current = void 0;
+      }, 250);
+    };
     (0, import_react27.useEffect)(() => {
       const handler = (event) => {
         const message = event.data;
         if (message.type === "state") {
+          if (message.preserveDraft) {
+            setCanCreatePdes(Boolean(message.canCreatePdes));
+            return;
+          }
+          if (!applyIncomingDocumentState(message.ackRevision)) {
+            return;
+          }
           setEditorMode("schema");
           setSchema(message.schema);
           const nextValue = message.value ?? {};
@@ -59610,6 +59651,9 @@ ${diagnosticSummary}` : topic.displayName, children: [
           setCanCreatePdes(Boolean(message.canCreatePdes));
           setCanExportPspec(false);
         } else if (message.type === "pdesState") {
+          if (!applyIncomingDocumentState(message.ackRevision)) {
+            return;
+          }
           setEditorMode("pdes");
           setSchema(void 0);
           setFormData(void 0);
@@ -59626,6 +59670,9 @@ ${diagnosticSummary}` : topic.displayName, children: [
           setCanCreatePdes(false);
           setCanExportPspec(Boolean(message.canExportPspec));
         } else if (message.type === "pddState") {
+          if (!applyIncomingDocumentState(message.ackRevision)) {
+            return;
+          }
           setEditorMode("pdd");
           setSchema(void 0);
           setFormData(void 0);
@@ -59820,15 +59867,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
     }, [parseError, hostErrors]);
     const [errorsCollapsed, setErrorsCollapsed] = (0, import_react27.useState)(true);
     const onChange = (data) => {
-      liveFormDataRef.current = data.formData;
       setFormData(data.formData);
-      if (pendingUpdate.current) {
-        window.clearTimeout(pendingUpdate.current);
-      }
-      pendingUpdate.current = window.setTimeout(() => {
-        vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current });
-        pendingUpdate.current = void 0;
-      }, 250);
+      queueDocumentUpdate(data.formData);
     };
     const onBlur = () => {
       scheduleValidation(0);
@@ -59901,7 +59941,11 @@ ${diagnosticSummary}` : topic.displayName, children: [
                 type: "button",
                 style: styles5.smallButton,
                 title: "Export this valid protocol design as a protocol specification",
-                onClick: () => vscode.postMessage({ type: "exportPspec", value: pdesData ?? {} }),
+                onClick: () => vscode.postMessage({
+                  type: "exportPspec",
+                  value: pdesData ?? {},
+                  revision: draftRevision.current
+                }),
                 children: "Export .pspec"
               }
             ) : null,
@@ -59924,15 +59968,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
             pddPath,
             protocolCompletions,
             onChange: (next) => {
-              liveFormDataRef.current = next;
               setPdesData(next);
-              if (pendingUpdate.current) {
-                window.clearTimeout(pendingUpdate.current);
-              }
-              pendingUpdate.current = window.setTimeout(() => {
-                vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current });
-                pendingUpdate.current = void 0;
-              }, 250);
+              queueDocumentUpdate(next);
             }
           }
         )
@@ -59964,15 +60001,8 @@ ${diagnosticSummary}` : topic.displayName, children: [
             parseError,
             hostErrors,
             onChange: (next) => {
-              liveFormDataRef.current = next;
               setPdd(next);
-              if (pendingUpdate.current) {
-                window.clearTimeout(pendingUpdate.current);
-              }
-              pendingUpdate.current = window.setTimeout(() => {
-                vscode.postMessage({ type: "updateDoc", value: liveFormDataRef.current });
-                pendingUpdate.current = void 0;
-              }, 250);
+              queueDocumentUpdate(next);
             }
           }
         )

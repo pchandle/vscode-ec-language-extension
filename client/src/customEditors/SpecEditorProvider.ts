@@ -5,10 +5,11 @@ import * as vscode from "vscode";
 import Ajv, { AnySchema, ErrorObject, ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import { findNodeAtLocation, parseTree, Node as JsonNode } from "jsonc-parser";
+import { DocumentUpdateCoordinator } from "./DocumentUpdateCoordinator";
 
 type WebviewIncomingMessage =
   | { type: "ready" }
-  | { type: "updateDoc"; value: unknown }
+  | { type: "updateDoc"; value: unknown; revision: number }
   | { type: "createPdes" };
 
 type WebviewStateMessage = {
@@ -19,12 +20,14 @@ type WebviewStateMessage = {
   parseError?: string;
   contractCompletions?: string[];
   canCreatePdes?: boolean;
+  ackRevision?: number;
+  preserveDraft?: boolean;
 };
 
 export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   private readonly validator: Ajv;
   private readonly validateFn: ValidateFunction;
-  private suppressNextUpdateFor = new Set<string>();
+  private readonly sync = new DocumentUpdateCoordinator();
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -50,7 +53,8 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    const updateWebview = () => {
+    const documentKey = document.uri.toString();
+    const updateWebview = (ackRevision?: number, preserveDraft = false) => {
       const parseResult = this.parseDocument(document);
       const validation = this.validateDocument(document, parseResult);
       this.diagnostics.set(document.uri, validation.diagnostics);
@@ -64,20 +68,18 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
         parseError: parseResult.parseError,
         contractCompletions,
         canCreatePdes: this.canCreatePdes(document),
+        ackRevision,
+        preserveDraft,
       };
       void webviewPanel.webview.postMessage(message);
     };
+    const panel = this.sync.register(documentKey, updateWebview);
 
     const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.uri.toString() !== document.uri.toString()) {
+      if (event.document.uri.toString() !== documentKey) {
         return;
       }
-      const key = document.uri.toString();
-      if (this.suppressNextUpdateFor.has(key)) {
-        this.suppressNextUpdateFor.delete(key);
-        return;
-      }
-      updateWebview();
+      this.sync.handleDocumentChange(documentKey, event.document.version);
     });
 
     let directoryWatcher: fs.FSWatcher | undefined;
@@ -86,7 +88,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
         const targetName = `${path.basename(document.uri.fsPath, path.extname(document.uri.fsPath))}.pdes`;
         directoryWatcher = fs.watch(path.dirname(document.uri.fsPath), (_event, filename) => {
           if (!filename || filename.toString().toLowerCase() === targetName.toLowerCase()) {
-            updateWebview();
+            updateWebview(undefined, true);
           }
         });
       } catch (error) {
@@ -96,6 +98,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
 
     webviewPanel.onDidDispose(() => {
       changeDocumentSubscription.dispose();
+      panel.dispose();
       directoryWatcher?.close();
       this.diagnostics.delete(document.uri);
     });
@@ -103,7 +106,9 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     await this.normalizeOnOpen(document);
     webviewPanel.webview.onDidReceiveMessage((e: WebviewIncomingMessage) => {
       if (e.type === "updateDoc") {
-        void this.updateTextDocument(document, e.value);
+        void this.sync.enqueue(documentKey, panel.panelId, e.revision, () => document.version, () =>
+          this.updateTextDocument(document, e.value)
+        );
       } else if (e.type === "createPdes" && this.onCreatePdes) {
         void this.onCreatePdes(document);
       } else if (e.type === "ready") {
@@ -212,7 +217,6 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private async updateTextDocument(document: vscode.TextDocument, value: unknown) {
-    this.suppressNextUpdateFor.add(document.uri.toString());
     const edit = new vscode.WorkspaceEdit();
     const jsonText = JSON.stringify(value ?? {}, null, 2) + "\n";
     const end = document.positionAt(document.getText().length);
