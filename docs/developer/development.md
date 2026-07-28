@@ -9,6 +9,11 @@ For corpus-scale diagnostics validation and fast triage workflow, see:
 
 ## Building the Code
 ## Launching the Extension
+
+## Integration Tests
+
+`npm test` runs VS Code integration tests with a fresh temporary VS Code profile for each run. Set `EMERGENT_E2E_TIMEOUT_MS` to change the default 10-minute shutdown timeout. Failed or timed-out runs print the retained temporary profile path so their VS Code logs can be inspected.
+
 ## Contributing Snippets
 For more information on contributing snippets please read our [snippet requirements](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/community_snippets.md#contributing).
 

@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as path from 'path';
-
-import { runTests } from '@vscode/test-electron';
+import { downloadAndUnzipVSCode } from '@vscode/test-electron';
+import { parseE2eTimeout, runVsCodeIntegrationTests } from './e2eLauncher';
 
 async function main() {
 	try {
@@ -16,8 +16,13 @@ async function main() {
 		// Passed to --extensionTestsPath
 		const extensionTestsPath = path.resolve(__dirname, './index');
 
-		// Download VS Code, unzip it and run the integration test
-		await runTests({ extensionDevelopmentPath, extensionTestsPath });
+		const executablePath = await downloadAndUnzipVSCode({});
+		await runVsCodeIntegrationTests({
+			executablePath,
+			extensionDevelopmentPath,
+			extensionTestsPath,
+			timeoutMs: parseE2eTimeout(process.env.EMERGENT_E2E_TIMEOUT_MS),
+		});
 	} catch (err) {
 		console.error('Failed to run tests');
 		process.exit(1);
