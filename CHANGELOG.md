@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.12.1 - 2026-07-28
+- Fix custom specification editors so delayed autosave acknowledgements cannot overwrite newer text, including when the same document is open in multiple editor panes.
+- Make VS Code integration tests use an isolated profile, terminate timed-out process trees, and retain failed-run diagnostics for investigation.
+
 ## 0.12.0 - 2026-07-28
 - Add syntax-aware document and range formatting for Emergent expressions, including safer recovery behavior that preserves inline comments, strings, and block-comment content.
 - Add the Component Manager for exploring component relationships, including graph and sidebar views derived from Emergent expression analysis.
