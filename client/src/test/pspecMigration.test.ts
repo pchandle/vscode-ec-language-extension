@@ -102,11 +102,12 @@ suite(".pspec to .pdes migration", () => {
     assert.ok(withLabel.issues.some((issue) => issue.code === "interface-difference"));
   });
 
-  test("requires selection for structurally identical boolean collection modes", () => {
+  test("infers boolean collection modes from matching macro evidence", () => {
     const source = transformPdesToPspec(designFor("collect-boolean-or"), bundledPdd).pspec as Pspec;
-    const ambiguous = transformPspecToPdes(source, bundledPdd);
-    assert.equal(ambiguous.canCreate, false);
-    assert.deepEqual(ambiguous.modes[0].candidates?.sort(), ["collect-boolean-and", "collect-boolean-or"]);
+    const inferred = transformPspecToPdes(source, bundledPdd);
+    assert.equal(inferred.canCreate, true);
+    assert.equal(inferred.modes[0].modeTemplate, "collect-boolean-or");
+    assert.equal(inferred.modes[0].candidates, undefined);
     const selected = transformPspecToPdes(source, bundledPdd, { modeTemplates: { 0: "collect-boolean-or" } });
     assert.equal(selected.canCreate, true);
   });

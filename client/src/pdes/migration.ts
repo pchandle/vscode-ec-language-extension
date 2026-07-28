@@ -250,6 +250,7 @@ export function transformPspecToPdes(
     const selected = selectTopics(templateForTopics, remaining)!;
     const label = choices.labels?.[modes.length] ?? defaultLabel(selected).label;
     const labelDecision = defaultLabel(selected).requiresDecision && !choices.labels?.[modes.length];
+    const unresolvedCandidates = !chosen && candidates.length > 1 ? candidates.map((candidate) => candidate.name) : undefined;
 
     if (!chosen) {
       issues.push({
@@ -274,7 +275,7 @@ export function transformPspecToPdes(
         properties: properties(source.topic),
       })),
       sourceTopicIds: selected.map((source) => source.id),
-      candidates: candidates.length > 1 ? candidates.map((candidate) => candidate.name) : undefined,
+      candidates: unresolvedCandidates,
       inferred: Boolean(chosen || candidates.length === 1),
       labelRequiresDecision: labelDecision,
     };

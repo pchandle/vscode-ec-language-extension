@@ -10,7 +10,7 @@
     ],
     "expectedLines": [
       "job /example/test(a, b):",
-      "  value1, value2 -> out2 // 1,000,000; 999,999; 1,000",
+      "  value1, value2 -> out2  // 1,000,000; 999,999; 1,000",
       "end"
     ]
   },
@@ -29,7 +29,7 @@
     ],
     "expectedLines": [
       "job /example/test(a,b):",
-      "  value1, value2 -> out2 // 1,000",
+      "  value1, value2 -> out2  // 1,000",
       "end"
     ]
   },
@@ -44,7 +44,7 @@
     ],
     "expectedLines": [
       "sub /broken/test(a, b) ->",
-      "  value1, value2 -> out2 // 999,999",
+      "  value1, value2 -> out2  // 999,999",
       "end"
     ]
   },
@@ -183,7 +183,7 @@
     ],
     "expectedLines": [
       "job /example/test(x)",
-      "  value1, value2 -> out2 // keep   comment spacing",
+      "  value1, value2 -> out2  // keep   comment spacing",
       "end"
     ]
   },
@@ -792,7 +792,7 @@
     ],
     "expectedLines": [
       "job /example/test(x)",
-      "  value1, value2 -> out2 // keep   comment spacing",
+      "  value1, value2 -> out2  // keep   comment spacing",
       "end"
     ]
   },
@@ -1461,13 +1461,11 @@
     ],
     "expectedLines": [
       "job /example/test(x):",
-      "",
       "  // keep body note",
       "  $ -> value",
       "end",
       "",
       "value -> {",
-      "",
       "  // keep block note",
       "  sub /data/new($) -> out",
       "}"
@@ -1521,7 +1519,6 @@
       "  sub /data/new($) -> out",
       "",
       "end -> result1,",
-      "",
       "  // keep target note",
       "  result2"
     ]
@@ -1550,7 +1547,6 @@
       "  sub /data/new($) -> out",
       "",
       "end -> result1,",
-      "",
       "  // keep target note",
       "  result2"
     ]

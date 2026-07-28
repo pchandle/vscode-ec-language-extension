@@ -18,8 +18,14 @@ client/src/**
 server/src/**
 webview-src/**
 client/testFixture/**
+client/out/**
+server/out/**
 client/node_modules/**
+server/node_modules/**
 client/server/**
+AGENTS.md
+roadmap.md
+.codex
 # keep built/bundled assets
 !client/dist/**
 !server/dist/**

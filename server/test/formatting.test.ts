@@ -3927,6 +3927,32 @@ describe("formatting", () => {
     expect(decisions[0].formattedText).to.equal("  value1, value2 -> out2  // keep   comment spacing");
   });
 
+  it("preserves tab separators before attached inline comments on malformed recovery lines", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2\t// keep   comment spacing\nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x)",
+        "  value1, value2 -> out2\t// keep   comment spacing",
+        "end",
+      ].join("\n")
+    );
+  });
+
+  it("inserts a standard separator when an attached inline comment has none", () => {
+    const document = createDocument("job /example/test(x)\n  value1  ,value2  ->out2// keep comment\nend");
+    const output = TextDocument.applyEdits(document, formatDocument(document)).replace(/\r\n/g, "\n");
+
+    expect(output).to.equal(
+      [
+        "job /example/test(x)",
+        "  value1, value2 -> out2 // keep comment",
+        "end",
+      ].join("\n")
+    );
+  });
+
   it("marks standalone comment lines adjacent to malformed recovery syntax as protected trivia", () => {
     const document = createDocument("job /example/test(x)\n  // keep   nearby comment spacing  \n  value1  ,value2  ->out2  \nend");
     const model = buildFormattingInput(document);

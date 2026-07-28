@@ -438,8 +438,13 @@ function findAttachedCommentRange(
     return null;
   }
 
+  let attachedStart = commentStart;
+  while (attachedStart > 0 && (text[attachedStart - 1] === " " || text[attachedStart - 1] === "\t")) {
+    attachedStart--;
+  }
+
   return {
-    startCharacter: commentStart,
+    startCharacter: attachedStart,
     endCharacter: text.length,
   };
 }

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## 0.12.0 - 2026-07-28
+- Add syntax-aware document and range formatting for Emergent expressions, including safer recovery behavior that preserves inline comments, strings, and block-comment content.
+- Add the Component Manager for exploring component relationships, including graph and sidebar views derived from Emergent expression analysis.
+- Add guided migration from legacy `.pspec` files to managed `.pdes` designs, with improved protocol export behavior and version-aware design editing.
+- Improve specification validation and local formatting-corpus tooling to strengthen extension reliability.
+
 ## 0.11.27 - 2026-03-18
 - Add a dedicated **Protocol Design Definition Editor** for `.pdd` files and register it as the default custom editor.
 - Add structured `.pdd` authoring for:
