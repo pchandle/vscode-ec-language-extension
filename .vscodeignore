@@ -20,8 +20,16 @@ webview-src/**
 client/testFixture/**
 client/out/**
 server/out/**
+server/test/**
+server/tsconfig.test.json
 client/node_modules/**
 server/node_modules/**
+node_modules/**
+!node_modules/jsonc-parser/**
+client/package.json
+client/package-lock.json
+server/package.json
+server/package-lock.json
 client/server/**
 AGENTS.md
 roadmap.md
@@ -36,3 +44,7 @@ roadmap.md
 !CHANGELOG.md
 !LICENSE*
 !.vscodeignore
+# Do not re-include source maps through the bundled-asset exceptions above.
+client/dist/*.map
+server/dist/*.map
+media/*.map

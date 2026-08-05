@@ -5,7 +5,7 @@ Raise this extension to a first-class standard across reliability, UX, maintaina
 
 ## Current State Summary
 - Core language server functionality is strong and actively evolving.
-- Runtime spec-fetch/cache and diagnostics workflows are now significantly improved.
+- Studio spec-fetch/cache and diagnostics workflows are now significantly improved.
 - Main gaps are around engineering maturity: CI/CD automation, architectural boundaries, dead code removal, API/typing hygiene, and docs depth.
 
 ## Prioritization Model
@@ -45,7 +45,7 @@ Problem:
 Actions:
 - Confirm no runtime/import references to `valley.ts` and delete dead file(s).
 - Remove related stale comments/docs references to Valley indexing where Studio runtime fetch now applies.
-- Add a short architecture note documenting the single authoritative fetch path (server-side gateway client).
+- Add a short architecture note documenting the single authoritative fetch path (server-side Studio cache client).
 
 Exit Criteria:
 - Exactly one runtime fetch architecture path remains.

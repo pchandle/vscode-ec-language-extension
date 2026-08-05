@@ -1,60 +1,23 @@
-# Custom Protocol Editor Design
+# Protocol design editor implementation
 
-## Core Workflow
-- Edit `.pdes` as the source of truth; provide an explicit “Export to .pspec” action.
-- On open, read `protocolDesignVersion` from `.pdes`, load matching `.pdd`. If unknown/missing, warn and offer to open the file in a text editor.
-- Preserve file ordering/format to keep diffs clean; retain unknown fields on save or warn before dropping them.
+## File model
 
-## Protocol Design Definition (`.pdd`) Handling
-- Bundled default at `resources/pdd/default.pdd`.
-- Settings hold a list of `.pdd` definition paths; user selects the active one per workspace. Default falls back to the bundled file.
-- On export/edit, use the selected `.pdd` to interpret templates and macros.
-- `.pdd` files now also open in a dedicated **Protocol Design Definition Editor** custom editor.
-- The `.pdd` editor is the source for authoring macro globals, mode templates, topic definitions, and macro statement lines.
+- `.pdes` is the editable protocol-design source.
+- `.pspec` is an exported protocol specification.
+- `.pdd` is a versioned protocol-design definition that supplies macro wrappers and mode templates.
 
-## `.pdd` Editor UI Structure
-- Header: show editable `protocolDesignVersion`.
-- Macro wrapper cards: editable `hostMacroGlobal` and `joinMacroGlobal` `def` / `header` / `footer`.
-- Mode templates list: ordered; allow add/remove/reorder.
-  - Each template edits `name`, ordered `topics`, ordered `hostMacroTemplates`, and ordered `joinMacroTemplates`.
-  - Each topic edits `name`, `role`, `constraint`, `type`, and optional `comment`.
-  - Macro statements remain persisted as strings, but the editor provides insertion helpers for `$TOPIC_n`, common snippets, and reserved placeholders.
+The Protocol Design Editor resolves a `.pdd` by `protocolDesignVersion`: `protocolDesign.activeDefinition`, then `protocolDesign.definitionPaths`, then the bundled definition. If no matching definition exists, the editor reports the problem and the file can be opened as text.
 
-## `.pdd` Validation
-- Validate `.pdd` files against the bundled `pdd.schema.json`.
-- Add semantic diagnostics for duplicate mode template names.
-- Warn when global `def` strings omit `$TOPICS`.
-- Warn when macro statement lines reference out-of-range or malformed `$TOPIC_n` tokens.
+## Editors and validation
 
-## UI Structure
-- Header: show `classification` (4-segment protocol id), `description`, `policy` (editable); `protocolDesignVersion` read-only from file.
-- Modes list: ordered; allow reordering (up/down or drag).
-  - Add mode: choose `modeTemplate` from loaded `.pdd`.
-  - Mode detail:
-    - Topics shown in template-defined order (no reordering).
-    - Editable fields per topic: `name` and `properties` only.
-    - Display inherited `role`, `constraint`, and `type` as read-only badges.
-    - Property inputs per type:
-      - `abstraction`: `protocol` (string).
-      - `integer`: `minimum` (number), `maximum` (number), `hint` (string).
-      - `string`: `length` (number), `hint` (string).
-      - `boolean`: no properties.
-    - Show computed topic identifier (lowercase, non-alnum → `_`, suffix to disambiguate); warn on collisions.
+The `.pdes` and `.pdd` custom editors modify the VS Code text document through undoable edits. The source schemas are `docs/developer/spec.schema.json` and `docs/developer/pdd.schema.json`; the webview build copies their runtime variants to `media` and compiles the generated validators.
 
-## Validation
-- Enforce required properties per topic type and numeric constraints for integer/length fields.
-- Block export when validation fails; show inline errors.
+The `.pdd` editor manages version, host/join macro globals, ordered mode templates, ordered topics, and ordered macro statements. Semantic validation detects duplicate mode-template names, missing `$TOPICS` in global definitions, and malformed or out-of-range `$TOPIC_n` references.
 
-## Macro Preview
-- Live view of:
-  - `def` params: all requirement identifiers (host + join) followed by all obligation identifiers (host + join) with `$TOPICS` expanded.
-  - Host/join macro expansions with `$TOPIC_n` resolved and `$TOPICS` expanded.
+The `.pdes` editor manages classification, description, policy, ordered mode instances, collaboration labels, and properties supplied by the selected template. It blocks export when schema or semantic validation fails.
 
-## Export Flow
-- Target path selection for `.pspec`.
-- If target exists: prompt first. If user opts to review, generate and show diff (existing vs. new) side-by-side; overwrite only on confirm. If they decline, cancel export.
-- If target does not exist: generate and save directly after validation.
+## Export and migration
 
-## Commands and Settings (suggested)
-- Commands: “Open .pdes”, “Export .pspec”, “Switch protocol design definition”.
-- Settings: list of `.pdd` paths (select active), default bundled path, export path defaults, optional schema validation toggle.
+**Emergent: Export Protocol Spec (from .pdes)** validates the active design, transforms it with the matching PDD, and writes a `.pspec`. Existing targets can be reviewed in a diff before overwrite. Each mode requires a non-blank Collaboration label; export derives the public topic name, macro parameter identifiers, and implicit `<self>` endpoints.
+
+The Protocol Specification Editor supports guided migration from legacy `.pspec` to `.pdes`. Migration chooses compatible PDD templates when evidence is unique, requests review for ambiguous modes or labels, and never overwrites an existing same-named `.pdes`.

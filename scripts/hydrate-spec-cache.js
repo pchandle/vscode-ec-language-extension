@@ -75,7 +75,7 @@ function printHelp() {
 Options:
   --corpus <dir>            Directory containing .dla files (default: ${DEFAULT_CORPUS_DIR})
   --cache <file>            Path to contractCache.json (default: ${DEFAULT_CACHE_FILE})
-  --api-root <url>          Gateway root URL fallback (default: http://localhost:10000)
+  --api-root <url>          Studio root URL fallback (default: http://localhost:10000)
   --spec-path-prefix <path> Override spec path prefix from cache
   --concurrency <num>       Parallel fetch workers (default: 16)
   --timeout-ms <num>        Per-request timeout in milliseconds (default: 15000)

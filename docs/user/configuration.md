@@ -1,95 +1,85 @@
 # Configuration Guide
 
-This guide explains all user-facing configuration keys, their defaults, and when they are relevant.
+This guide lists every user-facing setting contributed by the extension.
 
-## Studio Connection
-
-| Key | Default | Notes |
-|---|---|---|
-| `studio.hostname` | `localhost` | Studio host used by runtime fetches. |
-| `studio.port` | `10000` | Studio port. |
-| `studio.allowInsecure` | `true` | Uses `http` when true, `https` when false. |
-| `studio.network` | `31` | Selects fetch path prefix strategy (`31` or `34`). |
-
-## Specification Fetch & Cache
+## Studio connection
 
 | Key | Default | Notes |
-|---|---|---|
+|---|---:|---|
+| `studio.hostname` | `localhost` | Studio host used for specification fetches. |
+| `studio.port` | `10000` | Studio TCP port. |
+| `studio.allowInsecure` | `true` | Use HTTP when true and HTTPS when false. |
+| `studio.network` | `31` | Fetch-path network: `31` or `34` (`34/36/37`). |
+
+### Migrating from 0.12.x
+
+Version 0.13.0 removes the legacy `gateway.*` settings. Replace each old key before upgrading:
+
+| Removed key | Replacement |
+|---|---|
+| `gateway.hostname` | `studio.hostname` |
+| `gateway.port` | `studio.port` |
+| `gateway.allowInsecure` | `studio.allowInsecure` |
+| `gateway.network` | `studio.network` |
+
+Legacy keys are ignored by 0.13.0 and later.
+
+## Specification fetch and cache
+
+| Key | Default | Notes |
+|---|---:|---|
 | `emergent.specCache.softTtlHours` | `24` | Cache soft TTL in hours. |
-| `emergent.specCache.fetchConcurrency` | `6` | Maximum in-flight spec fetch requests. |
+| `emergent.specCache.fetchConcurrency` | `6` | Maximum in-flight fetches. |
 | `emergent.specCache.retryCount` | `2` | Retries after the initial request. |
 | `emergent.specCache.retryBaseMs` | `250` | Base retry backoff in milliseconds. |
-| `emergent.specCache.allowStale` | `true` | Serve stale cached payloads while refresh runs. |
-| `emergent.specCache.enableRootDocFallback` | `false` | Enables root-doc host fallback when direct Studio fetch fails. |
+| `emergent.specCache.allowStale` | `true` | Serve a stale payload while refreshing it. |
+| `emergent.specCache.enableRootDocFallback` | `false` | Enable root-document host fallback after a direct Studio fetch fails. |
 | `emergent.specCache.requestTimeoutMs` | `10000` | Per-request timeout in milliseconds. |
-| `emergent.specCache.failureTtlMs` | `15000` | Cooldown in milliseconds before retrying a recent failed classification. |
-| `emergent.specCache.rootRefreshMinutes` | `30` | Root-doc refresh cadence in minutes (used when root-doc fallback is enabled). |
+| `emergent.specCache.failureTtlMs` | `15000` | Cooldown before retrying a failed classification. |
+| `emergent.specCache.rootRefreshMinutes` | `30` | Root-document refresh interval when fallback is enabled. |
 
-## Specification Authoring
-
-| Key | Default | Notes |
-|---|---|---|
-| `specification.defaultSupplier` | `""` | Default supplier for new contract specs. |
-| `specification.localContractRoot` | `""` | Root directory for local `.cspec` lookup. |
-| `specification.localProtocolRoot` | `""` | Root directory for local `.pspec` lookup. |
-| `specification.contractFilenameFormat` | `{layer}--{verb}--{subject}--{variation}--{platform}` | Template for new contract spec filenames. |
-| `specification.defaultContractExpressionPath` | `{layer}/{verb}/{subject}/{variation}/{platform}` | Relative directory template used by Component Manager when creating a missing contract expression. It is resolved under the component directory containing the contract and supports `{layer}`, `{verb}`, `{subject}`, `{variation}`, and `{platform}`. The filename and extension use `specification.contractFilenameFormat` and `emergent.autopilotExtension`. |
-| `specification.protocolFilenameFormat` | `{layer}--{subject}--{variation}--{platform}` | Template for new protocol spec filenames. |
-
-## Hover
+## Specification authoring
 
 | Key | Default | Notes |
 |---|---|---|
-| `emergent.hover.disabled` | `true` | Disables hover popups when true. |
+| `specification.defaultSupplier` | `""` | Default supplier for new contract specifications. |
+| `specification.localContractRoot` | `""` | Local root for `.cspec` lookup; accepts a filesystem path or file URI. |
+| `specification.localProtocolRoot` | `""` | Local root for `.pspec` lookup; accepts a filesystem path or file URI. |
+| `specification.contractFilenameFormat` | `{layer}--{verb}--{subject}--{variation}--{platform}` | Filename template for new contract specs. |
+| `specification.protocolFilenameFormat` | `{layer}--{subject}--{variation}--{platform}` | Filename template for new protocol specs. |
+| `specification.defaultContractExpressionPath` | `{layer}/{verb}/{subject}/{variation}/{platform}` | Relative Component Manager directory template for a new contract expression. |
 
-## Bulk Validation
+Filename and path templates support the tokens shown in their defaults. The extension appends the relevant specification extension automatically.
 
-| Key | Default | Notes |
-|---|---|---|
-| `emergent.autopilotExtension` | `.dla` | Autopilot extension filter. |
-| `emergent.pilotExtension` | `.dlp` | Pilot extension filter. |
-| `emergent.bulkValidationMode` | `autopilot` | `autopilot`, `pilot`, or `both`. |
-| `emergent.bulkValidationFolders` | `[]` | Relative workspace folder list; empty means all folders. |
-
-## Protocol Design
+## Editing and Component Manager
 
 | Key | Default | Notes |
 |---|---|---|
-| `protocolDesign.definitionPaths` | `[]` | Candidate `.pdd` files. Relative paths resolve from first workspace folder. |
-| `protocolDesign.activeDefinition` | `""` | Explicit active `.pdd` override. `.pdd` files open in the Protocol Design Definition Editor by default. |
+| `emergent.hover.disabled` | `true` | Disable Emergent hover popups. Set to `false` to enable them. |
+| `protocolDesign.definitionPaths` | `[]` | Candidate `.pdd` files; relative paths use the first workspace folder. |
+| `protocolDesign.activeDefinition` | `""` | Preferred `.pdd`; the bundled definition or the first valid candidate is used otherwise. |
+| `componentManager.componentDirectories` | `[]` | Workspace-scoped folder URIs recursively indexed by Component Manager. Directories may be outside the workspace. |
 
-## Component Manager
+Component Manager indexes `.pdes`, `.pspec`, `.cspec`, and files with `emergent.autopilotExtension`. It does not use `emergent.pilotExtension` or `emergent.bulkValidationMode`.
 
-| Key | Default | Notes |
-|---|---|---|
-| `componentManager.componentDirectories` | `[]` | Workspace-scoped folder URI list indexed by Component Manager. Directories may be outside the workspace. It indexes protocol designs (`.pdes`), protocol specifications (`.pspec`), contract specifications (`.cspec`), and files using `emergent.autopilotExtension`. Changes to component-source files are indexed incrementally; activation, configuration changes, and manual refresh perform a full scan. |
-
-Component Manager deliberately ignores `emergent.pilotExtension` and `emergent.bulkValidationMode`.
-
-## Diagnostics & Tracing
+## Bulk validation
 
 | Key | Default | Notes |
 |---|---|---|
-| `emergent.maxNumberOfProblems` | `100` | Cap on diagnostics returned by language server. |
-| `emergent.trace.server` | `verbose` | LSP trace level (`off`, `messages`, `verbose`). |
-| `emergent.hoverDebugLogging` | `false` | Extra hover classification/type logging in language-server output. |
-| `emergent.themeReminder.enabled` | `true` | Show a one-time reminder to switch to the Design Domain Language theme for richer Emergent syntax colors. |
+| `emergent.autopilotExtension` | `.dla` | Autopilot file extension; Component Manager also uses this value. |
+| `emergent.pilotExtension` | `.dlp` | Pilot file extension. |
+| `emergent.bulkValidationMode` | `autopilot` | Scan `autopilot`, `pilot`, or `both`. |
+| `emergent.bulkValidationFolders` | `[]` | Workspace-relative folders to scan; empty means all workspace folders. |
 
-## Deprecated Keys
+## Diagnostics, tracing, and theme
 
-`gateway.*` keys are deprecated and planned for removal in `0.12.0`.
+| Key | Default | Notes |
+|---|---:|---|
+| `emergent.maxNumberOfProblems` | `100` | Maximum diagnostics returned by the language server. |
+| `emergent.trace.server` | `verbose` | LSP trace level: `off`, `messages`, or `verbose`. |
+| `emergent.hoverDebugLogging` | `false` | Extra hover/type logging in the Language Server output. |
+| `emergent.themeReminder.enabled` | `true` | Show the one-time Design Domain Language theme reminder. |
 
-Current compatibility behavior:
-- `studio.*` is preferred.
-- If a matching `studio.*` value is absent, legacy `gateway.*` may still be used.
-- On activation, the extension attempts to migrate legacy values into `studio.*` when missing.
-- A warning notification is shown when deprecated `gateway.*` fallback is still in use.
+## Configuration Diagnostics
 
-## Configuration Diagnostics Command
-
-Use `Emergent: Show Configuration Diagnostics` to open a report with:
-- effective Studio connection values
-- effective spec-fetch/cache settings
-- active cache file path
-- diagnostics/hover/bulk-validation settings
-- deprecated `gateway.*` fallback usage status
+Run **Emergent: Show Configuration Diagnostics** to open a report of effective Studio settings, cache settings and path, authoring settings, bulk-validation settings, and protocol-design settings.

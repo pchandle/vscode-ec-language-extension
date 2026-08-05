@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## 0.13.0 - Unreleased
+- Remove the legacy `gateway.*` connection settings. Configure Studio with `studio.hostname`, `studio.port`, `studio.allowInsecure`, and `studio.network`.
+- Incrementally index Component Manager source changes in configured component directories.
+- Add Component Manager actions to open matching contract expressions, choose among multiple matches, or create a new expression from configured path and filename templates.
+- Reuse the active editor group for Component Manager source navigation; Ctrl-click/Cmd-click opens beside the current editor group.
+- Use compact icon actions for Component Manager specification and expression controls.
+- Refresh release, user, developer, security, and language documentation; add documentation validation and tighten VSIX contents.
+
 ## 0.12.1 - 2026-07-28
 - Fix custom specification editors so delayed autosave acknowledgements cannot overwrite newer text, including when the same document is open in multiple editor panes.
 - Make VS Code integration tests use an isolated profile, terminate timed-out process trees, and retain failed-run diagnostics for investigation.

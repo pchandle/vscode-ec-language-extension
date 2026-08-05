@@ -1,92 +1,47 @@
 # Emergent Coding for Visual Studio Code
 
-This extension provides rich Emergent Coding language support for Visual Studio Code ([VS Code](https://github.com/Microsoft/vscode)). Now you can write and debug Emergent Coding expressions using the excellent IDE-like interface that VS Code provides.
+Emergent Coding provides editing support for Emergent expressions and specifications in Visual Studio Code.
 
-## User Guide
-Start here for day-to-day workflows: [Emergent Coding User Guide](./docs/user/user-guide.md).
+## Quick start
 
-## Welcome / Quick Start
-1. Read the [User Guide](./docs/user/user-guide.md).
-2. Configure Studio settings in VS Code (`studio.hostname`, `studio.port`, `studio.network`, `studio.allowInsecure`).
-3. Run `Emergent: Show Configuration Diagnostics` from the Command Palette.
+1. Install the **Emergent Coding** extension from the [VS Code Extension Marketplace](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace).
+2. Open an Emergent workspace and configure `studio.hostname`, `studio.port`, `studio.network`, and `studio.allowInsecure`.
+3. Run **Emergent: Show Configuration Diagnostics** to confirm the effective connection and cache settings.
 
-## Docs Map
+> **0.13.0 breaking change:** `gateway.*` settings are no longer supported. Replace `gateway.hostname`, `gateway.port`, `gateway.network`, and `gateway.allowInsecure` with their `studio.*` equivalents before upgrading.
+
+## Features
+
+- Syntax highlighting, snippets, diagnostics, completions, document links, and hover type information for Emergent expressions.
+- Document and range formatting for `.dla` and `.dlp` files, including syntax-aware indentation for valid structures and conservative recovery for malformed input.
+- Specification lookup, local specification navigation, supplier completions, and supplier quick fixes.
+- Custom editors for contract specifications (`.cspec`), protocol specifications (`.pspec`), protocol designs (`.pdes`), and protocol design definitions (`.pdd`).
+- Protocol-design export and guided legacy `.pspec` to `.pdes` migration.
+- Bulk Expression Validation for workspace diagnostics triage.
+- Component Manager for indexing configured component directories, finding contracts/protocols, and viewing direct protocol relationships.
+
+## Documentation
+
 User documentation:
-- [User Guide](./docs/user/user-guide.md)
-- [Configuration Guide](./docs/user/configuration.md)
-- [Troubleshooting](./docs/user/troubleshooting.md)
-- [Language Reference](./docs/user/emergent-coding-language.md)
+
+- [User guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/user-guide.md)
+- [Configuration guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/configuration.md)
+- [Troubleshooting](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/troubleshooting.md)
+- [Extension language guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/emergent-coding-language.md)
 
 Developer documentation:
-- [Development Guide](./docs/developer/development.md)
-- [Security Reporting](./docs/developer/SECURITY.md)
-- [Diagnostics Validation Playbook](./docs/developer/diagnostics/diagnostics-validation-playbook.md)
 
-# Features
-- Syntax highlighting
-- Code snippets
-- IntelliSense for contract specifications, protocol specifications and more
-- Custom editors for `.cspec`, `.pspec`, `.pdes`, and `.pdd` files
-- Bulk Expression Validation for workspace-wide diagnostics triage
+- [Development guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/development.md)
+- [Security reporting](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/SECURITY.md)
+- [Diagnostics validation playbook](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/diagnostics/diagnostics-validation-playbook.md)
+- [Formatter corpus validation](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/formatting-validation.md)
 
-# Bulk Expression Validation
-Bulk Expression Validation lets you recursively scan workspace folders for Emergent diagnostics and work through them in a dedicated tree view.
+## Release and support
 
-## How to start
-1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
-2. Run `Emergent: Start Bulk Expression Validation`.
-3. Use the `Bulk Expression Validation` view in Explorer to click through diagnostics and jump directly to file locations.
+- Review [CHANGELOG.md](https://github.com/pchandle/vscode-ec-language-extension/blob/main/CHANGELOG.md) for release notes.
+- Report non-security problems through the project repository.
+- Do not report security vulnerabilities publicly; follow the [security reporting policy](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/SECURITY.md).
 
-## Commands
-- `Emergent: Start Bulk Expression Validation`
-- `Emergent: Rescan Bulk Expression Validation`
-- `Emergent: Next Bulk Expression File`
-- `Emergent: Previous Bulk Expression File`
-- `Emergent: Skip Bulk Expression File`
-- `Emergent: Clear Bulk Expression Validation`
+## Licence
 
-## Default keybindings
-- `Ctrl+Alt+E Ctrl+F`: Start/Focus Bulk Expression Validation
-- `Ctrl+Alt+E Ctrl+N`: Next diagnostic
-- `Ctrl+Alt+E Ctrl+P`: Previous diagnostic
-- `Ctrl+Alt+E Ctrl+S`: Skip diagnostic (session-only)
-- `Ctrl+Alt+E Ctrl+R`: Rescan
-- `Ctrl+Alt+S`: Show specification at cursor/classification
-- `Ctrl+Alt+Shift+S`: Open local specification at cursor/classification
-
-## Configuration
-Key settings are grouped as follows:
-
-| Group | Key Prefix | Purpose |
-|---|---|---|
-| Studio Connection | `studio.*` | Configure Studio endpoint and network |
-| Specification Fetch & Cache | `emergent.specCache.*` | Runtime fetch/cache behavior (TTL, retry, timeout, fallback) |
-| Specification Authoring | `specification.*` | Local roots, filename templates, default supplier |
-| Hover | `emergent.hover.*` | Enable/disable hover |
-| Bulk Validation | `emergent.autopilotExtension`, `emergent.pilotExtension`, `emergent.bulkValidation*` | Corpus scan behavior |
-| Protocol Design | `protocolDesign.*` | `.pdd` selection, override, and protocol design definition editing |
-| Diagnostics & Tracing | `emergent.maxNumberOfProblems`, `emergent.trace.server`, `emergent.hoverDebugLogging` | Diagnostic volume and logging |
-
-Legacy `gateway.*` settings are deprecated, auto-migrated when possible, and planned for removal in `0.12.0`.
-
-For detailed defaults, behavior notes, and migration guidance, see [Configuration Guide](./docs/user/configuration.md).
-
-## Additional Commands
-- `Emergent: Show Configuration Diagnostics` (opens a report of effective configuration values and runtime paths)
-
-## Notes
-- Bulk Expression Validation results coexist with live language-server diagnostics.
-- `Skip` is temporary and only applies to the current session.
-- Saving a file after a fix automatically marks matching items as resolved and advances to the next pending item.
-
-# Installing the Extension
-You can install the official release of the Emergent Coding extension by following the steps in the [Visual Studio Code documentation](https://code.visualstudio.com/docs/editor/extension-marketplace). In the Extensions pane, search for "Emergent Coding" extension and install it there. You will get notified automatically about any future extension updates!
-
-# Reporting Problems
-If you experience any problems with the Emergent Coding Extension, see the [troubleshooting docs](./docs/user/troubleshooting.md) for information on diagnosing and reporting issues.
-
-# Contributing to the Code
-Check out the [development documentation](./docs/developer/development.md) for more details on how to contribute to this extension!
-
-# License
-This extension is licensed under the [MIT License](https://github.com/aptissio/vscode-ec-language-extension/blob/main/LICENSE). Please see the [third-party notices](https://github.com/aptissio/vscode-ec-language-extension/blob/main/third-party-notices.md) file for details on the third-party binaries that we include with releases of this project.
+This extension is licensed under the [MIT License](https://github.com/pchandle/vscode-ec-language-extension/blob/main/LICENSE). See [third-party notices](https://github.com/pchandle/vscode-ec-language-extension/blob/main/third-party-notices.md) for shipped dependency notices.

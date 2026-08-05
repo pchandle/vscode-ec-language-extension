@@ -11,19 +11,19 @@ This document defines a repeatable process for validating large `.dla` corpora (
 - Extension integration tests: `npm test`
 - Server/unit diagnostics behavior: `npm run test:server`
 - Lint/type safety: `npm run lint`, `npm run typecheck`
-- Corpus-level diagnostics run (headless script; recommended to add if missing)
+- Corpus-level diagnostics run: `npm run validate:corpus`
 
 ## Local-Only Workspace Layout
 Use the local, git-excluded workspace:
 
-`/.ops/diagnostics-lab/`
+`.ops/diagnostics-lab/`
 
 Recommended structure:
-- `/.ops/diagnostics-lab/corpus/`
-- `/.ops/diagnostics-lab/runs/`
-- `/.ops/diagnostics-lab/baseline/`
-- `/.ops/diagnostics-lab/tags/`
-- `/.ops/diagnostics-lab/tmp/`
+- `.ops/diagnostics-lab/corpus/`
+- `.ops/diagnostics-lab/runs/`
+- `.ops/diagnostics-lab/baseline/`
+- `.ops/diagnostics-lab/tags/`
+- `.ops/diagnostics-lab/tmp/`
 
 `corpus/` is the nominated subdirectory for `.dla` expressions used during training-style iteration.
 
@@ -59,7 +59,7 @@ To keep tagging fast, use:
 - Allows reliable diffing and re-triage across runs.
 
 2. Flat JSONL tags file
-- Suggested path: `artifacts/diagnostic-tags.jsonl`
+- Path: `.ops/diagnostics-lab/tags/diagnostic-tags.jsonl`
 - One tag per line:
 ```json
 {"id":"abc123","label":"fp","note":"keyword parsed as identifier"}
@@ -80,8 +80,8 @@ To keep tagging fast, use:
 
 ## Implemented Commands
 - `npm run validate:corpus`
-  - Scans `/.ops/diagnostics-lab/corpus/` recursively for `.dla`.
-  - Writes run artifacts to `/.ops/diagnostics-lab/runs/<timestamp>/`.
+  - Scans `.ops/diagnostics-lab/corpus/` recursively for `.dla`.
+  - Writes run artifacts to `.ops/diagnostics-lab/runs/<timestamp>/`.
   - Produces:
     - `diagnostics.jsonl`
     - `summary.json`
@@ -90,11 +90,11 @@ To keep tagging fast, use:
 
 - `npm run validate:corpus:baseline`
   - Same as `validate:corpus`, then updates:
-  - `/.ops/diagnostics-lab/baseline/current.jsonl`
+  - `.ops/diagnostics-lab/baseline/current.jsonl`
 
 - `npm run hydrate:spec-cache`
   - Scans corpus files and collects referenced classifications (`sub/job/host/join`).
-  - Fetches missing spec payloads into `/.ops/diagnostics-lab/tmp/contractCache.json`.
+  - Fetches missing spec payloads into `.ops/diagnostics-lab/tmp/contractCache.json`.
   - Shows live progress while running:
     - processed/total classifications
     - fetched/failed counts
@@ -105,7 +105,7 @@ To keep tagging fast, use:
   - Interactive tagging (default limit 20).
   - Reads latest run diagnostics.
   - Appends tags to:
-  - `/.ops/diagnostics-lab/tags/diagnostic-tags.jsonl`
+  - `.ops/diagnostics-lab/tags/diagnostic-tags.jsonl`
 
 - `npm run triage:report`
   - Summarizes tag coverage and top untagged messages for the latest run.
@@ -154,7 +154,7 @@ Per iteration with Codex:
 5. Re-run gates and summarize net diagnostic changes.
 
 ## Practical Iteration Checklist
-1. Add or update `.dla` files under `/.ops/diagnostics-lab/corpus/`.
+1. Add or update `.dla` files under `.ops/diagnostics-lab/corpus/`.
 2. Run `npm run sync:spec-cache`.
 3. Run `npm run hydrate:spec-cache`.
 4. Run `npm run validate:corpus`.

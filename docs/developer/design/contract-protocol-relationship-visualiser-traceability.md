@@ -1,46 +1,22 @@
-# Component Manager V1: Traceability and Acceptance
+# Component Manager traceability and acceptance
 
 ## Authoritative inputs
 
-| Component Manager fact | Authority |
+| Behaviour | Authority |
 |---|---|
-| Job block and its labels | Parsed autopilot expression. |
-| Contract interface and topic order | Resolved `.cspec`. |
-| Protocol design interface | Valid `.pdes` transformed with its matching `.pdd`. |
-| Protocol specification interface | `.pspec`, when no corresponding `.pdes` source is present. |
-| `host`/`join` binding | Selected role interface and positional arguments/outputs. |
-| Collaboration self binding | Unique `<self>` abstraction interface topic for the protocol's own classification. |
-| Normalised classification and semantic diagnostics | Existing language service. |
-| Filename expectation | `specification.contractFilenameFormat` plus `emergent.autopilotExtension`. |
+| Job blocks and labels | Parsed autopilot expressions |
+| Contract interface | Resolved `.cspec` |
+| Managed protocol interface | Valid `.pdes` transformed with its matching `.pdd` |
+| Spec-only protocol interface | `.pspec` without a matching `.pdes` |
+| Relationship binding | Selected protocol role and semantic `<self>` endpoint |
+| Source navigation | URI/range projection from indexed source |
 
-## Acceptance scenarios
+## Release acceptance scenarios
 
-| ID | Given | When | Then |
-|---|---|---|---|
-| AC-01 | A component directory containing one valid `.pdes`, matching `.pdd`, `.cspec`, and `.dla` | Index completes | The protocol, contract, and parsed job appear in Component Manager. |
-| AC-02 | A `.pspec` with no same-classification `.pdes` | It is indexed | It is searchable and visibly Spec-only; no synchronisation is offered. |
-| AC-03 | Two `.pdes` files share a classification | Index completes | A duplicate-protocol-design error links both files and blocks protocol-design updates. |
-| AC-04 | A `.dla` has exactly one job but a nonconforming filename | Index completes | A filename diagnostic reports the expected configured-format filename. |
-| AC-05 | A `.dla` has more than one job | Index completes | Each job is rendered as a node, grouped by file, and the file receives a structural diagnostic. |
-| AC-06 | A selected protocol design is used by two open jobs through valid self slots | User opens its graph | Lines terminate only on the matching job topic labels selected by the role's semantic `<self>` slot; non-self labels are not highlighted or wired. |
-| AC-07 | A job's matching `.cspec` is missing | Job is indexed | The diagnostic links to the expression folder and contract synchronisation is disabled. |
-| AC-08 | A valid protocol design adds a role topic | Its `.pdes` is saved | Each matching open statement receives only the newly generated label and remains unsaved/undoable. |
-| AC-09 | A protocol design reorders topics | Its `.pdes` is saved | Existing labels move with the matched topics. |
-| AC-10 | A role-topic mapping is ambiguous | A protocol or contract synchronisation is attempted | The affected lane is unchanged and a diagnostic links to source and expressions. |
-| AC-11 | A contract requirement collaboration is added | Its `.cspec` is saved and the user accepts the offer | A `join` statement is inserted first inside the job body; the new job label occupies the protocol join self slot. |
-| AC-12 | A contract obligation collaboration is added | Its `.cspec` is saved and the user accepts the offer | A `host` statement is inserted first inside the job body; the new job label occupies the protocol host self slot. |
-| AC-13 | A self topic is absent or invalid | A collaboration offer would be shown | The offer is unavailable and explains the invalid self mapping. |
-| AC-14 | A job-node, contract-topic, or protocol-design selection | The user activates it | The `.dla`, `.cspec` custom editor, or `.pdes` custom editor respectively reuses the active editor group and reveals the source; Ctrl-click/Cmd-click opens beside the graph. |
-| AC-15 | An open expression has unsaved edits | A valid synchronisation occurs | The update applies as an undoable edit and does not save the expression. |
-
-## Implementation boundaries
-
-- Component Manager must use a renderer-neutral projection between extension
-  host/language service and React Flow webview.
-- The graph must carry URI/range source references for every selectable node,
-  topic, and diagnostic.
-- Directory scanning must use the configured autopilot extension only.
-- The `.pdes` transform must be treated as the protocol design interface
-  authority, including its derived `<self>` topics and macro mapping.
-- No Component Manager rule may rely on `self` being at a fixed position;
-  resolve the semantic `<self>` topic instead.
+1. A configured directory with valid designs, definitions, contracts, and expressions appears after indexing.
+2. A `.pspec` without a design is searchable and marked Spec-only.
+3. Duplicate designs and unresolved/duplicate contracts surface linked diagnostics and block unsafe synchronization.
+4. Saving a valid design or contract updates matching open expressions through undoable, unsaved edits only.
+5. Ambiguous mappings make no source changes and report diagnostics.
+6. Contract actions open one matching expression, ask the user to choose among several, or offer to create one when no match exists.
+7. Graph lines connect only direct role `<self>` bindings; selections retain source navigation and open-beside modifiers.

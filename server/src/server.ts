@@ -45,6 +45,12 @@ import { analyseComponentManagerExpression, ComponentManagerExpressionAnalysis }
 import { collectReferencedClassifications } from './specReferenceCollector';
 import { formatDocument, formatDocumentRange } from './formatting';
 import { normalizeRangeToTouchedLines } from './formattingRange';
+import {
+	DEFAULT_STUDIO_CONNECTION,
+	StudioConnectionConfig,
+	studioConfigFromInitialization,
+	studioConfigUpdateFromSettings,
+} from './studioSettings';
 
 type FetchSpecificationParams = { textDocument: { uri: string }; position: { line: number; character: number } };
 type FetchSpecificationResult = { classification: string; specification: any } | null;
@@ -106,25 +112,7 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
-type StudioConnectionConfig = { hostname: string; port: number; allowInsecure: boolean; network: string };
-let studioConfig: StudioConnectionConfig = {
-	hostname: 'localhost',
-	port: 10000,
-	allowInsecure: true,
-	network: '31'
-};
-
-function normalizeStudioInitConfig(raw: any, fallback: StudioConnectionConfig): StudioConnectionConfig {
-	if (!raw || typeof raw !== 'object') {
-		return fallback;
-	}
-	return {
-		hostname: typeof raw.hostname === 'string' && raw.hostname ? raw.hostname : fallback.hostname,
-		port: typeof raw.port === 'number' && Number.isFinite(raw.port) ? raw.port : fallback.port,
-		allowInsecure: typeof raw.allowInsecure === 'boolean' ? raw.allowInsecure : fallback.allowInsecure,
-		network: typeof raw.network === 'string' && raw.network ? raw.network : fallback.network,
-	};
-}
+let studioConfig: StudioConnectionConfig = { ...DEFAULT_STUDIO_CONNECTION };
 
 type TraceLevel = 'off' | 'messages' | 'verbose';
 const validationDebounceMs = 200;
@@ -333,12 +321,8 @@ async function runBulkValidationScan(params: BulkValidationScanParams): Promise<
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
 	gatewayClient.setConfig(studioConfig);
-	const initOptions: any = params.initializationOptions ?? {};
-	const incomingStudio = initOptions.studio ?? initOptions.gateway;
-	if (incomingStudio) {
-		studioConfig = normalizeStudioInitConfig(incomingStudio, studioConfig);
-		gatewayClient.setConfig(studioConfig);
-	}
+	studioConfig = studioConfigFromInitialization(params.initializationOptions, studioConfig);
+	gatewayClient.setConfig(studioConfig);
 	gatewayClient.setNetworkPaths(studioConfig.network);
 
 	// Does the client support the `workspace/configuration` request?
@@ -473,37 +457,16 @@ connection.onDidChangeConfiguration(change => {
 		});
 	}
 
-	const studioNetwork = typeof change.settings?.studio?.network === 'string'
-		? change.settings.studio.network
-		: typeof change.settings?.gateway?.network === 'string'
-			? change.settings.gateway.network
-			: undefined;
-	const studioHost = typeof change.settings?.studio?.hostname === 'string'
-		? change.settings.studio.hostname
-		: typeof change.settings?.gateway?.hostname === 'string'
-			? change.settings.gateway.hostname
-			: undefined;
-	const studioPort = typeof change.settings?.studio?.port === 'number'
-		? change.settings.studio.port
-		: typeof change.settings?.gateway?.port === 'number'
-			? change.settings.gateway.port
-			: undefined;
-	const studioAllowInsecure = typeof change.settings?.studio?.allowInsecure === 'boolean'
-		? change.settings.studio.allowInsecure
-		: typeof change.settings?.gateway?.allowInsecure === 'boolean'
-			? change.settings.gateway.allowInsecure
-			: undefined;
-	if (studioHost || studioPort !== undefined || studioAllowInsecure !== undefined) {
+	const studioUpdate = studioConfigUpdateFromSettings(change.settings);
+	if (studioUpdate.hostname || studioUpdate.port !== undefined || studioUpdate.allowInsecure !== undefined) {
 		studioConfig = {
 			...studioConfig,
-			...(studioHost ? { hostname: studioHost } : {}),
-			...(studioPort !== undefined ? { port: studioPort } : {}),
-			...(studioAllowInsecure !== undefined ? { allowInsecure: studioAllowInsecure } : {}),
+			...studioUpdate,
 		};
 		gatewayClient.setConfig(studioConfig);
 	}
-	if (studioNetwork) {
-		studioConfig.network = studioNetwork;
+	if (studioUpdate.network) {
+		studioConfig.network = studioUpdate.network;
 		gatewayClient.setNetworkPaths(studioConfig.network);
 	}
 

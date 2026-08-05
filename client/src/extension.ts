@@ -58,83 +58,11 @@ type SpecCacheDiagnostics = {
 
 function getStudioConnectionConfig(): StudioConnectionConfig {
   const studio = workspace.getConfiguration("studio");
-  const gateway = workspace.getConfiguration("gateway");
-  const hostname = studio.get<string>("hostname") || gateway.get<string>("hostname") || "localhost";
-  const port = studio.get<number>("port") ?? gateway.get<number>("port") ?? 10000;
-  const allowInsecure = studio.get<boolean>("allowInsecure") ?? gateway.get<boolean>("allowInsecure") ?? true;
-  const network = studio.get<string>("network") || gateway.get<string>("network") || "31";
+  const hostname = studio.get<string>("hostname") || "localhost";
+  const port = studio.get<number>("port") ?? 10000;
+  const allowInsecure = studio.get<boolean>("allowInsecure") ?? true;
+  const network = studio.get<string>("network") || "31";
   return { hostname, port, allowInsecure, network };
-}
-
-function getLegacyGatewayFallbackKeys(): string[] {
-  const gateway = workspace.getConfiguration("gateway");
-  const studio = workspace.getConfiguration("studio");
-  const keys: Array<keyof StudioConnectionConfig> = ["hostname", "port", "allowInsecure", "network"];
-  const legacyInUse: string[] = [];
-
-  for (const key of keys) {
-    const legacyInspect = gateway.inspect<any>(key);
-    const modernInspect = studio.inspect<any>(key);
-    if (!legacyInspect || !modernInspect) {
-      continue;
-    }
-    const usingLegacyGlobal = legacyInspect.globalValue !== undefined && modernInspect.globalValue === undefined;
-    const usingLegacyWorkspace = legacyInspect.workspaceValue !== undefined && modernInspect.workspaceValue === undefined;
-    const usingLegacyWorkspaceFolder =
-      legacyInspect.workspaceFolderValue !== undefined && modernInspect.workspaceFolderValue === undefined;
-    if (usingLegacyGlobal || usingLegacyWorkspace || usingLegacyWorkspaceFolder) {
-      legacyInUse.push(`gateway.${key}`);
-    }
-  }
-
-  return legacyInUse;
-}
-
-async function migrateGatewaySettingsToStudio(): Promise<boolean> {
-  const gateway = workspace.getConfiguration("gateway");
-  const studio = workspace.getConfiguration("studio");
-  const rootConfig = workspace.getConfiguration();
-  const mappings: Array<{ legacy: keyof StudioConnectionConfig; modern: keyof StudioConnectionConfig }> = [
-    { legacy: "hostname", modern: "hostname" },
-    { legacy: "port", modern: "port" },
-    { legacy: "allowInsecure", modern: "allowInsecure" },
-    { legacy: "network", modern: "network" },
-  ];
-  const updates: Thenable<void>[] = [];
-  let migrated = false;
-
-  for (const mapping of mappings) {
-    const legacyInspect = gateway.inspect<any>(mapping.legacy);
-    const modernInspect = studio.inspect<any>(mapping.modern);
-    if (!legacyInspect || !modernInspect) {
-      continue;
-    }
-    if (legacyInspect.globalValue !== undefined && modernInspect.globalValue === undefined) {
-      updates.push(rootConfig.update(`studio.${mapping.modern}`, legacyInspect.globalValue, vscode.ConfigurationTarget.Global));
-      migrated = true;
-    }
-    if (legacyInspect.workspaceValue !== undefined && modernInspect.workspaceValue === undefined) {
-      updates.push(
-        rootConfig.update(`studio.${mapping.modern}`, legacyInspect.workspaceValue, vscode.ConfigurationTarget.Workspace)
-      );
-      migrated = true;
-    }
-    if (legacyInspect.workspaceFolderValue !== undefined && modernInspect.workspaceFolderValue === undefined) {
-      updates.push(
-        rootConfig.update(
-          `studio.${mapping.modern}`,
-          legacyInspect.workspaceFolderValue,
-          vscode.ConfigurationTarget.WorkspaceFolder
-        )
-      );
-      migrated = true;
-    }
-  }
-
-  if (updates.length > 0) {
-    await Promise.all(updates);
-  }
-  return migrated;
 }
 
 function getSpecCacheDiagnosticsConfig(): SpecCacheDiagnostics {
@@ -193,7 +121,6 @@ async function buildConfigurationDiagnosticsReport(): Promise<string> {
   const emergentCfg = vscode.workspace.getConfiguration("emergent");
   const specificationCfg = vscode.workspace.getConfiguration("specification");
   const protocolDesignCfg = vscode.workspace.getConfiguration("protocolDesign");
-  const legacyFallbackKeys = getLegacyGatewayFallbackKeys();
   let cachePath = "(unavailable)";
 
   try {
@@ -247,12 +174,6 @@ async function buildConfigurationDiagnosticsReport(): Promise<string> {
     "## Protocol Design",
     `- definitionPaths: \`${JSON.stringify(protocolDesignCfg.get<string[]>("definitionPaths", []) ?? [])}\``,
     `- activeDefinition: \`${protocolDesignCfg.get<string>("activeDefinition", "") ?? ""}\``,
-    "",
-    "## Deprecated Gateway Settings",
-    legacyFallbackKeys.length > 0
-      ? `- currently used as fallback: \`${legacyFallbackKeys.join(", ")}\``
-      : "- currently used as fallback: none",
-    "- planned removal version: `0.12.0`",
     "",
   ].join("\n");
 }
@@ -367,29 +288,6 @@ export async function activate(context: ExtensionContext) {
   extensionContext = context;
   console.debug("Activating 'emergent' language extension.");
   void maybePromptDesignDomainTheme(context);
-  const legacyFallbackKeys = getLegacyGatewayFallbackKeys();
-  try {
-    const migrated = await migrateGatewaySettingsToStudio();
-    if (migrated) {
-      void vscode.window.showInformationMessage(
-        "Migrated deprecated gateway.* settings to studio.*. You can now remove gateway.* entries from settings."
-      );
-    }
-    if (legacyFallbackKeys.length > 0) {
-      void vscode.window.showWarningMessage(
-        `Deprecated gateway.* settings are still being used (${legacyFallbackKeys.join(
-          ", "
-        )}). These keys will be removed in v0.12.0.`,
-        "Open Settings"
-      ).then((selection) => {
-        if (selection === "Open Settings") {
-          void vscode.commands.executeCommand("workbench.action.openSettings", "@ext:aptissio.emergent-coding gateway");
-        }
-      });
-    }
-  } catch (error: any) {
-    console.warn("Failed to migrate gateway settings to studio settings:", error?.message ?? error);
-  }
 
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(path.join("server", "dist", "server.js"));
@@ -418,7 +316,6 @@ export async function activate(context: ExtensionContext) {
     },
     initializationOptions: {
       studio: getStudioConnectionConfig(),
-      gateway: getStudioConnectionConfig(),
     },
   };
 
@@ -748,8 +645,6 @@ function updateStatusBar(statusBar: vscode.StatusBarItem, status: string, error 
   } else {
     statusBar.backgroundColor = undefined;
   }
-  // statusBar.text = `$(debug-disconnect) Gateway down`;
-  // statusBar.text = `$(pass) Gateway OK`;
   statusBar.text = status;
   lastStatusText = status;
 }

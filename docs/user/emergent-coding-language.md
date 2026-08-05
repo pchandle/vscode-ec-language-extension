@@ -1,253 +1,89 @@
-General syntax and semantics
+# Emergent Coding extension language guide
 
-A statement is made up of an expression on the left-hand side, and labels on the right-hand side.
-There can be zero, one, or many outputs to label per statement, depending on the expression.
+This is a practical guide to the expression syntax understood by this extension’s lexer, parser, formatter, diagnostics, and language server. It is not the complete Emergent language specification. For supplementary language material, see the bundled [Emergent Coding language PDF](./emergent-coding-language.pdf).
 
-As with most languages, the input parameters of a function can themselves be expressions, though each must have only one output.
+## Files and comments
 
-Subcontracting and Abstraction participation are also considered functions, where the inputs and outputs are specific to the defined interface.
+The extension recognises Emergent expressions in `.dla` and `.dlp` files. Line comments begin with `//`. Formatting preserves comment text and is intentionally conservative around malformed code.
 
-The language is declarative, not imperative, and labels are immutable.
-A label can be defined (and assigned a value) only once, and ordering of statements does not affect when labels get values.
+## Classifications and defaults
 
-Literal Values
+Contract classifications have five segments:
 
-Inputs and Outputs are strongly typed. “Immediate” types (capitalised names) are types an Agent manipulates directly at design-time.
+```emergent
+/layer/verb/subject/variation/platform
+```
 
-Integers
+Protocol classifications have four segments:
 
-Set using several literal notations:
+```emergent
+/layer/subject/variation/platform
+```
 
-// decimal
-42
+Use `defaults` to supply layer, variation, and platform values for shorthand classifications:
 
-// hexadecimal
--0x2A
+```emergent
+defaults: behaviour, default, x64, codevalley
+```
 
-// octal
-0o52
+The language service normalises classifications before resolving specifications. Use `.` in a shorthand segment to select its configured default.
 
-// binary
--0b00101010
+## Declarations and calls
 
-// integer range: -2^63 to (2^63)-1
+`job` declares an expression with a contract classification, input labels, optional output labels, and an `end`-terminated body. A colon is required after the header.
 
-Strings
-// simple string
-"Hello\n"
-
-// hex escape
-"Hello\x0a"
-
-// multiple escaped bytes
-"\x48\xb8"
-
-// quotes and backslashes must be escaped
-"This \"quote\" and \\ backslash"
-
-Declarations
-defaults
-defaults: <layer>, <variation>, <platform>, <user>
-
-
-Defines default identities for convenience. Common defaults include:
-
-layer
-
-variation (usually "default")
-
-platform
-
-asset
-asset(name::STRING) -> document::SITE
-
-
-Locally define the name of a document produced in a project. Used at top-level Pilot files.
-
-Communications
-job
-job /<layer>/<verb>/<subject>/<variation>/<platform> ( <requirement parameters> )
-    <obligation parameters> :
-
-
-Defines:
-
-design of an Agent
-
-parameter labels
-
-All classification parts must be explicit.
-
-sub
-sub /<layer>/<verb>/<subject>/<variation>/<platform> ( <requirement parameters> )
-    -> <obligation parameters>
-
-
-Subcontracts a supplier.
-
-Defaults may apply.
-
-join
-join /<layer>/<subject>/<variation>/<platform> ( <requirement parameters> )
-    -> <obligation parameters>
-
-
-Participate as a join in a Collaboration group.
-
-Example (from PDF)
-join integer(the_integer_variable) -> minimum_value, maximum_value, memory_handle
-
-
-(Image reference: Page 3)
-
-
-host
-host /<layer>/<subject>/<variation>/<platform> ( <requirement parameters> )
-    -> <obligation parameters>
-
-
-Participate as host in a Collaboration group.
-
-deliver
-deliver(document::SITE, input::STRING)
-
-
-Return document content for a project.
-
-def — Macro Definition
-
-Define a macro block:
-
-def doubleInt(flow_in, integer_in) integer_out:
-    sub add/integer/with-constant-to-new-result(flow_in, integer_in, integer_in)
-        -> integer_out
+```emergent
+job /behaviour/prepare/example/default/x64(input) output:
+    sub /data/transform/example/default/x64(input) -> output
 end
+```
 
+`def` declares a reusable block with the same `end`-terminated body shape:
 
-Macro instantiation:
+```emergent
+def double(value) result:
+    value + value -> result
+end
+```
 
-flow -> {
-    doubleInt($, i1) -> i2
-    doubleInt($, i2) -> i3
+`sub`, `host`, and `join` call a contract or protocol interface. Inputs appear in parentheses; output labels follow `->`. A `sub` call may include an `@supplier` qualifier. Supplier qualifiers are invalid on `host` and `join`.
+
+```emergent
+sub /data/transform/example/default/x64@codevalley(input) -> output
+host /data/example/default/x64(input) -> output
+join /data/example/default/x64(input) -> output
+```
+
+Arguments, targets, declaration headers, and defaults may continue across lines. A backslash can explicitly continue a call argument line.
+
+## Blocks and conditionals
+
+Brace obligations create a nested block after `->`:
+
+```emergent
+sub /data/transform/example/default/x64(input) -> {
+    input -> output
 }
+```
 
-Operations
+Conditionals use `if`, `then`, optional `else`, and `end`. A conditional can also provide trailing output targets after `end ->`.
 
-Operator precedence (from PDF table):
-
-order	operators
-1	(sign), + (sign), !
-2	%
-3	* , /
-4	- , +
-5	> , < , >= , <=
-6	== , !=
-7	&&
-8	||
-
-(Image reference: Page 4)
-
-
-Boolean NOT
-(input::BOOLEAN) -> output::BOOLEAN
-
-!true  //=> false
-!false //=> true
-
-Modulo
-(dividend::INTEGER, divisor::INTEGER) -> remainder::INTEGER
-
-Multiplication
-
-Works with INTEGER or STRING repetition.
-
-Division
-
-Integer quotient only.
-
-Addition / Subtraction
-
-INTEGER arithmetic or STRING concatenation.
-
-Comparisons
-
-INTEGER → BOOLEAN
-STRING → BOOLEAN
-BOOLEAN → BOOLEAN
-
-Functions
-max
-(op1::INTEGER, op2::INTEGER, ...) -> result::INTEGER
-
-min
-(op1::INTEGER, op2::INTEGER, ...) -> result::INTEGER
-
-concat
-(op1::STRING, op2::STRING, ...) -> STRING
-
-len
-(input::STRING) -> INTEGER
-
-maxlen
-
-Known before runtime.
-
-trunc
-(input::STRING, max_length::INTEGER) -> STRING
-
-replace
-(input::STRING, old::STRING, new::STRING) -> STRING
-
-int2str
-(input::INTEGER) -> STRING
-
-pack
-
-Binary representation of integers:
-
-"int64le"
-
-"int32le"
-
-"int8"
-
-pad
-
-Ensures string length is a multiple of quantum.
-
-escape
-
-Escapes string per Autopilot/Pilot encoding.
-
-Conditionals
-
-Three forms:
-
-Basic tack-on:
-if condition then
-    <statements>
-end
-
-tack-on with else:
-if condition then
-    <statements>
+```emergent
+if enabled then
+    source -> result
 else
-    <statements>
+    fallback -> result
 end
+```
 
-weave-in (produces values):
-if condition then
-    <statements>
-    expression::<output_type>
-else
-    <statements>
-    expression::<output_type>
-end -> output_label::<output_type>
+## Literals and expressions
 
+The parser supports integer literals in decimal, hexadecimal (`0x`), octal (`0o`), and binary (`0b`) notation; strings with common escaped characters; boolean values; identifiers; scope references such as `$`; calls; arithmetic; comparisons; and logical expressions.
 
-(Image reference: Page 7)
+The type checker validates supported expression operations and applies resolved contract/protocol interfaces to statement inputs and outputs. Diagnostics are authoritative when this guide and an installed language-server version differ.
 
+## Formatting and editor assistance
 
-Final Notes
+Use **Format Document** or **Format Selection** for `.dla` and `.dlp` files. For successfully parsed structures, formatting normalises spacing, indentation, selected blank-line boundaries, and multiline ownership. For recovery-mode input, it preserves uncertain strings and comments while applying only safe cleanup.
 
-“This is but a tiny taste of the possibilities created by conditional statements. More examples will follow in future.”
+Completions, links, specification lookup, and type hover depend on the cursor context and Studio specification availability. Classification and supplier tokens deliberately suppress type hover so their navigation and completion affordances remain clear.
