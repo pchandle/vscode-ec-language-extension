@@ -6,6 +6,7 @@ import Ajv, { AnySchema, ErrorObject, ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import { findNodeAtLocation, parseTree, Node as JsonNode } from "jsonc-parser";
 import { DocumentUpdateCoordinator } from "./DocumentUpdateCoordinator";
+import { isFileType, replaceExtension } from "../fileTypes";
 
 type WebviewIncomingMessage =
   | { type: "ready" }
@@ -85,7 +86,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     let directoryWatcher: fs.FSWatcher | undefined;
     if (this.expectedType === "protocol" && document.uri.scheme === "file") {
       try {
-        const targetName = `${path.basename(document.uri.fsPath, path.extname(document.uri.fsPath))}.pdes`;
+        const targetName = path.basename(replaceExtension(document.uri.fsPath, "protocolDesign"));
         directoryWatcher = fs.watch(path.dirname(document.uri.fsPath), (_event, filename) => {
           if (!filename || filename.toString().toLowerCase() === targetName.toLowerCase()) {
             updateWebview(undefined, true);
@@ -120,13 +121,10 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private canCreatePdes(document: vscode.TextDocument): boolean {
-    if (this.expectedType !== "protocol" || document.uri.scheme !== "file" || !document.uri.fsPath.toLowerCase().endsWith(".pspec")) {
+    if (this.expectedType !== "protocol" || document.uri.scheme !== "file" || !isFileType(document.uri.fsPath, "protocolSpecification")) {
       return false;
     }
-    const target = path.join(
-      path.dirname(document.uri.fsPath),
-      `${path.basename(document.uri.fsPath, path.extname(document.uri.fsPath))}.pdes`
-    );
+    const target = replaceExtension(document.uri.fsPath, "protocolDesign");
     return !fs.existsSync(target);
   }
 

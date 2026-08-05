@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { parse } from "jsonc-parser";
 import { findPddForVersion } from "./pddLoader";
+import { isFileType } from "./fileTypes";
 
 export function registerPdesVersionCheck(context: vscode.ExtensionContext) {
   const notified = new Set<string>();
@@ -17,7 +18,7 @@ export function registerPdesVersionCheck(context: vscode.ExtensionContext) {
   };
 
   const checkDocument = async (document: vscode.TextDocument) => {
-    if (!document.uri.fsPath.toLowerCase().endsWith(".pdes")) {
+    if (!isFileType(document.uri.fsPath, "protocolDesign")) {
       return;
     }
 

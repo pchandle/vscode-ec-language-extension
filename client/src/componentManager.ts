@@ -10,6 +10,8 @@ import { findPddForVersion } from "./pddLoader";
 import { PdesDesign, Pspec, transformPdesToPspec } from "./pdes/transform";
 import { loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { ExpressionDiagnostic, projectComponentGraph, ProjectionJobInput, SourceRef as ProjectionSourceRef } from "./componentManagerProjection";
+import { componentFileTypeForPath, DEFAULT_AUTOPILOT_EXTENSION, editorViewTypeForPath, normalizeExtension } from "./fileTypes";
+import { coalesceFileChange, FileChangeAction, PendingFileChange, removeFileRecord, replaceFileRecord } from "./componentManagerIndexState";
 
 type SourceRef = ProjectionSourceRef;
 type Topic = { name?: string; type?: string; protocol?: string; [key: string]: unknown };
@@ -17,7 +19,7 @@ type Role = { requirements: Topic[]; obligations: Topic[] };
 type ProtocolRecord = {
   classification: string;
   uri: vscode.Uri;
-  kind: "managed" | "legacy";
+  kind: "protocolDesign" | "protocolSpecification";
   interface?: { host: Role; join: Role };
   error?: string;
 };
@@ -37,6 +39,7 @@ type Job = {
 };
 type ManagerDiagnostic = { severity: "error" | "warning"; message: string; source: SourceRef; related?: SourceRef[] };
 type Snapshot = { protocols: Map<string, ProtocolRecord[]>; contracts: Map<string, ContractRecord[]>; jobs: Job[]; expressionFiles: Map<string, { uri: vscode.Uri; jobs: number }> };
+type IndexedFileRecord = { uri: vscode.Uri; fragment: Snapshot };
 type ScanStatus = { indexing: boolean; processed: number; total: number };
 type ExpressionTarget = { source: SourceRef; label: string };
 
@@ -171,8 +174,8 @@ function protocolRole(protocol: ProtocolRecord, role: "host" | "join"): Role | u
 function graphSelfSlots(protocol: ProtocolRecord | undefined): { slots: Partial<Record<"host" | "join", number>>; unavailable: Partial<Record<"host" | "join", string>> } {
   const slots: Partial<Record<"host" | "join", number>> = {};
   const unavailable: Partial<Record<"host" | "join", string>> = {};
-  if (!protocol || protocol.kind !== "managed") {
-    const reason = protocol?.kind === "legacy" ? "legacy protocols do not expose managed <self> mappings" : "the selected protocol is unresolved";
+  if (!protocol || protocol.kind !== "protocolDesign") {
+    const reason = protocol?.kind === "protocolSpecification" ? "protocol specifications do not expose protocol-design <self> mappings" : "the selected protocol is unresolved";
     return { slots, unavailable: { host: reason, join: reason } };
   }
   (["host", "join"] as const).forEach((role) => {
@@ -209,8 +212,7 @@ function configuredDirectories(): vscode.Uri[] {
 }
 
 function autopilotExtension(): string {
-  const configured = vscode.workspace.getConfiguration("emergent").get<string>("autopilotExtension", ".dla") || ".dla";
-  return configured.startsWith(".") ? configured.toLowerCase() : `.${configured.toLowerCase()}`;
+  return normalizeExtension(vscode.workspace.getConfiguration("emergent").get<string>("autopilotExtension", DEFAULT_AUTOPILOT_EXTENSION), DEFAULT_AUTOPILOT_EXTENSION);
 }
 
 async function filesBelow(root: vscode.Uri): Promise<vscode.Uri[]> {
@@ -257,8 +259,8 @@ class ComponentManagerSidebar implements vscode.WebviewViewProvider {
         directUseCount,
         kind: "protocol",
         classification: protocol.classification,
-        managed: protocol.kind === "managed",
-        detail: protocol.kind === "legacy" ? `Legacy / published only · ${directUseCount} direct uses` : `${directUseCount} direct uses`,
+        designBacked: protocol.kind === "protocolDesign",
+        detail: protocol.kind === "protocolSpecification" ? `Spec-only · ${directUseCount} direct uses` : `${directUseCount} direct uses`,
         source: uriRef(protocol.uri),
       };
     });
@@ -295,6 +297,10 @@ export class ComponentManager implements vscode.Disposable {
   private graphPanel: vscode.WebviewPanel | undefined;
   private selectedProtocol: string | undefined;
   private refreshRunning: Promise<void> | undefined;
+  private indexWork: Promise<void> = Promise.resolve();
+  private readonly fileRecords = new Map<string, IndexedFileRecord>();
+  private readonly pendingFileChanges = new Map<string, PendingFileChange<vscode.Uri>>();
+  private pendingFileChangeTimer: ReturnType<typeof setTimeout> | undefined;
   private pdesValidator: ReturnType<Ajv["compile"]> | undefined;
   private currentScan: ScanStatus = { indexing: false, processed: 0, total: 0 };
 
@@ -309,18 +315,25 @@ export class ComponentManager implements vscode.Disposable {
       vscode.commands.registerCommand("emergent.refreshComponentManager", () => void this.refresh()),
       vscode.commands.registerCommand("emergent.openComponentManagerGraph", (classification?: string) => void this.openGraph(classification)),
       vscode.commands.registerCommand("emergent.openComponentManagerSource", (source: SourceRef, openBeside?: boolean) => void this.openSource(source, openBeside)),
-      vscode.workspace.onDidSaveTextDocument((document) => void this.onSave(document)),
+      vscode.workspace.onDidSaveTextDocument((document) => this.onSave(document)),
       vscode.languages.onDidChangeDiagnostics((event) => {
         // Diagnostics are produced asynchronously by the language server. A
         // graph that is already open should reflect their current state
         // without requiring a Component Manager refresh or a saved document.
         if (this.graphPanel && this.selectedProtocol && event.uris.some((uri) => this.snapshot.expressionFiles.has(uri.toString()))) this.postGraph();
       }),
-      vscode.workspace.onDidCreateFiles(() => void this.refresh()),
-      vscode.workspace.onDidDeleteFiles(() => void this.refresh()),
+      vscode.workspace.onDidRenameFiles((event) => event.files.forEach((file) => {
+        this.queueFileChange(file.oldUri, "delete");
+        this.queueFileChange(file.newUri, "upsert");
+      })),
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration("componentManager.componentDirectories")) this.resetDirectoryWatchers();
-        if (event.affectsConfiguration("componentManager.componentDirectories") || event.affectsConfiguration("emergent.autopilotExtension")) void this.refresh();
+        const componentDirectoriesChanged = event.affectsConfiguration("componentManager.componentDirectories");
+        const autopilotExtensionChanged = event.affectsConfiguration("emergent.autopilotExtension");
+        if (componentDirectoriesChanged) this.resetDirectoryWatchers();
+        if (componentDirectoriesChanged || autopilotExtensionChanged) {
+          this.clearPendingFileChanges();
+          void this.refresh();
+        }
       })
     );
     this.resetDirectoryWatchers();
@@ -332,17 +345,20 @@ export class ComponentManager implements vscode.Disposable {
     this.directoryWatchers = [];
     for (const directory of configuredDirectories()) {
       const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, "**/*"));
-      watcher.onDidCreate(() => void this.refresh());
-      watcher.onDidChange(() => void this.refresh());
-      watcher.onDidDelete(() => void this.refresh());
+      watcher.onDidCreate((uri) => this.queueFileChange(uri, "upsert"));
+      watcher.onDidChange((uri) => this.queueFileChange(uri, "upsert"));
+      watcher.onDidDelete((uri) => this.queueFileChange(uri, "delete"));
       this.directoryWatchers.push(watcher);
     }
   }
 
-  dispose(): void { this.directoryWatchers.forEach((watcher) => watcher.dispose()); this.disposables.forEach((disposable) => disposable.dispose()); this.diagnosticCollection.dispose(); }
+  dispose(): void {
+    if (this.pendingFileChangeTimer) clearTimeout(this.pendingFileChangeTimer);
+    this.directoryWatchers.forEach((watcher) => watcher.dispose()); this.disposables.forEach((disposable) => disposable.dispose()); this.diagnosticCollection.dispose();
+  }
   protocols(): ProtocolRecord[] {
     return [...this.snapshot.protocols.values()]
-      .map((entries) => entries.find((entry) => entry.kind === "managed") ?? entries.find((entry) => entry.kind === "legacy"))
+      .map((entries) => entries.find((entry) => entry.kind === "protocolDesign") ?? entries.find((entry) => entry.kind === "protocolSpecification"))
       .filter((entry): entry is ProtocolRecord => Boolean(entry));
   }
   contracts(): ContractRecord[] { return [...this.snapshot.contracts.values()].flat(); }
@@ -370,7 +386,7 @@ export class ComponentManager implements vscode.Disposable {
 
   async refresh(): Promise<void> {
     if (this.refreshRunning) return this.refreshRunning;
-    this.refreshRunning = this.doRefresh().finally(() => {
+    this.refreshRunning = this.enqueueIndexWork(() => this.doRefresh()).finally(() => {
       this.currentScan = { ...this.currentScan, indexing: false };
       this.refreshRunning = undefined;
       this.sidebar.refresh();
@@ -378,53 +394,132 @@ export class ComponentManager implements vscode.Disposable {
     return this.refreshRunning;
   }
 
-  private async doRefresh(): Promise<void> {
-    const next: Snapshot = { protocols: new Map(), contracts: new Map(), jobs: [], expressionFiles: new Map() };
-    const directories = configuredDirectories();
-    const extension = autopilotExtension();
-    const uris = (await Promise.all(directories.map(filesBelow))).flat().filter((uri) => {
-      const ext = path.extname(uri.fsPath).toLowerCase();
-      return [".pdes", ".pspec", ".cspec", extension].includes(ext);
+  private enqueueIndexWork(work: () => Promise<void>): Promise<void> {
+    const next = this.indexWork.then(work, work);
+    this.indexWork = next.catch(() => undefined);
+    return next;
+  }
+
+  private emptySnapshot(): Snapshot { return { protocols: new Map(), contracts: new Map(), jobs: [], expressionFiles: new Map() }; }
+
+  private snapshotFromRecords(records = this.fileRecords): Snapshot {
+    const next = this.emptySnapshot();
+    [...records.values()].sort((left, right) => left.uri.toString().localeCompare(right.uri.toString())).forEach(({ fragment }) => {
+      fragment.protocols.forEach((protocols, classification) => next.protocols.set(classification, [...(next.protocols.get(classification) ?? []), ...protocols]));
+      fragment.contracts.forEach((contracts, classification) => next.contracts.set(classification, [...(next.contracts.get(classification) ?? []), ...contracts]));
+      next.jobs.push(...fragment.jobs);
+      fragment.expressionFiles.forEach((expression, key) => next.expressionFiles.set(key, expression));
     });
+    return next;
+  }
+
+  private isManagedUri(uri: vscode.Uri): boolean {
+    return uri.scheme === "file" && Boolean(this.componentDirectoryFor(uri)) && Boolean(componentFileTypeForPath(uri.fsPath, autopilotExtension()));
+  }
+
+  private queueFileChange(uri: vscode.Uri, action: FileChangeAction, synchronise = false): void {
+    if (!this.isManagedUri(uri)) return;
+    coalesceFileChange(this.pendingFileChanges, uri.toString(), uri, action, synchronise);
+    if (this.pendingFileChangeTimer) clearTimeout(this.pendingFileChangeTimer);
+    this.pendingFileChangeTimer = setTimeout(() => {
+      this.pendingFileChangeTimer = undefined;
+      void this.flushPendingFileChanges();
+    }, 300);
+  }
+
+  private clearPendingFileChanges(): void {
+    if (this.pendingFileChangeTimer) clearTimeout(this.pendingFileChangeTimer);
+    this.pendingFileChangeTimer = undefined;
+    this.pendingFileChanges.clear();
+  }
+
+  private async flushPendingFileChanges(): Promise<void> {
+    if (this.pendingFileChangeTimer) {
+      clearTimeout(this.pendingFileChangeTimer);
+      this.pendingFileChangeTimer = undefined;
+    }
+    if (!this.pendingFileChanges.size) return;
+    const changes = [...this.pendingFileChanges.entries()];
+    this.pendingFileChanges.clear();
+    await this.enqueueIndexWork(() => this.applyFileChanges(changes));
+  }
+
+  private async applyFileChanges(changes: Array<[string, PendingFileChange<vscode.Uri>]>): Promise<void> {
+    const before = this.snapshot;
+    this.currentScan = { indexing: true, processed: 0, total: changes.length };
+    this.sidebar.refresh();
+    const synchronise = changes.filter(([, change]) => change.synchronise && change.action === "upsert").map(([, change]) => change.item);
+    for (const [key, change] of changes) {
+      if (change.action === "delete") removeFileRecord(this.fileRecords, key);
+      else await this.upsertFileRecord(change.item);
+      this.advanceScan();
+    }
+    this.snapshot = this.snapshotFromRecords();
+    this.currentScan = { ...this.currentScan, indexing: false };
+    this.publishDiagnostics();
+    this.sidebar.refresh();
+    if (this.selectedProtocol) this.postGraph();
+    for (const uri of synchronise) {
+      const kind = componentFileTypeForPath(uri.fsPath, autopilotExtension());
+      if (kind === "protocolDesign") await this.syncProtocol(before, uri);
+      if (kind === "contractSpecification") await this.syncContract(before, uri);
+    }
+  }
+
+  private async upsertFileRecord(uri: vscode.Uri, text?: string): Promise<void> {
+    const source = text ?? await fs.readFile(uri.fsPath, "utf8").catch(() => undefined);
+    if (source === undefined) {
+      removeFileRecord(this.fileRecords, uri.toString());
+      return;
+    }
+    const fragment = this.emptySnapshot();
+    const kind = componentFileTypeForPath(uri.fsPath, autopilotExtension());
+    if (kind === "protocolDesign") this.addProtocolDesign(fragment, uri, source);
+    else if (kind === "protocolSpecification") this.addProtocolSpecification(fragment, uri, source);
+    else if (kind === "contractSpecification") this.addContract(fragment, uri, source);
+    else if (kind === "autopilotExpression") await this.addExpression(fragment, uri, source);
+    else return;
+    replaceFileRecord(this.fileRecords, uri.toString(), { uri, fragment });
+  }
+
+  private async doRefresh(): Promise<void> {
+    const directories = configuredDirectories();
+    const uris = [...new Map((await Promise.all(directories.map(filesBelow))).flat()
+      .filter((uri) => componentFileTypeForPath(uri.fsPath, autopilotExtension()))
+      .map((uri) => [uri.toString(), uri] as const)).values()];
     // Protocols and contracts are cheap JSON reads. Analyse expressions only
     // after navigation data is available, so large component folders become
     // useful early rather than appearing blank for the full scan.
     const priority = (uri: vscode.Uri) => {
-      const ext = path.extname(uri.fsPath).toLowerCase();
-      return ext === ".pdes" ? 0 : ext === ".pspec" ? 1 : ext === ".cspec" ? 2 : ext === extension ? 3 : 4;
+      const kind = componentFileTypeForPath(uri.fsPath, autopilotExtension());
+      return kind === "protocolDesign" ? 0 : kind === "protocolSpecification" ? 1 : kind === "contractSpecification" ? 2 : kind === "autopilotExpression" ? 3 : 4;
     };
     uris.sort((left, right) => priority(left) - priority(right));
     this.currentScan = { indexing: true, processed: 0, total: uris.length };
     this.sidebar.refresh();
+    this.fileRecords.clear();
     let publishedNavigation = false;
     for (const uri of uris) {
-      const ext = path.extname(uri.fsPath).toLowerCase();
-      if (!publishedNavigation && ext === extension) {
+      const kind = componentFileTypeForPath(uri.fsPath, autopilotExtension());
+      if (!publishedNavigation && kind === "autopilotExpression") {
         // Make protocol search/navigation useful before the potentially large
         // expression-analysis phase has finished.
-        this.snapshot = next;
+        this.snapshot = this.snapshotFromRecords();
         this.publishDiagnostics();
         this.sidebar.refresh();
         publishedNavigation = true;
       }
-      let text: string;
-      try { text = await fs.readFile(uri.fsPath, "utf8"); } catch { this.advanceScan(); continue; }
-      if (ext === ".pdes") this.addManagedProtocol(next, uri, text);
-      else if (ext === ".pspec") this.addLegacyProtocol(next, uri, text);
-      else if (ext === ".cspec") this.addContract(next, uri, text);
-      else await this.addExpression(next, uri, text);
+      await this.upsertFileRecord(uri);
       this.advanceScan();
     }
     // Open dirty autopilot documents are the authoritative source for an edit
     // that Component Manager may safely update; replace their indexed copy.
     for (const document of vscode.workspace.textDocuments) {
-      if (document.uri.scheme === "file" && document.uri.fsPath.toLowerCase().endsWith(extension)) {
-        next.jobs = next.jobs.filter((job) => job.uri.toString() !== document.uri.toString());
-        next.expressionFiles.delete(document.uri.toString());
-        await this.addExpression(next, document.uri, document.getText());
+      if (document.isDirty && this.isManagedUri(document.uri) && componentFileTypeForPath(document.uri.fsPath, autopilotExtension()) === "autopilotExpression") {
+        await this.upsertFileRecord(document.uri, document.getText());
       }
     }
-    this.snapshot = next;
+    this.snapshot = this.snapshotFromRecords();
     this.currentScan = { ...this.currentScan, indexing: false };
     this.publishDiagnostics();
     this.sidebar.refresh();
@@ -436,7 +531,7 @@ export class ComponentManager implements vscode.Disposable {
     if (this.currentScan.processed % 25 === 0 || this.currentScan.processed === this.currentScan.total) this.sidebar.refresh();
   }
 
-  private addManagedProtocol(snapshot: Snapshot, uri: vscode.Uri, text: string): void {
+  private addProtocolDesign(snapshot: Snapshot, uri: vscode.Uri, text: string): void {
     try {
       const design = parseJsonc(text) as PdesDesign;
       if (!this.isValidPdes(design)) throw new Error(".pdes schema validation failed");
@@ -444,10 +539,10 @@ export class ComponentManager implements vscode.Disposable {
       if (!match?.definition) throw new Error(`no matching .pdd for version ${design.protocolDesignVersion}`);
       const transformed = transformPdesToPspec(design, match.definition);
       if (!transformed.pspec || transformed.errors?.length) throw new Error(transformed.errors?.map((error) => error.message).join("; ") || "transform failed");
-      this.addProtocol(snapshot, { classification: transformed.pspec.name, uri, kind: "managed", interface: transformed.pspec });
+      this.addProtocol(snapshot, { classification: transformed.pspec.name, uri, kind: "protocolDesign", interface: transformed.pspec });
     } catch (error: any) {
       const classification = `invalid:${uri.toString()}`;
-      this.addProtocol(snapshot, { classification, uri, kind: "managed", error: error?.message ?? String(error) });
+      this.addProtocol(snapshot, { classification, uri, kind: "protocolDesign", error: error?.message ?? String(error) });
     }
   }
 
@@ -462,12 +557,12 @@ export class ComponentManager implements vscode.Disposable {
     return Boolean(this.pdesValidator(design));
   }
 
-  private addLegacyProtocol(snapshot: Snapshot, uri: vscode.Uri, text: string): void {
+  private addProtocolSpecification(snapshot: Snapshot, uri: vscode.Uri, text: string): void {
     try {
       const spec = parseJsonc(text) as Pspec;
       if (spec?.type !== "protocol" || !spec.name) throw new Error("invalid protocol specification");
-      this.addProtocol(snapshot, { classification: spec.name, uri, kind: "legacy", interface: spec });
-    } catch { this.addProtocol(snapshot, { classification: `invalid:${uri.toString()}`, uri, kind: "legacy", error: "invalid .pspec" }); }
+      this.addProtocol(snapshot, { classification: spec.name, uri, kind: "protocolSpecification", interface: spec });
+    } catch { this.addProtocol(snapshot, { classification: `invalid:${uri.toString()}`, uri, kind: "protocolSpecification", error: "invalid protocol specification" }); }
   }
   private addProtocol(snapshot: Snapshot, record: ProtocolRecord): void { snapshot.protocols.set(record.classification, [...(snapshot.protocols.get(record.classification) ?? []), record]); }
   private addContract(snapshot: Snapshot, uri: vscode.Uri, text: string): void {
@@ -498,9 +593,9 @@ export class ComponentManager implements vscode.Disposable {
   private collectDiagnostics(snapshot: Snapshot): ManagerDiagnostic[] {
     const diagnostics: ManagerDiagnostic[] = [];
     for (const [classification, protocols] of snapshot.protocols) {
-      const managed = protocols.filter((protocol) => protocol.kind === "managed");
-      if (managed.length > 1) managed.forEach((protocol) => diagnostics.push({ severity: "error", message: `Duplicate managed protocol definition for ${classification}`, source: uriRef(protocol.uri), related: managed.filter((other) => other !== protocol).map((other) => uriRef(other.uri)) }));
-      protocols.filter((protocol) => protocol.error).forEach((protocol) => diagnostics.push({ severity: "error", message: `Cannot use managed protocol: ${protocol.error}`, source: uriRef(protocol.uri) }));
+      const designs = protocols.filter((protocol) => protocol.kind === "protocolDesign");
+      if (designs.length > 1) designs.forEach((protocol) => diagnostics.push({ severity: "error", message: `Duplicate protocol design for ${classification}`, source: uriRef(protocol.uri), related: designs.filter((other) => other !== protocol).map((other) => uriRef(other.uri)) }));
+      protocols.filter((protocol) => protocol.error).forEach((protocol) => diagnostics.push({ severity: "error", message: `Cannot use ${protocol.kind === "protocolDesign" ? "protocol design" : "protocol specification"}: ${protocol.error}`, source: uriRef(protocol.uri) }));
     }
     for (const expression of snapshot.expressionFiles.values()) {
       if (expression.jobs !== 1) diagnostics.push({ severity: "error", message: `Autopilot expression contains ${expression.jobs === 0 ? "no" : "multiple"} job blocks`, source: uriRef(expression.uri) });
@@ -581,7 +676,8 @@ export class ComponentManager implements vscode.Disposable {
       const data = new TextEncoder().encode(renderContractExpressionSkeleton(contract.classification, contract.requirements, contract.obligations));
       await fs.writeFile(target.fsPath, data, { flag: "wx" });
       await this.openSource(uriRef(target), openBeside);
-      await this.refresh();
+      this.queueFileChange(target, "upsert");
+      await this.flushPendingFileChanges();
     } catch (error: any) {
       console.error("Failed to create contract expression", error);
       void vscode.window.showErrorMessage(`Failed to create contract expression: ${error?.message ?? error}`);
@@ -601,24 +697,22 @@ export class ComponentManager implements vscode.Disposable {
     byUri.forEach((items, key) => this.diagnosticCollection.set(vscode.Uri.parse(key), items));
   }
 
-  private async onSave(document: vscode.TextDocument): Promise<void> {
-    const before = this.snapshot;
-    const extension = document.uri.fsPath.toLowerCase();
-    await this.refresh();
-    if (extension.endsWith(".pdes")) await this.syncProtocol(before, document.uri);
-    if (extension.endsWith(".cspec")) await this.syncContract(before, document.uri);
+  private onSave(document: vscode.TextDocument): void {
+    const kind = componentFileTypeForPath(document.uri.fsPath, autopilotExtension());
+    if (!this.isManagedUri(document.uri) || !kind) return;
+    this.queueFileChange(document.uri, "upsert", kind === "protocolDesign" || kind === "contractSpecification");
   }
 
-  private managedProtocolForUri(snapshot: Snapshot, uri: vscode.Uri): ProtocolRecord | undefined { return [...snapshot.protocols.values()].flat().find((protocol) => protocol.kind === "managed" && protocol.uri.toString() === uri.toString()); }
+  private protocolDesignForUri(snapshot: Snapshot, uri: vscode.Uri): ProtocolRecord | undefined { return [...snapshot.protocols.values()].flat().find((protocol) => protocol.kind === "protocolDesign" && protocol.uri.toString() === uri.toString()); }
   private resolvedProtocol(classification: string): ProtocolRecord | undefined {
     const entries = this.snapshot.protocols.get(classification) ?? [];
-    const managed = entries.filter((entry) => entry.kind === "managed" && !entry.error);
-    return managed.length === 1 ? managed[0] : entries.length === 1 && entries[0].kind === "legacy" ? entries[0] : undefined;
+    const designs = entries.filter((entry) => entry.kind === "protocolDesign" && !entry.error);
+    return designs.length === 1 ? designs[0] : entries.length === 1 && entries[0].kind === "protocolSpecification" ? entries[0] : undefined;
   }
 
   private async syncProtocol(before: Snapshot, uri: vscode.Uri): Promise<void> {
-    const oldProtocol = this.managedProtocolForUri(before, uri);
-    const newProtocol = this.managedProtocolForUri(this.snapshot, uri);
+    const oldProtocol = this.protocolDesignForUri(before, uri);
+    const newProtocol = this.protocolDesignForUri(this.snapshot, uri);
     if (!oldProtocol || !newProtocol || !oldProtocol.interface || !newProtocol.interface || oldProtocol.classification !== newProtocol.classification) return;
     const updates: Array<{ uri: vscode.Uri; range: vscode.Range; text: string }> = [];
     for (const job of this.snapshot.jobs) {
@@ -668,9 +762,9 @@ export class ComponentManager implements vscode.Disposable {
     contract.obligations.forEach((topic, index) => { if (!oldContract.obligations.some((old) => topicKey(old) === topicKey(topic)) && topic.type === "abstraction" && typeof topic.protocol === "string") additions.push({ topic, label: obligations[index], role: "host" }); });
     for (const addition of additions) {
       const protocol = this.resolvedProtocol(addition.topic.protocol!);
-      const role = protocol && protocol.kind === "managed" ? protocolRole(protocol, addition.role) : undefined;
-      const self = role && protocol ? findSelf(addition.role === "join" ? role.requirements : role.obligations, protocol.classification) : { error: "unresolved, legacy-only, or invalid managed protocol" };
-      if (!protocol || protocol.kind !== "managed" || !role || self.error) continue;
+      const role = protocol && protocol.kind === "protocolDesign" ? protocolRole(protocol, addition.role) : undefined;
+      const self = role && protocol ? findSelf(addition.role === "join" ? role.requirements : role.obligations, protocol.classification) : { error: "unresolved, spec-only, or invalid protocol design" };
+      if (!protocol || protocol.kind !== "protocolDesign" || !role || self.error) continue;
       const choice = await vscode.window.showInformationMessage(`Component Manager: add ${addition.role} for new collaboration ${addition.topic.protocol}?`, "Insert", "Not now");
       if (choice !== "Insert") continue;
       const topics = addition.role === "join" ? role.requirements : role.obligations;
@@ -780,8 +874,7 @@ export class ComponentManager implements vscode.Disposable {
   private async openSource(source: SourceRef, openBeside = false): Promise<void> {
     const uri = vscode.Uri.parse(source.uri);
     const viewColumn = componentManagerSourceViewColumn(openBeside);
-    const extension = path.extname(uri.fsPath).toLowerCase();
-    const editorType = extension === ".pdes" ? "protocolDesignEditor" : extension === ".cspec" ? "contractSpecEditor" : extension === ".pspec" ? "protocolSpecEditor" : undefined;
+    const editorType = editorViewTypeForPath(uri.fsPath);
     if (editorType) {
       await vscode.commands.executeCommand("vscode.openWith", uri, editorType, viewColumn);
       return;

@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import { extensionFor } from "./fileTypes";
 
 export interface MacroGlobal {
   def: string;
@@ -39,7 +40,7 @@ export interface LoadedPdd {
   error?: string;
 }
 
-const BUNDLED_PDD_RELATIVE = path.join("resources", "pdd", "default.pdd");
+const BUNDLED_PDD_RELATIVE = path.join("resources", "pdd", `default${extensionFor("protocolDesignDefinition")}`);
 
 function resolvePath(inputPath: string, context: vscode.ExtensionContext): string {
   if (path.isAbsolute(inputPath)) {

@@ -7,6 +7,7 @@ import addFormats from "ajv-formats";
 import { findPddForVersion } from "./pddLoader";
 import { loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { transformPdesToPspec, PdesDesign } from "./pdes/transform";
+import { extensionWithoutDot, isFileType, replaceExtension } from "./fileTypes";
 
 export function registerExportProtocolSpec(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -71,10 +72,10 @@ export async function exportPdesDocument(
     return;
   }
 
-  const defaultTarget = path.join(path.dirname(uri.fsPath), `${path.basename(uri.fsPath, ".pdes")}.pspec`);
+  const defaultTarget = replaceExtension(uri.fsPath, "protocolSpecification");
   const saveUri = await vscode.window.showSaveDialog({
     defaultUri: vscode.Uri.file(defaultTarget),
-    filters: { "Protocol Spec": ["pspec"], JSON: ["json"] },
+    filters: { "Protocol Specification": [extensionWithoutDot("protocolSpecification")], JSON: ["json"] },
   });
   if (!saveUri) {
     return;
@@ -120,7 +121,7 @@ export async function exportPdesDocument(
 
 async function getActivePdesDocument(): Promise<{ uri?: vscode.Uri; text?: string }> {
   const activeEditor = vscode.window.activeTextEditor;
-  if (activeEditor && activeEditor.document.uri.fsPath.toLowerCase().endsWith(".pdes")) {
+  if (activeEditor && isFileType(activeEditor.document.uri.fsPath, "protocolDesign")) {
     return { uri: activeEditor.document.uri, text: activeEditor.document.getText() };
   }
 

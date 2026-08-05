@@ -22,7 +22,7 @@ export type Participation = {
 export type ProtocolSelfSlots = Partial<Record<"host" | "join", number>>;
 export type SelectedProtocol = {
   classification: string;
-  kind?: "managed" | "legacy";
+  kind?: "protocolDesign" | "protocolSpecification";
   source?: SourceRef;
   selfSlots?: ProtocolSelfSlots;
 };

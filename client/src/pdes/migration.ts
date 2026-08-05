@@ -1,5 +1,6 @@
 import { ModeTemplate, ProtocolDesignDefinition } from "../pddLoader";
 import { PdesDesign, transformPdesToPspec } from "./transform";
+import { replaceExtension } from "../fileTypes";
 import * as path from "path";
 
 export type PspecTopic = {
@@ -323,6 +324,6 @@ export function transformPspecToPdes(
 }
 
 export function hasSiblingPdes(sourcePath: string, exists: (path: string) => boolean): boolean {
-  const target = path.join(path.dirname(sourcePath), `${path.basename(sourcePath, path.extname(sourcePath))}.pdes`);
+  const target = replaceExtension(sourcePath, "protocolDesign");
   return exists(target);
 }

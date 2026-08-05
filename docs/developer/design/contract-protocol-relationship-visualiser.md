@@ -26,12 +26,12 @@ step with saved protocol-design and contract-specification changes.
 
 | Artefact | V1 role |
 |---|---|
-| `.pdes` + matching `.pdd` | Authoritative managed protocol source. A saved, valid design is transformed to obtain the interface used by Component Manager. |
-| `.pspec` | Published/legacy protocol artefact. It is searchable and viewable only when no managed `.pdes` source exists. It is not synchronised. |
+| `.pdes` + matching `.pdd` | Authoritative protocol design source. A saved, valid design is transformed to obtain the interface used by Component Manager. |
+| `.pspec` | First-class protocol specification, including exports from protocol designs. It is searchable and viewable when no corresponding `.pdes` exists, but is not synchronised. |
 | `.cspec` | Authoritative contract specification used to synchronise its matching job header. |
 | Configured autopilot expression | Source containing one or more `job` blocks, `host` statements, and `join` statements. |
 
-Editing a legacy `.pspec` and migrating it to `.pdes` is a manual process in
+Migrating an older source `.pspec` to `.pdes` is a manual process in
 V1. A future guided migration workflow is out of scope.
 
 ## Component directories and indexing
@@ -41,25 +41,23 @@ folder URIs. Directories may be outside the workspace.
 
 The manager recursively indexes:
 
-- managed `.pdes` sources;
-- legacy `.pspec` files;
+- `.pdes` protocol designs;
+- `.pspec` protocol specifications;
 - `.cspec` contract specifications; and
 - files with the configured `emergent.autopilotExtension` (default `.dla`).
 
 Pilot files and `emergent.bulkValidationMode` are unrelated to Component
 Manager and must not affect its index.
 
-The index refreshes automatically after relevant saves, file creations, and
-file deletions within component directories. A **Refresh Component Manager**
-command provides a manual fallback.
+Relevant file changes within component directories are batched and indexed incrementally. Activation, Component Manager configuration changes, and **Refresh Component Manager** perform a full recursive scan.
 
 ### File and classification diagnostics
 
-- Duplicate managed `.pdes` definitions for one protocol classification are a
+- Duplicate `.pdes` protocol designs for one protocol classification are a
   Component Manager error. Show every conflicting source as a link, and block
   protocol generation/synchronisation until resolved.
 - A `.pspec` with no corresponding `.pdes` is searchable but visibly marked
-  **Legacy / published only**.
+  **Spec-only**.
 - Missing or duplicate `.cspec` definitions for a job classification are
   resolution diagnostics. For a missing definition, link to the expression
   file's containing folder; for duplicates, link to each definition. Contract
@@ -84,7 +82,7 @@ but muted. The graph does not need an explanatory label on every muted node.
 ### Direct relationship rule
 
 A line is shown only for the semantic collaboration `<self>` endpoint of a
-selected managed protocol. A `join` statement contributes the label at the
+selected protocol design. A `join` statement contributes the label at the
 unique `<self>` slot in join requirements and matches it only to the job's
 requirement header; a `host` statement does the same from host obligations to
 the job's obligation header. Other role labels are not graph relationships.
@@ -114,8 +112,8 @@ Navigation is source-specific:
 |---|---|
 | Job node or current job label | Focus the `.dla` editor and reveal the job block/label. |
 | Contract topic | Open/focus the matching `.cspec` in the Contract Specification Editor. |
-| Managed protocol or protocol topic | Open/focus the matching `.pdes` in the Protocol Design Editor. |
-| Legacy protocol | Open the `.pspec` in the existing specification editor, marked legacy/published-only. |
+| Protocol design or its topic | Open/focus the matching `.pdes` in the Protocol Design Editor. |
+| Spec-only protocol | Open the `.pspec` in the Protocol Specification Editor, marked Spec-only. |
 
 By default, source navigation reuses the active editor group. Ctrl-click on
 Windows/Linux or Cmd-click on macOS opens the source beside the graph when the
@@ -131,7 +129,7 @@ Component Manager preserves existing source labels. It generates a new label
 as the normalised topic name, lower-case snake_case, adding `_2`, `_3`, and so
 on only to avoid a collision.
 
-### Managed protocol synchronisation
+### Protocol design synchronisation
 
 A protocol synchronisation begins only after a valid `.pdes` save can be
 transformed with its matching `.pdd`. Publishing/exporting `.pspec` is not a
@@ -157,7 +155,7 @@ for that role lane, and resumes only after the ambiguity is resolved.
 
 ### Collaboration self topic
 
-Managed protocol export derives an interface topic named `<self>` from the
+Protocol design export derives an interface topic named `<self>` from the
 protocol design classification. Component Manager recognises a self topic only
 when it is a unique `abstraction` topic whose `protocol` equals the selected
 protocol classification. It does not depend on a fixed array ordinal.
@@ -196,7 +194,7 @@ The contract topic's generated job label occupies the protocol role's semantic
 `<self>` slot; other role labels are generated from their protocol topics.
 
 The offer is unavailable when the nominated protocol cannot be resolved, is
-legacy-only, is ambiguous, or has no valid self-topic mapping.
+spec-only, is ambiguous, or has no valid self-topic mapping.
 
 ## Non-functional requirements
 

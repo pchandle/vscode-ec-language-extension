@@ -9,7 +9,7 @@ type ComponentEntry = {
   classification: string;
   detail: string;
   directUseCount?: number;
-  managed?: boolean;
+  designBacked?: boolean;
   source: SourceRef;
   expressionTargets?: { source: SourceRef; label: string }[];
   newExpressionPath?: string;
@@ -154,13 +154,13 @@ export function ComponentManagerSidebar({ state }: { state: ComponentManagerSide
   const [showContracts, setShowContracts] = useState(false);
   const [showProtocols, setShowProtocols] = useState(true);
   const [showUsed, setShowUsed] = useState(true);
-  const [showLegacy, setShowLegacy] = useState(false);
+  const [showSpecOnly, setShowSpecOnly] = useState(false);
 
   const protocols = useMemo(() => state.protocols.filter((entry) =>
     isMatch(entry.classification, query, wholeWord, regex)
       && (!showUsed || (entry.directUseCount ?? 0) > 0)
-      && (showLegacy || entry.managed)
-  ), [state.protocols, query, wholeWord, regex, showUsed, showLegacy]);
+      && (showSpecOnly || entry.designBacked)
+  ), [state.protocols, query, wholeWord, regex, showUsed, showSpecOnly]);
   const contracts = useMemo(() => state.contracts.filter((entry) => isMatch(entry.classification, query, wholeWord, regex)), [state.contracts, query, wholeWord, regex]);
   const displayedCount = (showProtocols ? protocols.length : 0) + (showContracts ? contracts.length : 0);
   const status = state.status.indexing
@@ -181,7 +181,7 @@ export function ComponentManagerSidebar({ state }: { state: ComponentManagerSide
           <label><input type="checkbox" checked={showContracts} onChange={(event) => setShowContracts(event.target.checked)} /> Contracts</label>
           <label><input type="checkbox" checked={showProtocols} onChange={(event) => setShowProtocols(event.target.checked)} /> Protocols</label>
           <label title="Show only protocols with at least one direct host or join use"><input type="checkbox" checked={showUsed} onChange={(event) => setShowUsed(event.target.checked)} /> Used</label>
-          <label title="Include protocols available only through a legacy .pspec file"><input type="checkbox" checked={showLegacy} onChange={(event) => setShowLegacy(event.target.checked)} /> Legacy</label>
+          <label title="Include protocol specifications that do not yet have a protocol design."><input type="checkbox" checked={showSpecOnly} onChange={(event) => setShowSpecOnly(event.target.checked)} /> Spec-only</label>
           <span className="cms-count">{displayedCount} result{displayedCount === 1 ? "" : "s"}</span>
         </div>
         <p className="cms-status" role="status">{status}</p>

@@ -7,6 +7,7 @@ import addFormats from "ajv-formats";
 import { loadSchema } from "./customEditors/SpecEditorProvider";
 import { loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { loadPddCandidates, ProtocolDesignDefinition } from "./pddLoader";
+import { isFileType, replaceExtension } from "./fileTypes";
 import {
   MigrationChoices,
   Pspec,
@@ -36,11 +37,11 @@ type ReviewState = {
 type SchemaErrorLike = { instancePath?: string; keyword?: string; message?: string };
 
 export function siblingPdesPath(sourcePath: string): string {
-  return path.join(path.dirname(sourcePath), `${path.basename(sourcePath, path.extname(sourcePath))}.pdes`);
+  return replaceExtension(sourcePath, "protocolDesign");
 }
 
 export function canOfferPdesMigration(sourcePath: string, exists: (filePath: string) => boolean = fs.existsSync): boolean {
-  return path.extname(sourcePath).toLowerCase() === ".pspec" && !exists(siblingPdesPath(sourcePath));
+  return isFileType(sourcePath, "protocolSpecification") && !exists(siblingPdesPath(sourcePath));
 }
 
 /** Atomically creates a migration target without ever replacing an existing file. */

@@ -15,6 +15,7 @@ import { workspace, ExtensionContext } from "vscode";
 import { loadPddCandidates } from "./pddLoader";
 import { registerBulkExpressionValidation } from "./bulkExpressionValidation";
 import { registerComponentManager } from "./componentManager";
+import { extensionFor, extensionWithoutDot, isFileType } from "./fileTypes";
 
 import * as vscode from "vscode";
 
@@ -30,8 +31,8 @@ let lastStatusText = "initialising...";
 
 const CONTRACT_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){4}[a-z0-9-]+$/;
 const PROTOCOL_CLASSIFICATION_PATTERN = /^\/(?:[a-z0-9-]+\/){3}[a-z0-9-]+$/;
-const DEFAULT_CONTRACT_FILE_EXTENSION = ".cspec";
-const DEFAULT_PROTOCOL_FILE_EXTENSION = ".pspec";
+const DEFAULT_CONTRACT_FILE_EXTENSION = extensionFor("contractSpecification");
+const DEFAULT_PROTOCOL_FILE_EXTENSION = extensionFor("protocolSpecification");
 const DEFAULT_CONTRACT_FILENAME_FORMAT = "{layer}--{verb}--{subject}--{variation}--{platform}";
 const DEFAULT_PROTOCOL_FILENAME_FORMAT = "{layer}--{subject}--{variation}--{platform}";
 const FILENAME_LITERAL_REGEX = /^[a-zA-Z0-9._-]*$/;
@@ -782,7 +783,7 @@ function registerSpecificationEditors(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      if (doc.uri.fsPath.toLowerCase().endsWith(".pspec") || doc.uri.fsPath.toLowerCase().endsWith(".cspec")) {
+      if (isFileType(doc.uri.fsPath, "protocolSpecification") || isFileType(doc.uri.fsPath, "contractSpecification")) {
         diagnostics.delete(doc.uri);
       }
     })
@@ -820,7 +821,7 @@ function registerPdesEditor(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      if (doc.uri.fsPath.toLowerCase().endsWith(".pdes")) {
+      if (isFileType(doc.uri.fsPath, "protocolDesign")) {
         diagnostics.delete(doc.uri);
       }
     })
@@ -857,7 +858,7 @@ function registerPddEditor(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      if (doc.uri.fsPath.toLowerCase().endsWith(".pdd")) {
+      if (isFileType(doc.uri.fsPath, "protocolDesignDefinition")) {
         diagnostics.delete(doc.uri);
       }
     })
@@ -1130,7 +1131,7 @@ async function createNewProtocolSpec() {
   const trimmedClassification = classification.trim();
   const suggestedFilename = buildFilenameFromClassification("protocol", trimmedClassification, {
     silent: false,
-    extension: ".pdes",
+    extension: extensionFor("protocolDesign"),
   });
 
   const highestPddVersion = (() => {
@@ -1147,7 +1148,7 @@ async function createNewProtocolSpec() {
   const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, suggestedFilename);
   const targetUri = await vscode.window.showSaveDialog({
     defaultUri,
-    filters: { "Protocol Specification": ["pdes"] },
+    filters: { "Protocol Design": [extensionWithoutDot("protocolDesign")] },
     saveLabel: "Create Protocol Specification",
   });
 
@@ -1207,7 +1208,7 @@ async function createNewContractSpec() {
   const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, suggestedFilename);
   const targetUri = await vscode.window.showSaveDialog({
     defaultUri,
-    filters: { "Contract Specification": ["cspec"] },
+    filters: { "Contract Specification": [extensionWithoutDot("contractSpecification")] },
     saveLabel: "Create Contract Specification",
   });
 

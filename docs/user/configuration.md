@@ -62,7 +62,7 @@ This guide explains all user-facing configuration keys, their defaults, and when
 
 | Key | Default | Notes |
 |---|---|---|
-| `componentManager.componentDirectories` | `[]` | Workspace-scoped folder URI list recursively indexed by Component Manager. Directories may be outside the workspace. It indexes `.pdes`, legacy `.pspec`, `.cspec`, and files using `emergent.autopilotExtension`. |
+| `componentManager.componentDirectories` | `[]` | Workspace-scoped folder URI list indexed by Component Manager. Directories may be outside the workspace. It indexes protocol designs (`.pdes`), protocol specifications (`.pspec`), contract specifications (`.cspec`), and files using `emergent.autopilotExtension`. Changes to component-source files are indexed incrementally; activation, configuration changes, and manual refresh perform a full scan. |
 
 Component Manager deliberately ignores `emergent.pilotExtension` and `emergent.bulkValidationMode`.
 
