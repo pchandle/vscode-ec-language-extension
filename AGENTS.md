@@ -39,6 +39,7 @@ Guidance for coding agents working in `vscode-ec-language-extension`.
 2. Keep changes scoped to the requested area (client/server/webview/docs).
 3. After edits, run the narrowest valid checks first, then broader checks:
    - Prefer targeted test(s) for changed code.
+   - After the **final** edit to `client/src`, `server/src`, `webview-src`, runtime configuration, or bundled assets, run `npm run build` before testing or handoff. This is mandatory: it keeps the extension-host bundle (`client/dist/extension.js`), language-server bundle, and webview bundle (`media/main.js`) in sync with source changes.
    - Run `npm run typecheck` and `npm run lint` before finalizing.
 4. If schema or webview form behavior changes, run `npm run build:webview` and confirm generated validators in `webview-src/generated` are updated.
 5. For parser/resolver/type checker changes, run `npm run test:server`.
