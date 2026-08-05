@@ -134,6 +134,12 @@
             "default": "{layer}--{subject}--{variation}--{platform}",
             "markdownDescription": "Filename format for new protocol specifications (extension is appended automatically: .pspec). Supported tokens: `{layer}`, `{subject}`, `{variation}`, `{platform}`.",
             "order": 130
+          },
+          "specification.defaultContractExpressionPath": {
+            "type": "string",
+            "default": "{layer}/{verb}/{subject}/{variation}/{platform}",
+            "markdownDescription": "Relative directory template for Component Manager's **New expression** action. It is resolved from the configured Component Manager directory that contains the contract specification. Supported tokens: `{layer}`, `{verb}`, `{subject}`, `{variation}`, `{platform}`. The filename and extension come from `specification.contractFilenameFormat` and `emergent.autopilotExtension`.",
+            "order": 135
           }
         }
       },

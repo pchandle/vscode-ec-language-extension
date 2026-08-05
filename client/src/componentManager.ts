@@ -38,10 +38,13 @@ type Job = {
 type ManagerDiagnostic = { severity: "error" | "warning"; message: string; source: SourceRef; related?: SourceRef[] };
 type Snapshot = { protocols: Map<string, ProtocolRecord[]>; contracts: Map<string, ContractRecord[]>; jobs: Job[]; expressionFiles: Map<string, { uri: vscode.Uri; jobs: number }> };
 type ScanStatus = { indexing: boolean; processed: number; total: number };
+type ExpressionTarget = { source: SourceRef; label: string };
 
 type Analysis = { jobs: Array<Omit<Job, "key" | "uri">>; diagnostics: Array<{ message: string; range: SourceRef["range"] }> };
 
 const MANAGER_SOURCE = "Component Manager";
+const CONTRACT_PATH_TOKENS = ["layer", "verb", "subject", "variation", "platform"] as const;
+const DEFAULT_CONTRACT_EXPRESSION_PATH = "{layer}/{verb}/{subject}/{variation}/{platform}";
 
 function uriRef(uri: vscode.Uri, range?: SourceRef["range"]): SourceRef {
   return { uri: uri.toString(), range };
@@ -89,6 +92,35 @@ function uniqueLabels(topics: Topic[], occupied: Set<string>, selfLabel?: string
 
 function topicKey(topic: Topic): string {
   return JSON.stringify({ type: topic.type, name: topic.name, protocol: topic.protocol });
+}
+
+function contractPathValues(classification: string): Record<(typeof CONTRACT_PATH_TOKENS)[number], string> | undefined {
+  const parts = classification.split("/").filter(Boolean);
+  if (parts.length !== CONTRACT_PATH_TOKENS.length || parts.some((part) => !part)) return undefined;
+  return Object.fromEntries(CONTRACT_PATH_TOKENS.map((token, index) => [token, parts[index]])) as Record<(typeof CONTRACT_PATH_TOKENS)[number], string>;
+}
+
+export function validateContractExpressionPathTemplate(template: string): string | undefined {
+  if (!template.trim()) return "Default contract expression path cannot be empty.";
+  if (template.includes("\\") || path.posix.isAbsolute(template) || template.split("/").some((part) => part === "..")) {
+    return "Default contract expression path must be a relative path without '..' segments.";
+  }
+  const tokens = [...template.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);
+  const invalid = tokens.find((token) => !CONTRACT_PATH_TOKENS.includes(token as (typeof CONTRACT_PATH_TOKENS)[number]));
+  return invalid ? `Unknown path token: {${invalid}}.` : undefined;
+}
+
+export function renderContractExpressionDirectory(classification: string, template: string): string | undefined {
+  if (validateContractExpressionPathTemplate(template)) return undefined;
+  const values = contractPathValues(classification);
+  if (!values) return undefined;
+  return template.replace(/\{(layer|verb|subject|variation|platform)\}/g, (_match, token) => values[token as keyof typeof values]);
+}
+
+export function renderContractExpressionSkeleton(classification: string, requirements: Topic[], obligations: Topic[]): string {
+  const requirementLabels = uniqueLabels(requirements, new Set());
+  const obligationLabels = uniqueLabels(obligations, new Set());
+  return `job ${classification}(${requirementLabels.join(", ")})${obligationLabels.length ? ` -> ${obligationLabels.join(", ")}` : ""}:\nend\n`;
 }
 
 /** Map old labels onto a changed topic list. Exact topic matches support reorders;
@@ -206,6 +238,8 @@ class ComponentManagerSidebar implements vscode.WebviewViewProvider {
       if (message?.type === "ready") this.refresh();
       if (message?.type === "openProtocol") void vscode.commands.executeCommand("emergent.openComponentManagerGraph", message.classification);
       if (message?.type === "openSource") void vscode.commands.executeCommand("emergent.openComponentManagerSource", message.source);
+      if (message?.type === "openContractExpression") void this.manager.openContractExpression(message.classification);
+      if (message?.type === "createContractExpression") void this.manager.createContractExpression(message.classification, message.source);
     });
     view.onDidDispose(() => { this.view = undefined; });
     this.refresh();
@@ -224,7 +258,14 @@ class ComponentManagerSidebar implements vscode.WebviewViewProvider {
         source: uriRef(protocol.uri),
       };
     });
-    const contracts = this.manager.contracts().map((contract) => ({ kind: "contract", classification: contract.classification, detail: "Contract specification", source: uriRef(contract.uri) }));
+    const contracts = this.manager.contracts().map((contract) => ({
+      kind: "contract",
+      classification: contract.classification,
+      detail: "Contract specification",
+      source: uriRef(contract.uri),
+      expressionTargets: this.manager.expressionTargets(contract.classification),
+      newExpressionPath: this.manager.newContractExpressionUri(contract)?.fsPath,
+    }));
     void this.view.webview.postMessage({ type: "componentManagerSidebar", status: this.manager.scanStatus(), protocols, contracts, diagnostics: this.manager.diagnostics(), directories: this.manager.directories().map((directory) => directory.fsPath) });
   }
 
@@ -306,6 +347,22 @@ export class ComponentManager implements vscode.Disposable {
   jobCount(): number { return this.snapshot.jobs.length; }
   diagnostics(): ManagerDiagnostic[] { return this.collectDiagnostics(this.snapshot); }
   usageCount(classification: string): number { return this.snapshot.jobs.filter((job) => job.statements.some((statement) => statement.classification === classification)).length; }
+  expressionTargets(classification: string): ExpressionTarget[] {
+    return this.snapshot.jobs
+      .filter((job) => job.classification === classification)
+      .map((job) => ({
+        source: uriRef(job.uri, job.range),
+        label: `${vscode.workspace.asRelativePath(job.uri, false)} · line ${(job.range.start.line ?? 0) + 1}`,
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }
+  newContractExpressionUri(contract: ContractRecord): vscode.Uri | undefined {
+    const root = this.componentDirectoryFor(contract.uri);
+    const template = vscode.workspace.getConfiguration("specification").get<string>("defaultContractExpressionPath", DEFAULT_CONTRACT_EXPRESSION_PATH) ?? DEFAULT_CONTRACT_EXPRESSION_PATH;
+    const directory = renderContractExpressionDirectory(contract.classification, template);
+    if (!root || !directory) return undefined;
+    return vscode.Uri.joinPath(root, ...directory.split("/").filter(Boolean), this.expectedExpressionFilename(contract.classification));
+  }
 
   async refresh(): Promise<void> {
     if (this.refreshRunning) return this.refreshRunning;
@@ -465,6 +522,66 @@ export class ComponentManager implements vscode.Disposable {
     const [layer, verb, subject, variation, platform] = parts;
     const format = vscode.workspace.getConfiguration("specification").get<string>("contractFilenameFormat", "{layer}--{verb}--{subject}--{variation}--{platform}") || "{layer}--{verb}--{subject}--{variation}--{platform}";
     return format.replace(/\{(layer|verb|subject|variation|platform)\}/g, (_match, key) => ({ layer, verb, subject, variation, platform } as Record<string, string>)[key] ?? "") + autopilotExtension();
+  }
+
+  private componentDirectoryFor(uri: vscode.Uri): vscode.Uri | undefined {
+    if (uri.scheme !== "file") return undefined;
+    return configuredDirectories()
+      .filter((directory) => directory.scheme === "file")
+      .filter((directory) => {
+        const relative = path.relative(directory.fsPath, uri.fsPath);
+        return relative !== "" && !relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative);
+      })
+      .sort((left, right) => right.fsPath.length - left.fsPath.length)[0];
+  }
+
+  async openContractExpression(classification: string): Promise<void> {
+    const targets = this.expressionTargets(classification);
+    if (!targets.length) {
+      void vscode.window.showInformationMessage(`Component Manager: no indexed expression found for ${classification}.`);
+      return;
+    }
+    let source = targets[0].source;
+    if (targets.length > 1) {
+      const selected = await vscode.window.showQuickPick(targets.map((target) => ({ label: target.label, source: target.source })), { title: "Select contract expression to open" });
+      if (!selected) return;
+      source = selected.source;
+    }
+    await this.openSource(source);
+  }
+
+  async createContractExpression(classification: string, source: SourceRef): Promise<void> {
+    const contract = this.contracts().find((candidate) => candidate.classification === classification && candidate.uri.toString() === source?.uri);
+    if (!contract) {
+      void vscode.window.showErrorMessage("Component Manager: contract specification is no longer indexed.");
+      return;
+    }
+    if (this.expressionTargets(classification).length) {
+      await this.openContractExpression(classification);
+      return;
+    }
+    const target = this.newContractExpressionUri(contract);
+    if (!target) {
+      void vscode.window.showErrorMessage("Component Manager: unable to resolve the default contract expression path. Check specification.defaultContractExpressionPath and the Component Manager directories.");
+      return;
+    }
+    try {
+      await vscode.workspace.fs.stat(target);
+      await this.openSource(uriRef(target));
+      return;
+    } catch {
+      // The path is available for a new expression.
+    }
+    try {
+      await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(target.fsPath)));
+      const data = new TextEncoder().encode(renderContractExpressionSkeleton(contract.classification, contract.requirements, contract.obligations));
+      await fs.writeFile(target.fsPath, data, { flag: "wx" });
+      await this.openSource(uriRef(target));
+      await this.refresh();
+    } catch (error: any) {
+      console.error("Failed to create contract expression", error);
+      void vscode.window.showErrorMessage(`Failed to create contract expression: ${error?.message ?? error}`);
+    }
   }
 
   private publishDiagnostics(): void {

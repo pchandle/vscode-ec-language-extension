@@ -33,6 +33,7 @@ This guide explains all user-facing configuration keys, their defaults, and when
 | `specification.localContractRoot` | `""` | Root directory for local `.cspec` lookup. |
 | `specification.localProtocolRoot` | `""` | Root directory for local `.pspec` lookup. |
 | `specification.contractFilenameFormat` | `{layer}--{verb}--{subject}--{variation}--{platform}` | Template for new contract spec filenames. |
+| `specification.defaultContractExpressionPath` | `{layer}/{verb}/{subject}/{variation}/{platform}` | Relative directory template used by Component Manager when creating a missing contract expression. It is resolved under the component directory containing the contract and supports `{layer}`, `{verb}`, `{subject}`, `{variation}`, and `{platform}`. The filename and extension use `specification.contractFilenameFormat` and `emergent.autopilotExtension`. |
 | `specification.protocolFilenameFormat` | `{layer}--{subject}--{variation}--{platform}` | Template for new protocol spec filenames. |
 
 ## Hover

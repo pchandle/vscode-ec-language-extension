@@ -64,6 +64,15 @@ export type WebviewMessage =
   | {
       type: "componentManagerOpenSource";
       source: unknown;
+    }
+  | {
+      type: "openContractExpression";
+      classification: string;
+    }
+  | {
+      type: "createContractExpression";
+      classification: string;
+      source: unknown;
     };
 
 export type TopicRole = "host" | "join";

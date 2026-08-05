@@ -11,6 +11,8 @@ type ComponentEntry = {
   directUseCount?: number;
   managed?: boolean;
   source: SourceRef;
+  expressionTargets?: { source: SourceRef; label: string }[];
+  newExpressionPath?: string;
 };
 
 type DiagnosticEntry = {
@@ -66,6 +68,12 @@ const styles = `
   .cms-name.protocol::before { content: '◌  '; color: var(--vscode-charts-blue); }
   .cms-name.contract::before { content: '□  '; color: var(--vscode-charts-green); }
   .cms-detail { margin-top: 2px; color: var(--vscode-descriptionForeground); font-size: 0.92em; }
+  .cms-contract { padding: 5px 8px; }
+  .cms-contract-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .cms-action-button { padding: 3px 7px; color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: 1px solid var(--vscode-button-border, transparent); border-radius: 2px; cursor: pointer; font: inherit; }
+  .cms-action-button:hover { background: var(--vscode-button-hoverBackground); }
+  .cms-action-button:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
+  .cms-action-button:disabled { color: var(--vscode-disabledForeground); background: var(--vscode-button-secondaryBackground); cursor: default; }
   .cms-empty { margin: 0; padding: 7px 8px; color: var(--vscode-descriptionForeground); }
   .cms-diagnostic { color: var(--vscode-inputValidation-warningForeground); }
   .cms-diagnostic.error { color: var(--vscode-inputValidation-errorForeground); }
@@ -73,14 +81,34 @@ const styles = `
 
 function ComponentList({ entries, empty }: { entries: ComponentEntry[]; empty: string }) {
   if (!entries.length) return <p className="cms-empty">{empty}</p>;
-  return <div className="cms-list">{entries.map((entry) => (
-    <button key={`${entry.kind}:${entry.source.uri}:${entry.classification}`} className="cms-item" type="button" onClick={() => {
-      vscode.postMessage(entry.kind === "protocol" ? { type: "openProtocol", classification: entry.classification } : { type: "openSource", source: entry.source });
+  return <div className="cms-list">{entries.map((entry) => {
+    const key = `${entry.kind}:${entry.source.uri}:${entry.classification}`;
+    if (entry.kind === "contract") {
+      const hasExpression = Boolean(entry.expressionTargets?.length);
+      return <div key={key} className="cms-contract">
+        <span className="cms-name contract">{entry.classification}</span>
+        <small className="cms-detail">{entry.detail}</small>
+        <div className="cms-contract-actions">
+          <button className="cms-action-button" type="button" onClick={() => vscode.postMessage({ type: "openSource", source: entry.source })}>Open specification</button>
+          <button
+            className="cms-action-button"
+            type="button"
+            title={hasExpression ? `Open ${entry.expressionTargets!.length === 1 ? "the matching expression" : "a matching expression"}` : entry.newExpressionPath ? `Create ${entry.newExpressionPath}` : "Configure a valid Default contract expression path to create an expression"}
+            disabled={!hasExpression && !entry.newExpressionPath}
+            onClick={() => vscode.postMessage(hasExpression
+              ? { type: "openContractExpression", classification: entry.classification }
+              : { type: "createContractExpression", classification: entry.classification, source: entry.source })}
+          >{hasExpression ? "Open expression" : "New expression"}</button>
+        </div>
+      </div>;
+    }
+    return <button key={key} className="cms-item" type="button" onClick={() => {
+      vscode.postMessage({ type: "openProtocol", classification: entry.classification });
     }}>
       <span className={`cms-name ${entry.kind}`}>{entry.classification}</span>
       <small className="cms-detail">{entry.detail}</small>
-    </button>
-  ))}</div>;
+    </button>;
+  })}</div>;
 }
 
 export function ComponentManagerSidebar({ state }: { state: ComponentManagerSidebarState }) {
