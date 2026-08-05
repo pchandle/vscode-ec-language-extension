@@ -117,9 +117,9 @@ Navigation is source-specific:
 | Managed protocol or protocol topic | Open/focus the matching `.pdes` in the Protocol Design Editor. |
 | Legacy protocol | Open the `.pspec` in the existing specification editor, marked legacy/published-only. |
 
-By default, source navigation opens the source beside the graph so the
-relationship context remains visible. The user may use normal VS Code editor
-layout controls instead.
+By default, source navigation reuses the active editor group. Ctrl-click on
+Windows/Linux or Cmd-click on macOS opens the source beside the graph when the
+relationship context should remain visible.
 
 ## Protocol participation semantics
 

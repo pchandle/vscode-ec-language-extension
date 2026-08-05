@@ -64,15 +64,18 @@ export type WebviewMessage =
   | {
       type: "componentManagerOpenSource";
       source: unknown;
+      openBeside?: boolean;
     }
   | {
       type: "openContractExpression";
       classification: string;
+      openBeside?: boolean;
     }
   | {
       type: "createContractExpression";
       classification: string;
       source: unknown;
+      openBeside?: boolean;
     };
 
 export type TopicRole = "host" | "join";

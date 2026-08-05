@@ -21,6 +21,10 @@ type DiagnosticEntry = {
   source: SourceRef;
 };
 
+function opensBeside(event: React.MouseEvent<HTMLElement>): boolean {
+  return event.ctrlKey || event.metaKey;
+}
+
 export type ComponentManagerSidebarState = {
   status: { indexing: boolean; processed: number; total: number };
   protocols: ComponentEntry[];
@@ -89,15 +93,15 @@ function ComponentList({ entries, empty }: { entries: ComponentEntry[]; empty: s
         <span className="cms-name contract">{entry.classification}</span>
         <small className="cms-detail">{entry.detail}</small>
         <div className="cms-contract-actions">
-          <button className="cms-action-button" type="button" onClick={() => vscode.postMessage({ type: "openSource", source: entry.source })}>Open specification</button>
+          <button className="cms-action-button" type="button" onClick={(event) => vscode.postMessage({ type: "openSource", source: entry.source, openBeside: opensBeside(event) })}>Open specification</button>
           <button
             className="cms-action-button"
             type="button"
             title={hasExpression ? `Open ${entry.expressionTargets!.length === 1 ? "the matching expression" : "a matching expression"}` : entry.newExpressionPath ? `Create ${entry.newExpressionPath}` : "Configure a valid Default contract expression path to create an expression"}
             disabled={!hasExpression && !entry.newExpressionPath}
-            onClick={() => vscode.postMessage(hasExpression
-              ? { type: "openContractExpression", classification: entry.classification }
-              : { type: "createContractExpression", classification: entry.classification, source: entry.source })}
+            onClick={(event) => vscode.postMessage(hasExpression
+              ? { type: "openContractExpression", classification: entry.classification, openBeside: opensBeside(event) }
+              : { type: "createContractExpression", classification: entry.classification, source: entry.source, openBeside: opensBeside(event) })}
           >{hasExpression ? "Open expression" : "New expression"}</button>
         </div>
       </div>;
@@ -162,7 +166,7 @@ export function ComponentManagerSidebar({ state }: { state: ComponentManagerSide
     <details className="cms-section">
       <summary>Diagnostics ({state.diagnostics.length})</summary>
       {state.diagnostics.length ? <div className="cms-list">{state.diagnostics.map((diagnostic, index) => (
-        <button key={`${diagnostic.source.uri}:${index}`} className={`cms-item cms-diagnostic ${diagnostic.severity}`} type="button" onClick={() => vscode.postMessage({ type: "openSource", source: diagnostic.source })}>
+        <button key={`${diagnostic.source.uri}:${index}`} className={`cms-item cms-diagnostic ${diagnostic.severity}`} type="button" onClick={(event) => vscode.postMessage({ type: "openSource", source: diagnostic.source, openBeside: opensBeside(event) })}>
           <span>{diagnostic.severity}: {diagnostic.message}</span>
         </button>
       ))}</div> : <p className="cms-empty">No Component Manager diagnostics.</p>}

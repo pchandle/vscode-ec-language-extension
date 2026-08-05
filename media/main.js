@@ -59222,8 +59222,8 @@
 
   // webview-src/componentManager/ComponentManagerGraph.tsx
   var import_jsx_runtime52 = __toESM(require_jsx_runtime());
-  function open(source) {
-    vscode.postMessage({ type: "componentManagerOpenSource", source });
+  function open(source, openBeside = false) {
+    vscode.postMessage({ type: "componentManagerOpenSource", source, openBeside });
   }
   function TopicRow({ topic, bindings, side }) {
     const hasHost = bindings.some((binding) => binding.role === "host");
@@ -59231,7 +59231,7 @@
     const diagnostics = bindings.flatMap((binding) => binding.diagnostics).filter((diagnostic, index2, all) => all.findIndex((candidate) => candidate.message === diagnostic.message && candidate.severity === diagnostic.severity) === index2);
     const diagnosticSummary = diagnostics.map((diagnostic) => `${diagnostic.severity === "error" ? "Error" : "Warning"}: ${diagnostic.message}`).join("\n");
     const towardConduit = side === "join" ? Position.Left : Position.Right;
-    return /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("button", { className: `cm-topic ${bindings.length ? "cm-topic-bound" : ""}`, onClick: () => open(topic.source), title: diagnosticSummary ? `${topic.displayName}
+    return /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("button", { className: `cm-topic ${bindings.length ? "cm-topic-bound" : ""}`, onClick: (event) => open(topic.source, event.ctrlKey || event.metaKey), title: diagnosticSummary ? `${topic.displayName}
 ${diagnosticSummary}` : topic.displayName, children: [
       hasJoin && /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(Handle, { type: "target", position: towardConduit, id: `${topic.id}:join` }),
       /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("span", { className: "cm-topic-label", children: topic.displayName }),
@@ -59277,7 +59277,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
       ] });
     };
     return /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("article", { ref: cardRef, className: `cm-job cm-job-${data.participation}`, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("div", { className: "cm-job-heading", children: /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { className: "cm-job-title", onClick: () => open(data.source), title: "Open job source", children: data.classification }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("div", { className: "cm-job-heading", children: /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { className: "cm-job-title", onClick: (event) => open(data.source, event.ctrlKey || event.metaKey), title: "Open job source", children: data.classification }) }),
       /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("div", { className: "cm-job-lanes", children: [
         lane("requirements", data.requirements),
         lane("obligations", data.obligations)
@@ -59395,12 +59395,12 @@ ${diagnosticSummary}` : topic.displayName, children: [
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: () => setFitToken((value) => value + 1), title: "Center and zoom the displayed relationship map", "aria-label": "Center graph", children: "Center graph" }),
         /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: () => setListMode((value) => !value), title: listMode ? "Return to the relationship map" : "View the same relationships as a keyboard-friendly list", children: listMode ? "Show graph" : "Show relationship list" }),
-        state.protocol && /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: () => open(state.protocol.source), children: "Open protocol source" })
+        state.protocol && /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: (event) => open(state.protocol.source, event.ctrlKey || event.metaKey), children: "Open protocol source" })
       ] }),
       listMode ? /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("section", { className: "cm-accessible", "aria-label": "Protocol design relationship list", children: [
         /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("p", { children: "This keyboard-friendly list contains the same direct protocol design relationships shown on the map. Activate a job or contract topic to open its source." }),
         state.jobs.map((job) => /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("article", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: () => open(job.source), children: job.classification }),
+          /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: (event) => open(job.source, event.ctrlKey || event.metaKey), children: job.classification }),
           /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("ul", { children: job.bindings.map((binding) => {
             const topic = (binding.lane === "requirements" ? job.requirements : job.obligations).find((entry) => entry.id === binding.topicId);
             return /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("li", { children: [
@@ -59408,7 +59408,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
               " \u2192 ",
               binding.lane,
               " ",
-              /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: () => topic && open(topic.source), children: topic?.displayName ?? binding.expressionLabel })
+              /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("button", { onClick: (event) => topic && open(topic.source, event.ctrlKey || event.metaKey), children: topic?.displayName ?? binding.expressionLabel })
             ] }, binding.id);
           }) })
         ] }, job.id))
@@ -59424,6 +59424,9 @@ ${diagnosticSummary}` : topic.displayName, children: [
   // webview-src/componentManager/ComponentManagerSidebar.tsx
   var import_react26 = __toESM(require_react());
   var import_jsx_runtime53 = __toESM(require_jsx_runtime());
+  function opensBeside(event) {
+    return event.ctrlKey || event.metaKey;
+  }
   function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -59481,7 +59484,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
           /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("span", { className: "cms-name contract", children: entry.classification }),
           /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("small", { className: "cms-detail", children: entry.detail }),
           /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("div", { className: "cms-contract-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: "cms-action-button", type: "button", onClick: () => vscode.postMessage({ type: "openSource", source: entry.source }), children: "Open specification" }),
+            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: "cms-action-button", type: "button", onClick: (event) => vscode.postMessage({ type: "openSource", source: entry.source, openBeside: opensBeside(event) }), children: "Open specification" }),
             /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(
               "button",
               {
@@ -59489,7 +59492,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
                 type: "button",
                 title: hasExpression ? `Open ${entry.expressionTargets.length === 1 ? "the matching expression" : "a matching expression"}` : entry.newExpressionPath ? `Create ${entry.newExpressionPath}` : "Configure a valid Default contract expression path to create an expression",
                 disabled: !hasExpression && !entry.newExpressionPath,
-                onClick: () => vscode.postMessage(hasExpression ? { type: "openContractExpression", classification: entry.classification } : { type: "createContractExpression", classification: entry.classification, source: entry.source }),
+                onClick: (event) => vscode.postMessage(hasExpression ? { type: "openContractExpression", classification: entry.classification, openBeside: opensBeside(event) } : { type: "createContractExpression", classification: entry.classification, source: entry.source, openBeside: opensBeside(event) }),
                 children: hasExpression ? "Open expression" : "New expression"
               }
             )
@@ -59576,7 +59579,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
           state.diagnostics.length,
           ")"
         ] }),
-        state.diagnostics.length ? /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("div", { className: "cms-list", children: state.diagnostics.map((diagnostic, index2) => /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: `cms-item cms-diagnostic ${diagnostic.severity}`, type: "button", onClick: () => vscode.postMessage({ type: "openSource", source: diagnostic.source }), children: /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("span", { children: [
+        state.diagnostics.length ? /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("div", { className: "cms-list", children: state.diagnostics.map((diagnostic, index2) => /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: `cms-item cms-diagnostic ${diagnostic.severity}`, type: "button", onClick: (event) => vscode.postMessage({ type: "openSource", source: diagnostic.source, openBeside: opensBeside(event) }), children: /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("span", { children: [
           diagnostic.severity,
           ": ",
           diagnostic.message

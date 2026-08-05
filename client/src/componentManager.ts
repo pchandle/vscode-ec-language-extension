@@ -46,6 +46,10 @@ const MANAGER_SOURCE = "Component Manager";
 const CONTRACT_PATH_TOKENS = ["layer", "verb", "subject", "variation", "platform"] as const;
 const DEFAULT_CONTRACT_EXPRESSION_PATH = "{layer}/{verb}/{subject}/{variation}/{platform}";
 
+export function componentManagerSourceViewColumn(openBeside = false): vscode.ViewColumn {
+  return openBeside ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active;
+}
+
 function uriRef(uri: vscode.Uri, range?: SourceRef["range"]): SourceRef {
   return { uri: uri.toString(), range };
 }
@@ -237,9 +241,9 @@ class ComponentManagerSidebar implements vscode.WebviewViewProvider {
     view.webview.onDidReceiveMessage((message: any) => {
       if (message?.type === "ready") this.refresh();
       if (message?.type === "openProtocol") void vscode.commands.executeCommand("emergent.openComponentManagerGraph", message.classification);
-      if (message?.type === "openSource") void vscode.commands.executeCommand("emergent.openComponentManagerSource", message.source);
-      if (message?.type === "openContractExpression") void this.manager.openContractExpression(message.classification);
-      if (message?.type === "createContractExpression") void this.manager.createContractExpression(message.classification, message.source);
+      if (message?.type === "openSource") void vscode.commands.executeCommand("emergent.openComponentManagerSource", message.source, message.openBeside === true);
+      if (message?.type === "openContractExpression") void this.manager.openContractExpression(message.classification, message.openBeside === true);
+      if (message?.type === "createContractExpression") void this.manager.createContractExpression(message.classification, message.source, message.openBeside === true);
     });
     view.onDidDispose(() => { this.view = undefined; });
     this.refresh();
@@ -304,7 +308,7 @@ export class ComponentManager implements vscode.Disposable {
     this.disposables.push(
       vscode.commands.registerCommand("emergent.refreshComponentManager", () => void this.refresh()),
       vscode.commands.registerCommand("emergent.openComponentManagerGraph", (classification?: string) => void this.openGraph(classification)),
-      vscode.commands.registerCommand("emergent.openComponentManagerSource", (source: SourceRef) => void this.openSource(source)),
+      vscode.commands.registerCommand("emergent.openComponentManagerSource", (source: SourceRef, openBeside?: boolean) => void this.openSource(source, openBeside)),
       vscode.workspace.onDidSaveTextDocument((document) => void this.onSave(document)),
       vscode.languages.onDidChangeDiagnostics((event) => {
         // Diagnostics are produced asynchronously by the language server. A
@@ -535,7 +539,7 @@ export class ComponentManager implements vscode.Disposable {
       .sort((left, right) => right.fsPath.length - left.fsPath.length)[0];
   }
 
-  async openContractExpression(classification: string): Promise<void> {
+  async openContractExpression(classification: string, openBeside = false): Promise<void> {
     const targets = this.expressionTargets(classification);
     if (!targets.length) {
       void vscode.window.showInformationMessage(`Component Manager: no indexed expression found for ${classification}.`);
@@ -547,17 +551,17 @@ export class ComponentManager implements vscode.Disposable {
       if (!selected) return;
       source = selected.source;
     }
-    await this.openSource(source);
+    await this.openSource(source, openBeside);
   }
 
-  async createContractExpression(classification: string, source: SourceRef): Promise<void> {
+  async createContractExpression(classification: string, source: SourceRef, openBeside = false): Promise<void> {
     const contract = this.contracts().find((candidate) => candidate.classification === classification && candidate.uri.toString() === source?.uri);
     if (!contract) {
       void vscode.window.showErrorMessage("Component Manager: contract specification is no longer indexed.");
       return;
     }
     if (this.expressionTargets(classification).length) {
-      await this.openContractExpression(classification);
+      await this.openContractExpression(classification, openBeside);
       return;
     }
     const target = this.newContractExpressionUri(contract);
@@ -567,7 +571,7 @@ export class ComponentManager implements vscode.Disposable {
     }
     try {
       await vscode.workspace.fs.stat(target);
-      await this.openSource(uriRef(target));
+      await this.openSource(uriRef(target), openBeside);
       return;
     } catch {
       // The path is available for a new expression.
@@ -576,7 +580,7 @@ export class ComponentManager implements vscode.Disposable {
       await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(target.fsPath)));
       const data = new TextEncoder().encode(renderContractExpressionSkeleton(contract.classification, contract.requirements, contract.obligations));
       await fs.writeFile(target.fsPath, data, { flag: "wx" });
-      await this.openSource(uriRef(target));
+      await this.openSource(uriRef(target), openBeside);
       await this.refresh();
     } catch (error: any) {
       console.error("Failed to create contract expression", error);
@@ -721,7 +725,7 @@ export class ComponentManager implements vscode.Disposable {
         // shared webview bundle reports ready after that listener is attached,
         // so use it as the reliable graph-state handshake.
         if (message?.type === "ready") this.postGraph();
-        if (message?.type === "componentManagerOpenSource") void this.openSource(message.source);
+        if (message?.type === "componentManagerOpenSource") void this.openSource(message.source, message.openBeside === true);
       });
       this.graphPanel.webview.html = this.graphHtml(this.graphPanel.webview);
     }
@@ -773,16 +777,17 @@ export class ComponentManager implements vscode.Disposable {
     const nonce = Math.random().toString(36).slice(2);
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'nonce-${nonce}';"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="${stylesheet}"></head><body><div id="root"></div><script nonce="${nonce}" src="${script}"></script></body></html>`;
   }
-  private async openSource(source: SourceRef): Promise<void> {
+  private async openSource(source: SourceRef, openBeside = false): Promise<void> {
     const uri = vscode.Uri.parse(source.uri);
+    const viewColumn = componentManagerSourceViewColumn(openBeside);
     const extension = path.extname(uri.fsPath).toLowerCase();
     const editorType = extension === ".pdes" ? "protocolDesignEditor" : extension === ".cspec" ? "contractSpecEditor" : extension === ".pspec" ? "protocolSpecEditor" : undefined;
     if (editorType) {
-      await vscode.commands.executeCommand("vscode.openWith", uri, editorType, vscode.ViewColumn.Beside);
+      await vscode.commands.executeCommand("vscode.openWith", uri, editorType, viewColumn);
       return;
     }
     const document = await vscode.workspace.openTextDocument(uri);
-    const editor = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.Beside, preview: true });
+    const editor = await vscode.window.showTextDocument(document, { viewColumn, preview: true });
     if (source.range) { const range = toRange(source.range); editor.selection = new vscode.Selection(range.start, range.end); editor.revealRange(range, vscode.TextEditorRevealType.InCenter); }
   }
 }

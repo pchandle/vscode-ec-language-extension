@@ -1,7 +1,13 @@
 import * as assert from "assert";
-import { renderContractExpressionDirectory, renderContractExpressionSkeleton, validateContractExpressionPathTemplate } from "../componentManager";
+import * as vscode from "vscode";
+import { componentManagerSourceViewColumn, renderContractExpressionDirectory, renderContractExpressionSkeleton, validateContractExpressionPathTemplate } from "../componentManager";
 
 suite("Component Manager contract expression helpers", () => {
+  test("opens source navigation in the active group unless beside is requested", () => {
+    assert.equal(componentManagerSourceViewColumn(), vscode.ViewColumn.Active);
+    assert.equal(componentManagerSourceViewColumn(true), vscode.ViewColumn.Beside);
+  });
+
   test("renders the configured directory template from a contract classification", () => {
     assert.equal(
       renderContractExpressionDirectory("/system/log/hash/default/x64", "{layer}/{verb}/{subject}/{variation}/{platform}"),

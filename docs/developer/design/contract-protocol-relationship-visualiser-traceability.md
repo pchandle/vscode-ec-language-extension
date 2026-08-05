@@ -30,7 +30,7 @@
 | AC-11 | A contract requirement collaboration is added | Its `.cspec` is saved and the user accepts the offer | A `join` statement is inserted first inside the job body; the new job label occupies the protocol join self slot. |
 | AC-12 | A contract obligation collaboration is added | Its `.cspec` is saved and the user accepts the offer | A `host` statement is inserted first inside the job body; the new job label occupies the protocol host self slot. |
 | AC-13 | A self topic is absent or invalid | A collaboration offer would be shown | The offer is unavailable and explains the invalid self mapping. |
-| AC-14 | A job-node, contract-topic, or managed-protocol selection | The user activates it | The `.dla`, `.cspec` custom editor, or `.pdes` custom editor respectively opens beside the graph and reveals the source. |
+| AC-14 | A job-node, contract-topic, or managed-protocol selection | The user activates it | The `.dla`, `.cspec` custom editor, or `.pdes` custom editor respectively reuses the active editor group and reveals the source; Ctrl-click/Cmd-click opens beside the graph. |
 | AC-15 | An open expression has unsaved edits | A valid synchronisation occurs | The update applies as an undoable edit and does not save the expression. |
 
 ## Implementation boundaries

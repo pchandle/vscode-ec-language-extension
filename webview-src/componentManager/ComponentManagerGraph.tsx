@@ -33,7 +33,7 @@ export type ComponentGraphState = {
   counts: { directUseJobs: number; hostJobs: number; joinJobs: number };
 };
 
-function open(source: Source): void { vscode.postMessage({ type: "componentManagerOpenSource", source }); }
+function open(source: Source, openBeside = false): void { vscode.postMessage({ type: "componentManagerOpenSource", source, openBeside }); }
 
 function TopicRow({ topic, bindings, side }: { topic: GraphTopic; bindings: Binding[]; side: GraphJob["side"] }) {
   const hasHost = bindings.some((binding) => binding.role === "host");
@@ -42,7 +42,7 @@ function TopicRow({ topic, bindings, side }: { topic: GraphTopic; bindings: Bind
     .filter((diagnostic, index, all) => all.findIndex((candidate) => candidate.message === diagnostic.message && candidate.severity === diagnostic.severity) === index);
   const diagnosticSummary = diagnostics.map((diagnostic) => `${diagnostic.severity === "error" ? "Error" : "Warning"}: ${diagnostic.message}`).join("\n");
   const towardConduit = side === "join" ? Position.Left : Position.Right;
-  return <button className={`cm-topic ${bindings.length ? "cm-topic-bound" : ""}`} onClick={() => open(topic.source)} title={diagnosticSummary ? `${topic.displayName}\n${diagnosticSummary}` : topic.displayName}>
+  return <button className={`cm-topic ${bindings.length ? "cm-topic-bound" : ""}`} onClick={(event) => open(topic.source, event.ctrlKey || event.metaKey)} title={diagnosticSummary ? `${topic.displayName}\n${diagnosticSummary}` : topic.displayName}>
     {hasJoin && <Handle type="target" position={towardConduit} id={`${topic.id}:join`} />}
     <span className="cm-topic-label">{topic.displayName}</span>
     {diagnostics.length > 0 && <span className="cm-topic-warning" role="img" aria-label={`${diagnostics.length} expression ${diagnostics.length === 1 ? "diagnostic" : "diagnostics"}: ${diagnosticSummary}`} title={diagnosticSummary}>⚠</span>}
@@ -80,7 +80,7 @@ function JobCard({ id, data }: { id: string; data: JobCardData }) {
     </section>;
   };
   return <article ref={cardRef} className={`cm-job cm-job-${data.participation}`}>
-    <div className="cm-job-heading"><button className="cm-job-title" onClick={() => open(data.source)} title="Open job source">{data.classification}</button></div>
+    <div className="cm-job-heading"><button className="cm-job-title" onClick={(event) => open(data.source, event.ctrlKey || event.metaKey)} title="Open job source">{data.classification}</button></div>
     <div className="cm-job-lanes">
       {lane("requirements", data.requirements)}
       {lane("obligations", data.obligations)}
@@ -193,13 +193,13 @@ export function ComponentManagerGraph({ state }: { state: ComponentGraphState })
       <div className="cm-heading"><strong>{state.selectedProtocol}</strong>{state.protocol?.kind === "legacy" && <span className="cm-legacy">Legacy / published only</span>}<small>{state.counts.directUseJobs} jobs · {state.counts.hostJobs} host · {state.counts.joinJobs} join</small>{selfMappingWarnings.map((warning) => <small key={warning} className="cm-self-warning">{warning}</small>)}</div>
       <button onClick={() => setFitToken((value) => value + 1)} title="Center and zoom the displayed relationship map" aria-label="Center graph">Center graph</button>
       <button onClick={() => setListMode((value) => !value)} title={listMode ? "Return to the relationship map" : "View the same relationships as a keyboard-friendly list"}>{listMode ? "Show graph" : "Show relationship list"}</button>
-      {state.protocol && <button onClick={() => open(state.protocol!.source)}>Open protocol source</button>}
+      {state.protocol && <button onClick={(event) => open(state.protocol!.source, event.ctrlKey || event.metaKey)}>Open protocol source</button>}
     </header>
     {listMode ? <section className="cm-accessible" aria-label="Protocol design relationship list">
       <p>This keyboard-friendly list contains the same direct protocol design relationships shown on the map. Activate a job or contract topic to open its source.</p>
-      {state.jobs.map((job) => <article key={job.id}><button onClick={() => open(job.source)}>{job.classification}</button><ul>{job.bindings.map((binding) => {
+      {state.jobs.map((job) => <article key={job.id}><button onClick={(event) => open(job.source, event.ctrlKey || event.metaKey)}>{job.classification}</button><ul>{job.bindings.map((binding) => {
         const topic = (binding.lane === "requirements" ? job.requirements : job.obligations).find((entry) => entry.id === binding.topicId);
-        return <li key={binding.id}>{binding.role} → {binding.lane} <button onClick={() => topic && open(topic.source)}>{topic?.displayName ?? binding.expressionLabel}</button></li>;
+        return <li key={binding.id}>{binding.role} → {binding.lane} <button onClick={(event) => topic && open(topic.source, event.ctrlKey || event.metaKey)}>{topic?.displayName ?? binding.expressionLabel}</button></li>;
       })}</ul></article>)}
     </section> : <section className="cm-canvas" aria-label="Protocol design relationship map">
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodesDraggable={false} nodesConnectable={false} elementsSelectable proOptions={{ hideAttribution: true }}>
