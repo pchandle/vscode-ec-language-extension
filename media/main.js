@@ -59460,50 +59460,77 @@ ${diagnosticSummary}` : topic.displayName, children: [
   .cms-list { display: flex; flex-direction: column; max-height: 37vh; overflow-y: auto; }
   .cms-item { display: flex; flex-direction: column; width: 100%; padding: 5px 8px; color: var(--vscode-foreground); background: transparent; border: 0; text-align: left; cursor: pointer; font: inherit; }
   .cms-item:hover, .cms-item:focus-visible { background: var(--vscode-list-hoverBackground); outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
-  .cms-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cms-entry { display: flex; align-items: flex-start; gap: 6px; min-width: 0; padding: 5px 8px; }
+  .cms-entry:hover { background: var(--vscode-list-hoverBackground); }
+  .cms-entry-main { flex: 1; min-width: 0; }
+  .cms-protocol-main { display: flex; flex: 1; flex-direction: column; min-width: 0; padding: 0; color: var(--vscode-foreground); background: transparent; border: 0; text-align: left; cursor: pointer; font: inherit; }
+  .cms-protocol-main:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
+  .cms-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cms-name.protocol::before { content: '\u25CC  '; color: var(--vscode-charts-blue); }
   .cms-name.contract::before { content: '\u25A1  '; color: var(--vscode-charts-green); }
   .cms-detail { margin-top: 2px; color: var(--vscode-descriptionForeground); font-size: 0.92em; }
-  .cms-contract { padding: 5px 8px; }
-  .cms-contract-actions { display: flex; gap: 6px; margin-top: 6px; }
-  .cms-action-button { padding: 3px 7px; color: var(--vscode-button-foreground); background: var(--vscode-button-background); border: 1px solid var(--vscode-button-border, transparent); border-radius: 2px; cursor: pointer; font: inherit; }
-  .cms-action-button:hover { background: var(--vscode-button-hoverBackground); }
+  .cms-entry-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+  .cms-action-button { display: grid; width: 24px; height: 24px; place-items: center; padding: 0; color: var(--vscode-icon-foreground); background: transparent; border: 1px solid transparent; border-radius: 2px; cursor: pointer; }
+  .cms-action-button svg { width: 16px; height: 16px; }
+  .cms-action-button:hover { background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground)); }
   .cms-action-button:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
-  .cms-action-button:disabled { color: var(--vscode-disabledForeground); background: var(--vscode-button-secondaryBackground); cursor: default; }
+  .cms-action-button:disabled { color: var(--vscode-disabledForeground); cursor: default; }
+  .cms-action-button:disabled:hover { background: transparent; }
   .cms-empty { margin: 0; padding: 7px 8px; color: var(--vscode-descriptionForeground); }
   .cms-diagnostic { color: var(--vscode-inputValidation-warningForeground); }
   .cms-diagnostic.error { color: var(--vscode-inputValidation-errorForeground); }
 `;
+  function EditSpecificationIcon() {
+    return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("svg", { viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "M10.8 2.1a1.7 1.7 0 0 1 2.4 2.4l-7.1 7.1-3.3.9.9-3.3 7.1-7.1Z", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" }),
+      /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "m9.7 3.2 2.4 2.4", stroke: "currentColor", strokeWidth: "1.4", strokeLinecap: "round" })
+    ] });
+  }
+  function OpenExpressionIcon() {
+    return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("svg", { viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "M6 1.75h4l2 2v9.5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-10.5a1 1 0 0 1 1-1Z", stroke: "currentColor", strokeWidth: "1.3", strokeLinejoin: "round" }),
+      /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "M10 1.75v2h2M1.75 7.5h5.5m-2-2 2 2-2 2", stroke: "currentColor", strokeWidth: "1.3", strokeLinecap: "round", strokeLinejoin: "round" })
+    ] });
+  }
+  function NewExpressionIcon() {
+    return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("svg", { viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "M4 1.75h4l2.5 2.5v8.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1Z", stroke: "currentColor", strokeWidth: "1.3", strokeLinejoin: "round" }),
+      /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "M8 1.75v2.5h2.5M8 8.25v4m-2-2h4", stroke: "currentColor", strokeWidth: "1.3", strokeLinecap: "round" })
+    ] });
+  }
   function ComponentList({ entries, empty: empty2 }) {
     if (!entries.length) return /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("p", { className: "cms-empty", children: empty2 });
     return /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("div", { className: "cms-list", children: entries.map((entry) => {
       const key = `${entry.kind}:${entry.source.uri}:${entry.classification}`;
       if (entry.kind === "contract") {
         const hasExpression = Boolean(entry.expressionTargets?.length);
-        return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("div", { className: "cms-contract", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("span", { className: "cms-name contract", children: entry.classification }),
-          /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("small", { className: "cms-detail", children: entry.detail }),
-          /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("div", { className: "cms-contract-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: "cms-action-button", type: "button", onClick: (event) => vscode.postMessage({ type: "openSource", source: entry.source, openBeside: opensBeside(event) }), children: "Open specification" }),
+        return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("div", { className: "cms-entry cms-contract", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("span", { className: "cms-name cms-entry-main contract", children: entry.classification }),
+          /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("div", { className: "cms-entry-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: "cms-action-button", type: "button", title: "Edit specification", "aria-label": "Edit specification", onClick: (event) => vscode.postMessage({ type: "openSource", source: entry.source, openBeside: opensBeside(event) }), children: /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(EditSpecificationIcon, {}) }),
             /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(
               "button",
               {
                 className: "cms-action-button",
                 type: "button",
-                title: hasExpression ? `Open ${entry.expressionTargets.length === 1 ? "the matching expression" : "a matching expression"}` : entry.newExpressionPath ? `Create ${entry.newExpressionPath}` : "Configure a valid Default contract expression path to create an expression",
+                "aria-label": hasExpression ? "Edit expression" : "New expression",
+                title: hasExpression ? "Edit expression" : "New expression",
                 disabled: !hasExpression && !entry.newExpressionPath,
                 onClick: (event) => vscode.postMessage(hasExpression ? { type: "openContractExpression", classification: entry.classification, openBeside: opensBeside(event) } : { type: "createContractExpression", classification: entry.classification, source: entry.source, openBeside: opensBeside(event) }),
-                children: hasExpression ? "Open expression" : "New expression"
+                children: hasExpression ? /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(OpenExpressionIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(NewExpressionIcon, {})
               }
             )
           ] })
         ] }, key);
       }
-      return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("button", { className: "cms-item", type: "button", onClick: () => {
-        vscode.postMessage({ type: "openProtocol", classification: entry.classification });
-      }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("span", { className: `cms-name ${entry.kind}`, children: entry.classification }),
-        /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("small", { className: "cms-detail", children: entry.detail })
+      return /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("div", { className: "cms-entry cms-protocol", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)("button", { className: "cms-protocol-main", type: "button", onClick: () => {
+          vscode.postMessage({ type: "openProtocol", classification: entry.classification });
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("span", { className: `cms-name ${entry.kind}`, children: entry.classification }),
+          /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("small", { className: "cms-detail", children: entry.detail })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("div", { className: "cms-entry-actions", children: /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("button", { className: "cms-action-button", type: "button", title: "Edit specification", "aria-label": "Edit specification", onClick: (event) => vscode.postMessage({ type: "openSource", source: entry.source, openBeside: opensBeside(event) }), children: /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(EditSpecificationIcon, {}) }) })
       ] }, key);
     }) });
   }
