@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## 0.13.0 - Unreleased
+## 0.13.0 - 2026-08-05
 - Remove the legacy `gateway.*` connection settings. Configure Studio with `studio.hostname`, `studio.port`, `studio.allowInsecure`, and `studio.network`.
 - Incrementally index Component Manager source changes in configured component directories.
 - Add Component Manager actions to open matching contract expressions, choose among multiple matches, or create a new expression from configured path and filename templates.

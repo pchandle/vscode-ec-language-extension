@@ -24,24 +24,24 @@ Emergent Coding provides editing support for Emergent expressions and specificat
 
 User documentation:
 
-- [User guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/user-guide.md)
-- [Configuration guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/configuration.md)
-- [Troubleshooting](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/troubleshooting.md)
-- [Extension language guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/user/emergent-coding-language.md)
+- [User guide](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/user/user-guide.md)
+- [Configuration guide](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/user/configuration.md)
+- [Troubleshooting](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/user/troubleshooting.md)
+- [Extension language guide](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/user/emergent-coding-language.md)
 
 Developer documentation:
 
-- [Development guide](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/development.md)
-- [Security reporting](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/SECURITY.md)
-- [Diagnostics validation playbook](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/diagnostics/diagnostics-validation-playbook.md)
-- [Formatter corpus validation](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/formatting-validation.md)
+- [Development guide](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/development.md)
+- [Security reporting](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/SECURITY.md)
+- [Diagnostics validation playbook](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/diagnostics/diagnostics-validation-playbook.md)
+- [Formatter corpus validation](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/formatting-validation.md)
 
 ## Release and support
 
-- Review [CHANGELOG.md](https://github.com/pchandle/vscode-ec-language-extension/blob/main/CHANGELOG.md) for release notes.
+- Review [CHANGELOG.md](https://github.com/aptissio/vscode-ec-language-extension/blob/main/CHANGELOG.md) for release notes.
 - Report non-security problems through the project repository.
-- Do not report security vulnerabilities publicly; follow the [security reporting policy](https://github.com/pchandle/vscode-ec-language-extension/blob/main/docs/developer/SECURITY.md).
+- Do not report security vulnerabilities publicly; follow the [security reporting policy](https://github.com/aptissio/vscode-ec-language-extension/blob/main/docs/developer/SECURITY.md).
 
 ## Licence
 
-This extension is licensed under the [MIT License](https://github.com/pchandle/vscode-ec-language-extension/blob/main/LICENSE). See [third-party notices](https://github.com/pchandle/vscode-ec-language-extension/blob/main/third-party-notices.md) for shipped dependency notices.
+This extension is licensed under the [MIT License](https://github.com/aptissio/vscode-ec-language-extension/blob/main/LICENSE). See [third-party notices](https://github.com/aptissio/vscode-ec-language-extension/blob/main/third-party-notices.md) for shipped dependency notices.
