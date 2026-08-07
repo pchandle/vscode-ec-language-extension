@@ -173,9 +173,7 @@ export function transformPdesToPspec(
 
   const policy =
     typeof design.policy === "string" && /^-?\d+$/.test(design.policy.trim())
-      ? String(parseInt(design.policy.trim(), 10))
-      : typeof design.policy === "number"
-      ? String(Math.trunc(design.policy))
+      ? BigInt(design.policy.trim()).toString()
       : "0";
 
   const pspec: Pspec = {

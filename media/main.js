@@ -44564,12 +44564,12 @@
   var propertyFields = {
     abstraction: [{ key: "protocol", label: "Protocol", type: "text" }],
     integer: [
-      { key: "minimum", label: "Minimum", type: "number" },
-      { key: "maximum", label: "Maximum", type: "number" },
+      { key: "minimum", label: "Minimum", type: "text" },
+      { key: "maximum", label: "Maximum", type: "text" },
       { key: "hint", label: "Hint", type: "text" }
     ],
     string: [
-      { key: "length", label: "Length", type: "number" },
+      { key: "length", label: "Length", type: "text" },
       { key: "hint", label: "Hint", type: "text" }
     ],
     boolean: []
@@ -44955,7 +44955,7 @@
                   ...topic,
                   properties: {
                     ...topic.properties ?? {},
-                    [field.key]: field.type === "number" ? e2.target.value === "" ? void 0 : Number(e2.target.value) : e2.target.value
+                    [field.key]: e2.target.value
                   }
                 })
               }
@@ -46572,12 +46572,13 @@
   (function(module2, exports2) {
     "use strict";
     exports2.contractSpec = validate10;
-    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Contract)", "$ref": "#/$defs/supplierSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "contractSpec" };
+    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Contract)", "$ref": "#/$defs/supplierSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "description": "Signed decimal integer. The custom editor writes valid values as unquoted JSON integer literals while preserving precision.", "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "contractSpec" };
     const schema12 = { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false };
     const schema13 = { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" };
-    const schema14 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
+    const schema14 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
     const pattern0 = new RegExp("^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$", "u");
-    const pattern1 = new RegExp("^[\\w .(),-]+$", "u");
+    const pattern1 = new RegExp("^-?\\d+$", "u");
+    const pattern3 = new RegExp("^[\\w .(),-]+$", "u");
     function validate11(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       let vErrors = null;
       let errors = 0;
@@ -46786,8 +46787,11 @@
                 }
                 if (data4.minimum !== void 0) {
                   let data8 = data4.minimum;
-                  if (!(typeof data8 == "number") && typeof data8 !== "string") {
-                    const err18 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.minimum.type, parentSchema: schema14.oneOf[1].properties.minimum, data: data8 };
+                  const _errs21 = errors;
+                  let valid8 = false;
+                  const _errs22 = errors;
+                  if (!(typeof data8 == "number" && (!(data8 % 1) && !isNaN(data8)))) {
+                    const err18 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.oneOf[1].properties.minimum.anyOf[0].type, parentSchema: schema14.oneOf[1].properties.minimum.anyOf[0], data: data8 };
                     if (vErrors === null) {
                       vErrors = [err18];
                     } else {
@@ -46795,27 +46799,118 @@
                     }
                     errors++;
                   }
+                  var _valid1 = _errs22 === errors;
+                  valid8 = valid8 || _valid1;
+                  if (!valid8) {
+                    const _errs24 = errors;
+                    if (typeof data8 === "string") {
+                      if (!pattern1.test(data8)) {
+                        const err19 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.oneOf[1].properties.minimum.anyOf[1], data: data8 };
+                        if (vErrors === null) {
+                          vErrors = [err19];
+                        } else {
+                          vErrors.push(err19);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err20 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[1].properties.minimum.anyOf[1].type, parentSchema: schema14.oneOf[1].properties.minimum.anyOf[1], data: data8 };
+                      if (vErrors === null) {
+                        vErrors = [err20];
+                      } else {
+                        vErrors.push(err20);
+                      }
+                      errors++;
+                    }
+                    var _valid1 = _errs24 === errors;
+                    valid8 = valid8 || _valid1;
+                  }
+                  if (!valid8) {
+                    const err21 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.oneOf[1].properties.minimum.anyOf, parentSchema: schema14.oneOf[1].properties.minimum, data: data8 };
+                    if (vErrors === null) {
+                      vErrors = [err21];
+                    } else {
+                      vErrors.push(err21);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs21;
+                    if (vErrors !== null) {
+                      if (_errs21) {
+                        vErrors.length = _errs21;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
                 }
                 if (data4.maximum !== void 0) {
                   let data9 = data4.maximum;
-                  if (!(typeof data9 == "number") && typeof data9 !== "string") {
-                    const err19 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.maximum.type, parentSchema: schema14.oneOf[1].properties.maximum, data: data9 };
+                  const _errs27 = errors;
+                  let valid9 = false;
+                  const _errs28 = errors;
+                  if (!(typeof data9 == "number" && (!(data9 % 1) && !isNaN(data9)))) {
+                    const err22 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.oneOf[1].properties.maximum.anyOf[0].type, parentSchema: schema14.oneOf[1].properties.maximum.anyOf[0], data: data9 };
                     if (vErrors === null) {
-                      vErrors = [err19];
+                      vErrors = [err22];
                     } else {
-                      vErrors.push(err19);
+                      vErrors.push(err22);
                     }
                     errors++;
+                  }
+                  var _valid2 = _errs28 === errors;
+                  valid9 = valid9 || _valid2;
+                  if (!valid9) {
+                    const _errs30 = errors;
+                    if (typeof data9 === "string") {
+                      if (!pattern1.test(data9)) {
+                        const err23 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.oneOf[1].properties.maximum.anyOf[1], data: data9 };
+                        if (vErrors === null) {
+                          vErrors = [err23];
+                        } else {
+                          vErrors.push(err23);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err24 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[1].properties.maximum.anyOf[1].type, parentSchema: schema14.oneOf[1].properties.maximum.anyOf[1], data: data9 };
+                      if (vErrors === null) {
+                        vErrors = [err24];
+                      } else {
+                        vErrors.push(err24);
+                      }
+                      errors++;
+                    }
+                    var _valid2 = _errs30 === errors;
+                    valid9 = valid9 || _valid2;
+                  }
+                  if (!valid9) {
+                    const err25 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.oneOf[1].properties.maximum.anyOf, parentSchema: schema14.oneOf[1].properties.maximum, data: data9 };
+                    if (vErrors === null) {
+                      vErrors = [err25];
+                    } else {
+                      vErrors.push(err25);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs27;
+                    if (vErrors !== null) {
+                      if (_errs27) {
+                        vErrors.length = _errs27;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
                   }
                 }
                 if (data4.hint !== void 0) {
                   let data10 = data4.hint;
                   if (!(typeof data10 == "number") && typeof data10 !== "string") {
-                    const err20 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.hint.type, parentSchema: schema14.oneOf[1].properties.hint, data: data10 };
+                    const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.hint.type, parentSchema: schema14.oneOf[1].properties.hint, data: data10 };
                     if (vErrors === null) {
-                      vErrors = [err20];
+                      vErrors = [err26];
                     } else {
-                      vErrors.push(err20);
+                      vErrors.push(err26);
                     }
                     errors++;
                   }
@@ -46830,34 +46925,34 @@
                   valid5 = true;
                   passing0 = 1;
                 }
-                const _errs26 = errors;
+                const _errs34 = errors;
                 if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
                   if (data4.length === void 0) {
-                    const err21 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data4 };
+                    const err27 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data4 };
                     if (vErrors === null) {
-                      vErrors = [err21];
+                      vErrors = [err27];
                     } else {
-                      vErrors.push(err21);
+                      vErrors.push(err27);
                     }
                     errors++;
                   }
                   if (data4.hint === void 0) {
-                    const err22 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data4 };
+                    const err28 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data4 };
                     if (vErrors === null) {
-                      vErrors = [err22];
+                      vErrors = [err28];
                     } else {
-                      vErrors.push(err22);
+                      vErrors.push(err28);
                     }
                     errors++;
                   }
                   if (data4.type !== void 0) {
                     let data11 = data4.type;
                     if ("string" !== data11) {
-                      const err23 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema14.oneOf[2].properties.type, data: data11 };
+                      const err29 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema14.oneOf[2].properties.type, data: data11 };
                       if (vErrors === null) {
-                        vErrors = [err23];
+                        vErrors = [err29];
                       } else {
-                        vErrors.push(err23);
+                        vErrors.push(err29);
                       }
                       errors++;
                     }
@@ -46865,11 +46960,11 @@
                   if (data4.length !== void 0) {
                     let data12 = data4.length;
                     if (!(typeof data12 == "number") && typeof data12 !== "string") {
-                      const err24 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/oneOf/2/properties/length/type", keyword: "type", params: { type: schema14.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.length.type, parentSchema: schema14.oneOf[2].properties.length, data: data12 };
+                      const err30 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/oneOf/2/properties/length/type", keyword: "type", params: { type: schema14.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.length.type, parentSchema: schema14.oneOf[2].properties.length, data: data12 };
                       if (vErrors === null) {
-                        vErrors = [err24];
+                        vErrors = [err30];
                       } else {
-                        vErrors.push(err24);
+                        vErrors.push(err30);
                       }
                       errors++;
                     }
@@ -46877,17 +46972,17 @@
                   if (data4.hint !== void 0) {
                     let data13 = data4.hint;
                     if (!(typeof data13 == "number") && typeof data13 !== "string") {
-                      const err25 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.hint.type, parentSchema: schema14.oneOf[2].properties.hint, data: data13 };
+                      const err31 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.hint.type, parentSchema: schema14.oneOf[2].properties.hint, data: data13 };
                       if (vErrors === null) {
-                        vErrors = [err25];
+                        vErrors = [err31];
                       } else {
-                        vErrors.push(err25);
+                        vErrors.push(err31);
                       }
                       errors++;
                     }
                   }
                 }
-                var _valid0 = _errs26 === errors;
+                var _valid0 = _errs34 === errors;
                 if (_valid0 && valid5) {
                   valid5 = false;
                   passing0 = [passing0, 2];
@@ -46896,22 +46991,22 @@
                     valid5 = true;
                     passing0 = 2;
                   }
-                  const _errs32 = errors;
+                  const _errs40 = errors;
                   if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
                     if (data4.type !== void 0) {
                       let data14 = data4.type;
                       if ("boolean" !== data14) {
-                        const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema14.oneOf[3].properties.type, data: data14 };
+                        const err32 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema14.oneOf[3].properties.type, data: data14 };
                         if (vErrors === null) {
-                          vErrors = [err26];
+                          vErrors = [err32];
                         } else {
-                          vErrors.push(err26);
+                          vErrors.push(err32);
                         }
                         errors++;
                       }
                     }
                   }
-                  var _valid0 = _errs32 === errors;
+                  var _valid0 = _errs40 === errors;
                   if (_valid0 && valid5) {
                     valid5 = false;
                     passing0 = [passing0, 3];
@@ -46920,22 +47015,22 @@
                       valid5 = true;
                       passing0 = 3;
                     }
-                    const _errs34 = errors;
+                    const _errs42 = errors;
                     if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
                       if (data4.type !== void 0) {
                         let data15 = data4.type;
                         if ("site" !== data15) {
-                          const err27 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema14.oneOf[4].properties.type, data: data15 };
+                          const err33 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema14.oneOf[4].properties.type, data: data15 };
                           if (vErrors === null) {
-                            vErrors = [err27];
+                            vErrors = [err33];
                           } else {
-                            vErrors.push(err27);
+                            vErrors.push(err33);
                           }
                           errors++;
                         }
                       }
                     }
-                    var _valid0 = _errs34 === errors;
+                    var _valid0 = _errs42 === errors;
                     if (_valid0 && valid5) {
                       valid5 = false;
                       passing0 = [passing0, 4];
@@ -46949,11 +47044,11 @@
                 }
               }
               if (!valid5) {
-                const err28 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf", schema: schema14.oneOf, parentSchema: schema14, data: data4 };
+                const err34 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf", schema: schema14.oneOf, parentSchema: schema14, data: data4 };
                 if (vErrors === null) {
-                  vErrors = [err28];
+                  vErrors = [err34];
                 } else {
-                  vErrors.push(err28);
+                  vErrors.push(err34);
                 }
                 errors++;
               } else {
@@ -46968,96 +47063,26 @@
               }
               if (data4 && typeof data4 == "object" && !Array.isArray(data4)) {
                 if (data4.type === void 0) {
-                  const err29 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema14.required, parentSchema: schema14, data: data4 };
+                  const err35 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema14.required, parentSchema: schema14, data: data4 };
                   if (vErrors === null) {
-                    vErrors = [err29];
+                    vErrors = [err35];
                   } else {
-                    vErrors.push(err29);
+                    vErrors.push(err35);
                   }
                   errors++;
                 }
                 if (data4.name === void 0) {
-                  const err30 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema14.required, parentSchema: schema14, data: data4 };
+                  const err36 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema14.required, parentSchema: schema14, data: data4 };
                   if (vErrors === null) {
-                    vErrors = [err30];
+                    vErrors = [err36];
                   } else {
-                    vErrors.push(err30);
+                    vErrors.push(err36);
                   }
                   errors++;
                 }
                 for (const key1 in data4) {
                   if (!(key1 === "type" || key1 === "name" || key1 === "protocol" || key1 === "minimum" || key1 === "maximum" || key1 === "length" || key1 === "hint")) {
-                    const err31 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data: data4 };
-                    if (vErrors === null) {
-                      vErrors = [err31];
-                    } else {
-                      vErrors.push(err31);
-                    }
-                    errors++;
-                  }
-                }
-                if (data4.type !== void 0) {
-                  let data16 = data4.type;
-                  if (typeof data16 !== "string") {
-                    const err32 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.type.type, parentSchema: schema14.properties.type, data: data16 };
-                    if (vErrors === null) {
-                      vErrors = [err32];
-                    } else {
-                      vErrors.push(err32);
-                    }
-                    errors++;
-                  }
-                }
-                if (data4.name !== void 0) {
-                  let data17 = data4.name;
-                  if (typeof data17 === "string") {
-                    if (!pattern1.test(data17)) {
-                      const err33 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema14.properties.name, data: data17 };
-                      if (vErrors === null) {
-                        vErrors = [err33];
-                      } else {
-                        vErrors.push(err33);
-                      }
-                      errors++;
-                    }
-                  } else {
-                    const err34 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.name.type, parentSchema: schema14.properties.name, data: data17 };
-                    if (vErrors === null) {
-                      vErrors = [err34];
-                    } else {
-                      vErrors.push(err34);
-                    }
-                    errors++;
-                  }
-                }
-                if (data4.protocol !== void 0) {
-                  let data18 = data4.protocol;
-                  if (typeof data18 !== "string") {
-                    const err35 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.protocol.type, parentSchema: schema14.properties.protocol, data: data18 };
-                    if (vErrors === null) {
-                      vErrors = [err35];
-                    } else {
-                      vErrors.push(err35);
-                    }
-                    errors++;
-                  }
-                }
-                if (data4.minimum !== void 0) {
-                  let data19 = data4.minimum;
-                  if (!(typeof data19 == "number") && typeof data19 !== "string") {
-                    const err36 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/type", keyword: "type", params: { type: schema14.properties.minimum.type }, message: "must be number,string", schema: schema14.properties.minimum.type, parentSchema: schema14.properties.minimum, data: data19 };
-                    if (vErrors === null) {
-                      vErrors = [err36];
-                    } else {
-                      vErrors.push(err36);
-                    }
-                    errors++;
-                  }
-                }
-                if (data4.maximum !== void 0) {
-                  let data20 = data4.maximum;
-                  if (!(typeof data20 == "number") && typeof data20 !== "string") {
-                    const err37 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/type", keyword: "type", params: { type: schema14.properties.maximum.type }, message: "must be number,string", schema: schema14.properties.maximum.type, parentSchema: schema14.properties.maximum, data: data20 };
+                    const err37 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data: data4 };
                     if (vErrors === null) {
                       vErrors = [err37];
                     } else {
@@ -47066,10 +47091,10 @@
                     errors++;
                   }
                 }
-                if (data4.length !== void 0) {
-                  let data21 = data4.length;
-                  if (!(typeof data21 == "number") && typeof data21 !== "string") {
-                    const err38 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/properties/length/type", keyword: "type", params: { type: schema14.properties.length.type }, message: "must be number,string", schema: schema14.properties.length.type, parentSchema: schema14.properties.length, data: data21 };
+                if (data4.type !== void 0) {
+                  let data16 = data4.type;
+                  if (typeof data16 !== "string") {
+                    const err38 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.type.type, parentSchema: schema14.properties.type, data: data16 };
                     if (vErrors === null) {
                       vErrors = [err38];
                     } else {
@@ -47078,34 +47103,198 @@
                     errors++;
                   }
                 }
+                if (data4.name !== void 0) {
+                  let data17 = data4.name;
+                  if (typeof data17 === "string") {
+                    if (!pattern3.test(data17)) {
+                      const err39 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema14.properties.name, data: data17 };
+                      if (vErrors === null) {
+                        vErrors = [err39];
+                      } else {
+                        vErrors.push(err39);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err40 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.name.type, parentSchema: schema14.properties.name, data: data17 };
+                    if (vErrors === null) {
+                      vErrors = [err40];
+                    } else {
+                      vErrors.push(err40);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.protocol !== void 0) {
+                  let data18 = data4.protocol;
+                  if (typeof data18 !== "string") {
+                    const err41 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.protocol.type, parentSchema: schema14.properties.protocol, data: data18 };
+                    if (vErrors === null) {
+                      vErrors = [err41];
+                    } else {
+                      vErrors.push(err41);
+                    }
+                    errors++;
+                  }
+                }
+                if (data4.minimum !== void 0) {
+                  let data19 = data4.minimum;
+                  const _errs52 = errors;
+                  let valid14 = false;
+                  const _errs53 = errors;
+                  if (!(typeof data19 == "number" && (!(data19 % 1) && !isNaN(data19)))) {
+                    const err42 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.properties.minimum.anyOf[0].type, parentSchema: schema14.properties.minimum.anyOf[0], data: data19 };
+                    if (vErrors === null) {
+                      vErrors = [err42];
+                    } else {
+                      vErrors.push(err42);
+                    }
+                    errors++;
+                  }
+                  var _valid3 = _errs53 === errors;
+                  valid14 = valid14 || _valid3;
+                  if (!valid14) {
+                    const _errs55 = errors;
+                    if (typeof data19 === "string") {
+                      if (!pattern1.test(data19)) {
+                        const err43 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.properties.minimum.anyOf[1], data: data19 };
+                        if (vErrors === null) {
+                          vErrors = [err43];
+                        } else {
+                          vErrors.push(err43);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err44 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.minimum.anyOf[1].type, parentSchema: schema14.properties.minimum.anyOf[1], data: data19 };
+                      if (vErrors === null) {
+                        vErrors = [err44];
+                      } else {
+                        vErrors.push(err44);
+                      }
+                      errors++;
+                    }
+                    var _valid3 = _errs55 === errors;
+                    valid14 = valid14 || _valid3;
+                  }
+                  if (!valid14) {
+                    const err45 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.properties.minimum.anyOf, parentSchema: schema14.properties.minimum, data: data19 };
+                    if (vErrors === null) {
+                      vErrors = [err45];
+                    } else {
+                      vErrors.push(err45);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs52;
+                    if (vErrors !== null) {
+                      if (_errs52) {
+                        vErrors.length = _errs52;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data4.maximum !== void 0) {
+                  let data20 = data4.maximum;
+                  const _errs58 = errors;
+                  let valid15 = false;
+                  const _errs59 = errors;
+                  if (!(typeof data20 == "number" && (!(data20 % 1) && !isNaN(data20)))) {
+                    const err46 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.properties.maximum.anyOf[0].type, parentSchema: schema14.properties.maximum.anyOf[0], data: data20 };
+                    if (vErrors === null) {
+                      vErrors = [err46];
+                    } else {
+                      vErrors.push(err46);
+                    }
+                    errors++;
+                  }
+                  var _valid4 = _errs59 === errors;
+                  valid15 = valid15 || _valid4;
+                  if (!valid15) {
+                    const _errs61 = errors;
+                    if (typeof data20 === "string") {
+                      if (!pattern1.test(data20)) {
+                        const err47 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.properties.maximum.anyOf[1], data: data20 };
+                        if (vErrors === null) {
+                          vErrors = [err47];
+                        } else {
+                          vErrors.push(err47);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err48 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.maximum.anyOf[1].type, parentSchema: schema14.properties.maximum.anyOf[1], data: data20 };
+                      if (vErrors === null) {
+                        vErrors = [err48];
+                      } else {
+                        vErrors.push(err48);
+                      }
+                      errors++;
+                    }
+                    var _valid4 = _errs61 === errors;
+                    valid15 = valid15 || _valid4;
+                  }
+                  if (!valid15) {
+                    const err49 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.properties.maximum.anyOf, parentSchema: schema14.properties.maximum, data: data20 };
+                    if (vErrors === null) {
+                      vErrors = [err49];
+                    } else {
+                      vErrors.push(err49);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs58;
+                    if (vErrors !== null) {
+                      if (_errs58) {
+                        vErrors.length = _errs58;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data4.length !== void 0) {
+                  let data21 = data4.length;
+                  if (!(typeof data21 == "number") && typeof data21 !== "string") {
+                    const err50 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/properties/length/type", keyword: "type", params: { type: schema14.properties.length.type }, message: "must be number,string", schema: schema14.properties.length.type, parentSchema: schema14.properties.length, data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err50];
+                    } else {
+                      vErrors.push(err50);
+                    }
+                    errors++;
+                  }
+                }
                 if (data4.hint !== void 0) {
                   let data22 = data4.hint;
                   if (!(typeof data22 == "number") && typeof data22 !== "string") {
-                    const err39 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/properties/hint/type", keyword: "type", params: { type: schema14.properties.hint.type }, message: "must be number,string", schema: schema14.properties.hint.type, parentSchema: schema14.properties.hint, data: data22 };
+                    const err51 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/properties/hint/type", keyword: "type", params: { type: schema14.properties.hint.type }, message: "must be number,string", schema: schema14.properties.hint.type, parentSchema: schema14.properties.hint, data: data22 };
                     if (vErrors === null) {
-                      vErrors = [err39];
+                      vErrors = [err51];
                     } else {
-                      vErrors.push(err39);
+                      vErrors.push(err51);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err40 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data: data4 };
+                const err52 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data: data4 };
                 if (vErrors === null) {
-                  vErrors = [err40];
+                  vErrors = [err52];
                 } else {
-                  vErrors.push(err40);
+                  vErrors.push(err52);
                 }
                 errors++;
               }
             }
           } else {
-            const err41 = { instancePath: instancePath + "/requirements", schemaPath: "#/properties/requirements/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema12.properties.requirements.type, parentSchema: schema12.properties.requirements, data: data3 };
+            const err53 = { instancePath: instancePath + "/requirements", schemaPath: "#/properties/requirements/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema12.properties.requirements.type, parentSchema: schema12.properties.requirements, data: data3 };
             if (vErrors === null) {
-              vErrors = [err41];
+              vErrors = [err53];
             } else {
-              vErrors.push(err41);
+              vErrors.push(err53);
             }
             errors++;
           }
@@ -47116,28 +47305,28 @@
             const len1 = data23.length;
             for (let i1 = 0; i1 < len1; i1++) {
               let data24 = data23[i1];
-              const _errs56 = errors;
-              let valid15 = false;
+              const _errs72 = errors;
+              let valid19 = false;
               let passing1 = null;
-              const _errs57 = errors;
+              const _errs73 = errors;
               if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
                 if (data24.protocol === void 0) {
-                  const err42 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema14.oneOf[0].required, parentSchema: schema14.oneOf[0], data: data24 };
+                  const err54 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema14.oneOf[0].required, parentSchema: schema14.oneOf[0], data: data24 };
                   if (vErrors === null) {
-                    vErrors = [err42];
+                    vErrors = [err54];
                   } else {
-                    vErrors.push(err42);
+                    vErrors.push(err54);
                   }
                   errors++;
                 }
                 if (data24.type !== void 0) {
                   let data25 = data24.type;
                   if ("abstraction" !== data25) {
-                    const err43 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema14.oneOf[0].properties.type, data: data25 };
+                    const err55 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema14.oneOf[0].properties.type, data: data25 };
                     if (vErrors === null) {
-                      vErrors = [err43];
+                      vErrors = [err55];
                     } else {
-                      vErrors.push(err43);
+                      vErrors.push(err55);
                     }
                     errors++;
                   }
@@ -47145,300 +47334,128 @@
                 if (data24.protocol !== void 0) {
                   let data26 = data24.protocol;
                   if (typeof data26 !== "string") {
-                    const err44 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[0].properties.protocol.type, parentSchema: schema14.oneOf[0].properties.protocol, data: data26 };
+                    const err56 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[0].properties.protocol.type, parentSchema: schema14.oneOf[0].properties.protocol, data: data26 };
                     if (vErrors === null) {
-                      vErrors = [err44];
+                      vErrors = [err56];
                     } else {
-                      vErrors.push(err44);
+                      vErrors.push(err56);
                     }
                     errors++;
                   }
                 }
               }
-              var _valid1 = _errs57 === errors;
-              if (_valid1) {
-                valid15 = true;
+              var _valid5 = _errs73 === errors;
+              if (_valid5) {
+                valid19 = true;
                 passing1 = 0;
               }
-              const _errs61 = errors;
+              const _errs77 = errors;
               if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
                 if (data24.minimum === void 0) {
-                  const err45 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
+                  const err57 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
                   if (vErrors === null) {
-                    vErrors = [err45];
+                    vErrors = [err57];
                   } else {
-                    vErrors.push(err45);
+                    vErrors.push(err57);
                   }
                   errors++;
                 }
                 if (data24.maximum === void 0) {
-                  const err46 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
+                  const err58 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
                   if (vErrors === null) {
-                    vErrors = [err46];
+                    vErrors = [err58];
                   } else {
-                    vErrors.push(err46);
+                    vErrors.push(err58);
                   }
                   errors++;
                 }
                 if (data24.hint === void 0) {
-                  const err47 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
+                  const err59 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[1].required, parentSchema: schema14.oneOf[1], data: data24 };
                   if (vErrors === null) {
-                    vErrors = [err47];
+                    vErrors = [err59];
                   } else {
-                    vErrors.push(err47);
+                    vErrors.push(err59);
                   }
                   errors++;
                 }
                 if (data24.type !== void 0) {
                   let data27 = data24.type;
                   if ("integer" !== data27) {
-                    const err48 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema14.oneOf[1].properties.type, data: data27 };
+                    const err60 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema14.oneOf[1].properties.type, data: data27 };
                     if (vErrors === null) {
-                      vErrors = [err48];
+                      vErrors = [err60];
                     } else {
-                      vErrors.push(err48);
+                      vErrors.push(err60);
                     }
                     errors++;
                   }
                 }
                 if (data24.minimum !== void 0) {
                   let data28 = data24.minimum;
-                  if (!(typeof data28 == "number") && typeof data28 !== "string") {
-                    const err49 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.minimum.type, parentSchema: schema14.oneOf[1].properties.minimum, data: data28 };
+                  const _errs80 = errors;
+                  let valid22 = false;
+                  const _errs81 = errors;
+                  if (!(typeof data28 == "number" && (!(data28 % 1) && !isNaN(data28)))) {
+                    const err61 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.oneOf[1].properties.minimum.anyOf[0].type, parentSchema: schema14.oneOf[1].properties.minimum.anyOf[0], data: data28 };
                     if (vErrors === null) {
-                      vErrors = [err49];
+                      vErrors = [err61];
                     } else {
-                      vErrors.push(err49);
+                      vErrors.push(err61);
                     }
                     errors++;
+                  }
+                  var _valid6 = _errs81 === errors;
+                  valid22 = valid22 || _valid6;
+                  if (!valid22) {
+                    const _errs83 = errors;
+                    if (typeof data28 === "string") {
+                      if (!pattern1.test(data28)) {
+                        const err62 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.oneOf[1].properties.minimum.anyOf[1], data: data28 };
+                        if (vErrors === null) {
+                          vErrors = [err62];
+                        } else {
+                          vErrors.push(err62);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err63 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[1].properties.minimum.anyOf[1].type, parentSchema: schema14.oneOf[1].properties.minimum.anyOf[1], data: data28 };
+                      if (vErrors === null) {
+                        vErrors = [err63];
+                      } else {
+                        vErrors.push(err63);
+                      }
+                      errors++;
+                    }
+                    var _valid6 = _errs83 === errors;
+                    valid22 = valid22 || _valid6;
+                  }
+                  if (!valid22) {
+                    const err64 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.oneOf[1].properties.minimum.anyOf, parentSchema: schema14.oneOf[1].properties.minimum, data: data28 };
+                    if (vErrors === null) {
+                      vErrors = [err64];
+                    } else {
+                      vErrors.push(err64);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs80;
+                    if (vErrors !== null) {
+                      if (_errs80) {
+                        vErrors.length = _errs80;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
                   }
                 }
                 if (data24.maximum !== void 0) {
                   let data29 = data24.maximum;
-                  if (!(typeof data29 == "number") && typeof data29 !== "string") {
-                    const err50 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema14.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.maximum.type, parentSchema: schema14.oneOf[1].properties.maximum, data: data29 };
-                    if (vErrors === null) {
-                      vErrors = [err50];
-                    } else {
-                      vErrors.push(err50);
-                    }
-                    errors++;
-                  }
-                }
-                if (data24.hint !== void 0) {
-                  let data30 = data24.hint;
-                  if (!(typeof data30 == "number") && typeof data30 !== "string") {
-                    const err51 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.hint.type, parentSchema: schema14.oneOf[1].properties.hint, data: data30 };
-                    if (vErrors === null) {
-                      vErrors = [err51];
-                    } else {
-                      vErrors.push(err51);
-                    }
-                    errors++;
-                  }
-                }
-              }
-              var _valid1 = _errs61 === errors;
-              if (_valid1 && valid15) {
-                valid15 = false;
-                passing1 = [passing1, 1];
-              } else {
-                if (_valid1) {
-                  valid15 = true;
-                  passing1 = 1;
-                }
-                const _errs69 = errors;
-                if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
-                  if (data24.length === void 0) {
-                    const err52 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data24 };
-                    if (vErrors === null) {
-                      vErrors = [err52];
-                    } else {
-                      vErrors.push(err52);
-                    }
-                    errors++;
-                  }
-                  if (data24.hint === void 0) {
-                    const err53 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data24 };
-                    if (vErrors === null) {
-                      vErrors = [err53];
-                    } else {
-                      vErrors.push(err53);
-                    }
-                    errors++;
-                  }
-                  if (data24.type !== void 0) {
-                    let data31 = data24.type;
-                    if ("string" !== data31) {
-                      const err54 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema14.oneOf[2].properties.type, data: data31 };
-                      if (vErrors === null) {
-                        vErrors = [err54];
-                      } else {
-                        vErrors.push(err54);
-                      }
-                      errors++;
-                    }
-                  }
-                  if (data24.length !== void 0) {
-                    let data32 = data24.length;
-                    if (!(typeof data32 == "number") && typeof data32 !== "string") {
-                      const err55 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/oneOf/2/properties/length/type", keyword: "type", params: { type: schema14.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.length.type, parentSchema: schema14.oneOf[2].properties.length, data: data32 };
-                      if (vErrors === null) {
-                        vErrors = [err55];
-                      } else {
-                        vErrors.push(err55);
-                      }
-                      errors++;
-                    }
-                  }
-                  if (data24.hint !== void 0) {
-                    let data33 = data24.hint;
-                    if (!(typeof data33 == "number") && typeof data33 !== "string") {
-                      const err56 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.hint.type, parentSchema: schema14.oneOf[2].properties.hint, data: data33 };
-                      if (vErrors === null) {
-                        vErrors = [err56];
-                      } else {
-                        vErrors.push(err56);
-                      }
-                      errors++;
-                    }
-                  }
-                }
-                var _valid1 = _errs69 === errors;
-                if (_valid1 && valid15) {
-                  valid15 = false;
-                  passing1 = [passing1, 2];
-                } else {
-                  if (_valid1) {
-                    valid15 = true;
-                    passing1 = 2;
-                  }
-                  const _errs75 = errors;
-                  if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
-                    if (data24.type !== void 0) {
-                      let data34 = data24.type;
-                      if ("boolean" !== data34) {
-                        const err57 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema14.oneOf[3].properties.type, data: data34 };
-                        if (vErrors === null) {
-                          vErrors = [err57];
-                        } else {
-                          vErrors.push(err57);
-                        }
-                        errors++;
-                      }
-                    }
-                  }
-                  var _valid1 = _errs75 === errors;
-                  if (_valid1 && valid15) {
-                    valid15 = false;
-                    passing1 = [passing1, 3];
-                  } else {
-                    if (_valid1) {
-                      valid15 = true;
-                      passing1 = 3;
-                    }
-                    const _errs77 = errors;
-                    if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
-                      if (data24.type !== void 0) {
-                        let data35 = data24.type;
-                        if ("site" !== data35) {
-                          const err58 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema14.oneOf[4].properties.type, data: data35 };
-                          if (vErrors === null) {
-                            vErrors = [err58];
-                          } else {
-                            vErrors.push(err58);
-                          }
-                          errors++;
-                        }
-                      }
-                    }
-                    var _valid1 = _errs77 === errors;
-                    if (_valid1 && valid15) {
-                      valid15 = false;
-                      passing1 = [passing1, 4];
-                    } else {
-                      if (_valid1) {
-                        valid15 = true;
-                        passing1 = 4;
-                      }
-                    }
-                  }
-                }
-              }
-              if (!valid15) {
-                const err59 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf", keyword: "oneOf", params: { passingSchemas: passing1 }, message: "must match exactly one schema in oneOf", schema: schema14.oneOf, parentSchema: schema14, data: data24 };
-                if (vErrors === null) {
-                  vErrors = [err59];
-                } else {
-                  vErrors.push(err59);
-                }
-                errors++;
-              } else {
-                errors = _errs56;
-                if (vErrors !== null) {
-                  if (_errs56) {
-                    vErrors.length = _errs56;
-                  } else {
-                    vErrors = null;
-                  }
-                }
-              }
-              if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
-                if (data24.type === void 0) {
-                  const err60 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema14.required, parentSchema: schema14, data: data24 };
-                  if (vErrors === null) {
-                    vErrors = [err60];
-                  } else {
-                    vErrors.push(err60);
-                  }
-                  errors++;
-                }
-                if (data24.name === void 0) {
-                  const err61 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema14.required, parentSchema: schema14, data: data24 };
-                  if (vErrors === null) {
-                    vErrors = [err61];
-                  } else {
-                    vErrors.push(err61);
-                  }
-                  errors++;
-                }
-                for (const key2 in data24) {
-                  if (!(key2 === "type" || key2 === "name" || key2 === "protocol" || key2 === "minimum" || key2 === "maximum" || key2 === "length" || key2 === "hint")) {
-                    const err62 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key2 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data: data24 };
-                    if (vErrors === null) {
-                      vErrors = [err62];
-                    } else {
-                      vErrors.push(err62);
-                    }
-                    errors++;
-                  }
-                }
-                if (data24.type !== void 0) {
-                  let data36 = data24.type;
-                  if (typeof data36 !== "string") {
-                    const err63 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.type.type, parentSchema: schema14.properties.type, data: data36 };
-                    if (vErrors === null) {
-                      vErrors = [err63];
-                    } else {
-                      vErrors.push(err63);
-                    }
-                    errors++;
-                  }
-                }
-                if (data24.name !== void 0) {
-                  let data37 = data24.name;
-                  if (typeof data37 === "string") {
-                    if (!pattern1.test(data37)) {
-                      const err64 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema14.properties.name, data: data37 };
-                      if (vErrors === null) {
-                        vErrors = [err64];
-                      } else {
-                        vErrors.push(err64);
-                      }
-                      errors++;
-                    }
-                  } else {
-                    const err65 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.name.type, parentSchema: schema14.properties.name, data: data37 };
+                  const _errs86 = errors;
+                  let valid23 = false;
+                  const _errs87 = errors;
+                  if (!(typeof data29 == "number" && (!(data29 % 1) && !isNaN(data29)))) {
+                    const err65 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.oneOf[1].properties.maximum.anyOf[0].type, parentSchema: schema14.oneOf[1].properties.maximum.anyOf[0], data: data29 };
                     if (vErrors === null) {
                       vErrors = [err65];
                     } else {
@@ -47446,47 +47463,55 @@
                     }
                     errors++;
                   }
-                }
-                if (data24.protocol !== void 0) {
-                  let data38 = data24.protocol;
-                  if (typeof data38 !== "string") {
-                    const err66 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.protocol.type, parentSchema: schema14.properties.protocol, data: data38 };
-                    if (vErrors === null) {
-                      vErrors = [err66];
+                  var _valid7 = _errs87 === errors;
+                  valid23 = valid23 || _valid7;
+                  if (!valid23) {
+                    const _errs89 = errors;
+                    if (typeof data29 === "string") {
+                      if (!pattern1.test(data29)) {
+                        const err66 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.oneOf[1].properties.maximum.anyOf[1], data: data29 };
+                        if (vErrors === null) {
+                          vErrors = [err66];
+                        } else {
+                          vErrors.push(err66);
+                        }
+                        errors++;
+                      }
                     } else {
-                      vErrors.push(err66);
+                      const err67 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.oneOf[1].properties.maximum.anyOf[1].type, parentSchema: schema14.oneOf[1].properties.maximum.anyOf[1], data: data29 };
+                      if (vErrors === null) {
+                        vErrors = [err67];
+                      } else {
+                        vErrors.push(err67);
+                      }
+                      errors++;
                     }
-                    errors++;
+                    var _valid7 = _errs89 === errors;
+                    valid23 = valid23 || _valid7;
                   }
-                }
-                if (data24.minimum !== void 0) {
-                  let data39 = data24.minimum;
-                  if (!(typeof data39 == "number") && typeof data39 !== "string") {
-                    const err67 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/type", keyword: "type", params: { type: schema14.properties.minimum.type }, message: "must be number,string", schema: schema14.properties.minimum.type, parentSchema: schema14.properties.minimum, data: data39 };
-                    if (vErrors === null) {
-                      vErrors = [err67];
-                    } else {
-                      vErrors.push(err67);
-                    }
-                    errors++;
-                  }
-                }
-                if (data24.maximum !== void 0) {
-                  let data40 = data24.maximum;
-                  if (!(typeof data40 == "number") && typeof data40 !== "string") {
-                    const err68 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/type", keyword: "type", params: { type: schema14.properties.maximum.type }, message: "must be number,string", schema: schema14.properties.maximum.type, parentSchema: schema14.properties.maximum, data: data40 };
+                  if (!valid23) {
+                    const err68 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.oneOf[1].properties.maximum.anyOf, parentSchema: schema14.oneOf[1].properties.maximum, data: data29 };
                     if (vErrors === null) {
                       vErrors = [err68];
                     } else {
                       vErrors.push(err68);
                     }
                     errors++;
+                  } else {
+                    errors = _errs86;
+                    if (vErrors !== null) {
+                      if (_errs86) {
+                        vErrors.length = _errs86;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
                   }
                 }
-                if (data24.length !== void 0) {
-                  let data41 = data24.length;
-                  if (!(typeof data41 == "number") && typeof data41 !== "string") {
-                    const err69 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/properties/length/type", keyword: "type", params: { type: schema14.properties.length.type }, message: "must be number,string", schema: schema14.properties.length.type, parentSchema: schema14.properties.length, data: data41 };
+                if (data24.hint !== void 0) {
+                  let data30 = data24.hint;
+                  if (!(typeof data30 == "number") && typeof data30 !== "string") {
+                    const err69 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[1].properties.hint.type, parentSchema: schema14.oneOf[1].properties.hint, data: data30 };
                     if (vErrors === null) {
                       vErrors = [err69];
                     } else {
@@ -47495,10 +47520,20 @@
                     errors++;
                   }
                 }
-                if (data24.hint !== void 0) {
-                  let data42 = data24.hint;
-                  if (!(typeof data42 == "number") && typeof data42 !== "string") {
-                    const err70 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/properties/hint/type", keyword: "type", params: { type: schema14.properties.hint.type }, message: "must be number,string", schema: schema14.properties.hint.type, parentSchema: schema14.properties.hint, data: data42 };
+              }
+              var _valid5 = _errs77 === errors;
+              if (_valid5 && valid19) {
+                valid19 = false;
+                passing1 = [passing1, 1];
+              } else {
+                if (_valid5) {
+                  valid19 = true;
+                  passing1 = 1;
+                }
+                const _errs93 = errors;
+                if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                  if (data24.length === void 0) {
+                    const err70 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data24 };
                     if (vErrors === null) {
                       vErrors = [err70];
                     } else {
@@ -47506,23 +47541,365 @@
                     }
                     errors++;
                   }
+                  if (data24.hint === void 0) {
+                    const err71 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema14.oneOf[2].required, parentSchema: schema14.oneOf[2], data: data24 };
+                    if (vErrors === null) {
+                      vErrors = [err71];
+                    } else {
+                      vErrors.push(err71);
+                    }
+                    errors++;
+                  }
+                  if (data24.type !== void 0) {
+                    let data31 = data24.type;
+                    if ("string" !== data31) {
+                      const err72 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema14.oneOf[2].properties.type, data: data31 };
+                      if (vErrors === null) {
+                        vErrors = [err72];
+                      } else {
+                        vErrors.push(err72);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data24.length !== void 0) {
+                    let data32 = data24.length;
+                    if (!(typeof data32 == "number") && typeof data32 !== "string") {
+                      const err73 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/oneOf/2/properties/length/type", keyword: "type", params: { type: schema14.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.length.type, parentSchema: schema14.oneOf[2].properties.length, data: data32 };
+                      if (vErrors === null) {
+                        vErrors = [err73];
+                      } else {
+                        vErrors.push(err73);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data24.hint !== void 0) {
+                    let data33 = data24.hint;
+                    if (!(typeof data33 == "number") && typeof data33 !== "string") {
+                      const err74 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema14.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema14.oneOf[2].properties.hint.type, parentSchema: schema14.oneOf[2].properties.hint, data: data33 };
+                      if (vErrors === null) {
+                        vErrors = [err74];
+                      } else {
+                        vErrors.push(err74);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                var _valid5 = _errs93 === errors;
+                if (_valid5 && valid19) {
+                  valid19 = false;
+                  passing1 = [passing1, 2];
+                } else {
+                  if (_valid5) {
+                    valid19 = true;
+                    passing1 = 2;
+                  }
+                  const _errs99 = errors;
+                  if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                    if (data24.type !== void 0) {
+                      let data34 = data24.type;
+                      if ("boolean" !== data34) {
+                        const err75 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema14.oneOf[3].properties.type, data: data34 };
+                        if (vErrors === null) {
+                          vErrors = [err75];
+                        } else {
+                          vErrors.push(err75);
+                        }
+                        errors++;
+                      }
+                    }
+                  }
+                  var _valid5 = _errs99 === errors;
+                  if (_valid5 && valid19) {
+                    valid19 = false;
+                    passing1 = [passing1, 3];
+                  } else {
+                    if (_valid5) {
+                      valid19 = true;
+                      passing1 = 3;
+                    }
+                    const _errs101 = errors;
+                    if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                      if (data24.type !== void 0) {
+                        let data35 = data24.type;
+                        if ("site" !== data35) {
+                          const err76 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema14.oneOf[4].properties.type, data: data35 };
+                          if (vErrors === null) {
+                            vErrors = [err76];
+                          } else {
+                            vErrors.push(err76);
+                          }
+                          errors++;
+                        }
+                      }
+                    }
+                    var _valid5 = _errs101 === errors;
+                    if (_valid5 && valid19) {
+                      valid19 = false;
+                      passing1 = [passing1, 4];
+                    } else {
+                      if (_valid5) {
+                        valid19 = true;
+                        passing1 = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              if (!valid19) {
+                const err77 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf", keyword: "oneOf", params: { passingSchemas: passing1 }, message: "must match exactly one schema in oneOf", schema: schema14.oneOf, parentSchema: schema14, data: data24 };
+                if (vErrors === null) {
+                  vErrors = [err77];
+                } else {
+                  vErrors.push(err77);
+                }
+                errors++;
+              } else {
+                errors = _errs72;
+                if (vErrors !== null) {
+                  if (_errs72) {
+                    vErrors.length = _errs72;
+                  } else {
+                    vErrors = null;
+                  }
+                }
+              }
+              if (data24 && typeof data24 == "object" && !Array.isArray(data24)) {
+                if (data24.type === void 0) {
+                  const err78 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema14.required, parentSchema: schema14, data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err78];
+                  } else {
+                    vErrors.push(err78);
+                  }
+                  errors++;
+                }
+                if (data24.name === void 0) {
+                  const err79 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema14.required, parentSchema: schema14, data: data24 };
+                  if (vErrors === null) {
+                    vErrors = [err79];
+                  } else {
+                    vErrors.push(err79);
+                  }
+                  errors++;
+                }
+                for (const key2 in data24) {
+                  if (!(key2 === "type" || key2 === "name" || key2 === "protocol" || key2 === "minimum" || key2 === "maximum" || key2 === "length" || key2 === "hint")) {
+                    const err80 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key2 }, message: "must NOT have additional properties", schema: false, parentSchema: schema14, data: data24 };
+                    if (vErrors === null) {
+                      vErrors = [err80];
+                    } else {
+                      vErrors.push(err80);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.type !== void 0) {
+                  let data36 = data24.type;
+                  if (typeof data36 !== "string") {
+                    const err81 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.type.type, parentSchema: schema14.properties.type, data: data36 };
+                    if (vErrors === null) {
+                      vErrors = [err81];
+                    } else {
+                      vErrors.push(err81);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.name !== void 0) {
+                  let data37 = data24.name;
+                  if (typeof data37 === "string") {
+                    if (!pattern3.test(data37)) {
+                      const err82 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema14.properties.name, data: data37 };
+                      if (vErrors === null) {
+                        vErrors = [err82];
+                      } else {
+                        vErrors.push(err82);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err83 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.name.type, parentSchema: schema14.properties.name, data: data37 };
+                    if (vErrors === null) {
+                      vErrors = [err83];
+                    } else {
+                      vErrors.push(err83);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.protocol !== void 0) {
+                  let data38 = data24.protocol;
+                  if (typeof data38 !== "string") {
+                    const err84 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.protocol.type, parentSchema: schema14.properties.protocol, data: data38 };
+                    if (vErrors === null) {
+                      vErrors = [err84];
+                    } else {
+                      vErrors.push(err84);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.minimum !== void 0) {
+                  let data39 = data24.minimum;
+                  const _errs111 = errors;
+                  let valid28 = false;
+                  const _errs112 = errors;
+                  if (!(typeof data39 == "number" && (!(data39 % 1) && !isNaN(data39)))) {
+                    const err85 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.properties.minimum.anyOf[0].type, parentSchema: schema14.properties.minimum.anyOf[0], data: data39 };
+                    if (vErrors === null) {
+                      vErrors = [err85];
+                    } else {
+                      vErrors.push(err85);
+                    }
+                    errors++;
+                  }
+                  var _valid8 = _errs112 === errors;
+                  valid28 = valid28 || _valid8;
+                  if (!valid28) {
+                    const _errs114 = errors;
+                    if (typeof data39 === "string") {
+                      if (!pattern1.test(data39)) {
+                        const err86 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.properties.minimum.anyOf[1], data: data39 };
+                        if (vErrors === null) {
+                          vErrors = [err86];
+                        } else {
+                          vErrors.push(err86);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err87 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.minimum.anyOf[1].type, parentSchema: schema14.properties.minimum.anyOf[1], data: data39 };
+                      if (vErrors === null) {
+                        vErrors = [err87];
+                      } else {
+                        vErrors.push(err87);
+                      }
+                      errors++;
+                    }
+                    var _valid8 = _errs114 === errors;
+                    valid28 = valid28 || _valid8;
+                  }
+                  if (!valid28) {
+                    const err88 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.properties.minimum.anyOf, parentSchema: schema14.properties.minimum, data: data39 };
+                    if (vErrors === null) {
+                      vErrors = [err88];
+                    } else {
+                      vErrors.push(err88);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs111;
+                    if (vErrors !== null) {
+                      if (_errs111) {
+                        vErrors.length = _errs111;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data24.maximum !== void 0) {
+                  let data40 = data24.maximum;
+                  const _errs117 = errors;
+                  let valid29 = false;
+                  const _errs118 = errors;
+                  if (!(typeof data40 == "number" && (!(data40 % 1) && !isNaN(data40)))) {
+                    const err89 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema14.properties.maximum.anyOf[0].type, parentSchema: schema14.properties.maximum.anyOf[0], data: data40 };
+                    if (vErrors === null) {
+                      vErrors = [err89];
+                    } else {
+                      vErrors.push(err89);
+                    }
+                    errors++;
+                  }
+                  var _valid9 = _errs118 === errors;
+                  valid29 = valid29 || _valid9;
+                  if (!valid29) {
+                    const _errs120 = errors;
+                    if (typeof data40 === "string") {
+                      if (!pattern1.test(data40)) {
+                        const err90 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema14.properties.maximum.anyOf[1], data: data40 };
+                        if (vErrors === null) {
+                          vErrors = [err90];
+                        } else {
+                          vErrors.push(err90);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err91 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.maximum.anyOf[1].type, parentSchema: schema14.properties.maximum.anyOf[1], data: data40 };
+                      if (vErrors === null) {
+                        vErrors = [err91];
+                      } else {
+                        vErrors.push(err91);
+                      }
+                      errors++;
+                    }
+                    var _valid9 = _errs120 === errors;
+                    valid29 = valid29 || _valid9;
+                  }
+                  if (!valid29) {
+                    const err92 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema14.properties.maximum.anyOf, parentSchema: schema14.properties.maximum, data: data40 };
+                    if (vErrors === null) {
+                      vErrors = [err92];
+                    } else {
+                      vErrors.push(err92);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs117;
+                    if (vErrors !== null) {
+                      if (_errs117) {
+                        vErrors.length = _errs117;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data24.length !== void 0) {
+                  let data41 = data24.length;
+                  if (!(typeof data41 == "number") && typeof data41 !== "string") {
+                    const err93 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/properties/length/type", keyword: "type", params: { type: schema14.properties.length.type }, message: "must be number,string", schema: schema14.properties.length.type, parentSchema: schema14.properties.length, data: data41 };
+                    if (vErrors === null) {
+                      vErrors = [err93];
+                    } else {
+                      vErrors.push(err93);
+                    }
+                    errors++;
+                  }
+                }
+                if (data24.hint !== void 0) {
+                  let data42 = data24.hint;
+                  if (!(typeof data42 == "number") && typeof data42 !== "string") {
+                    const err94 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/properties/hint/type", keyword: "type", params: { type: schema14.properties.hint.type }, message: "must be number,string", schema: schema14.properties.hint.type, parentSchema: schema14.properties.hint, data: data42 };
+                    if (vErrors === null) {
+                      vErrors = [err94];
+                    } else {
+                      vErrors.push(err94);
+                    }
+                    errors++;
+                  }
                 }
               } else {
-                const err71 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data: data24 };
+                const err95 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data: data24 };
                 if (vErrors === null) {
-                  vErrors = [err71];
+                  vErrors = [err95];
                 } else {
-                  vErrors.push(err71);
+                  vErrors.push(err95);
                 }
                 errors++;
               }
             }
           } else {
-            const err72 = { instancePath: instancePath + "/obligations", schemaPath: "#/properties/obligations/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema12.properties.obligations.type, parentSchema: schema12.properties.obligations, data: data23 };
+            const err96 = { instancePath: instancePath + "/obligations", schemaPath: "#/properties/obligations/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema12.properties.obligations.type, parentSchema: schema12.properties.obligations, data: data23 };
             if (vErrors === null) {
-              vErrors = [err72];
+              vErrors = [err96];
             } else {
-              vErrors.push(err72);
+              vErrors.push(err96);
             }
             errors++;
           }
@@ -47530,21 +47907,21 @@
         if (data.supplier !== void 0) {
           let data43 = data.supplier;
           if (typeof data43 !== "string") {
-            const err73 = { instancePath: instancePath + "/supplier", schemaPath: "#/properties/supplier/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.supplier.type, parentSchema: schema12.properties.supplier, data: data43 };
+            const err97 = { instancePath: instancePath + "/supplier", schemaPath: "#/properties/supplier/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema12.properties.supplier.type, parentSchema: schema12.properties.supplier, data: data43 };
             if (vErrors === null) {
-              vErrors = [err73];
+              vErrors = [err97];
             } else {
-              vErrors.push(err73);
+              vErrors.push(err97);
             }
             errors++;
           }
         }
       } else {
-        const err74 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema12.type, parentSchema: schema12, data };
+        const err98 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema12.type, parentSchema: schema12, data };
         if (vErrors === null) {
-          vErrors = [err74];
+          vErrors = [err98];
         } else {
-          vErrors.push(err74);
+          vErrors.push(err98);
         }
         errors++;
       }
@@ -47647,8 +48024,8 @@
       validate13.errors = vErrors;
       return errors === 0;
     }
-    exports2["17a0aba3"] = validate14;
-    const schema17 = { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "17a0aba3" };
+    exports2["-1f0ff93d"] = validate14;
+    const schema17 = { "properties": { "type": { "const": "integer" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "-1f0ff93d" };
     function validate14(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -47750,8 +48127,11 @@
         }
         if (data.minimum !== void 0) {
           let data1 = data.minimum;
-          if (!(typeof data1 == "number") && typeof data1 !== "string") {
-            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/type", keyword: "type", params: { type: schema17.properties.minimum.type }, message: "must be number,string", schema: schema17.properties.minimum.type, parentSchema: schema17.properties.minimum, data: data1 };
+          const _errs7 = errors;
+          let valid2 = false;
+          const _errs8 = errors;
+          if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)))) {
+            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema17.properties.minimum.anyOf[0].type, parentSchema: schema17.properties.minimum.anyOf[0], data: data1 };
             if (vErrors === null) {
               vErrors = [err6];
             } else {
@@ -47759,27 +48139,118 @@
             }
             errors++;
           }
+          var _valid1 = _errs8 === errors;
+          valid2 = valid2 || _valid1;
+          if (!valid2) {
+            const _errs10 = errors;
+            if (typeof data1 === "string") {
+              if (!pattern1.test(data1)) {
+                const err7 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema17.properties.minimum.anyOf[1], data: data1 };
+                if (vErrors === null) {
+                  vErrors = [err7];
+                } else {
+                  vErrors.push(err7);
+                }
+                errors++;
+              }
+            } else {
+              const err8 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema17.properties.minimum.anyOf[1].type, parentSchema: schema17.properties.minimum.anyOf[1], data: data1 };
+              if (vErrors === null) {
+                vErrors = [err8];
+              } else {
+                vErrors.push(err8);
+              }
+              errors++;
+            }
+            var _valid1 = _errs10 === errors;
+            valid2 = valid2 || _valid1;
+          }
+          if (!valid2) {
+            const err9 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema17.properties.minimum.anyOf, parentSchema: schema17.properties.minimum, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err9];
+            } else {
+              vErrors.push(err9);
+            }
+            errors++;
+          } else {
+            errors = _errs7;
+            if (vErrors !== null) {
+              if (_errs7) {
+                vErrors.length = _errs7;
+              } else {
+                vErrors = null;
+              }
+            }
+          }
         }
         if (data.maximum !== void 0) {
           let data2 = data.maximum;
-          if (!(typeof data2 == "number") && typeof data2 !== "string") {
-            const err7 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/type", keyword: "type", params: { type: schema17.properties.maximum.type }, message: "must be number,string", schema: schema17.properties.maximum.type, parentSchema: schema17.properties.maximum, data: data2 };
+          const _errs13 = errors;
+          let valid3 = false;
+          const _errs14 = errors;
+          if (!(typeof data2 == "number" && (!(data2 % 1) && !isNaN(data2)))) {
+            const err10 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema17.properties.maximum.anyOf[0].type, parentSchema: schema17.properties.maximum.anyOf[0], data: data2 };
             if (vErrors === null) {
-              vErrors = [err7];
+              vErrors = [err10];
             } else {
-              vErrors.push(err7);
+              vErrors.push(err10);
             }
             errors++;
+          }
+          var _valid2 = _errs14 === errors;
+          valid3 = valid3 || _valid2;
+          if (!valid3) {
+            const _errs16 = errors;
+            if (typeof data2 === "string") {
+              if (!pattern1.test(data2)) {
+                const err11 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema17.properties.maximum.anyOf[1], data: data2 };
+                if (vErrors === null) {
+                  vErrors = [err11];
+                } else {
+                  vErrors.push(err11);
+                }
+                errors++;
+              }
+            } else {
+              const err12 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema17.properties.maximum.anyOf[1].type, parentSchema: schema17.properties.maximum.anyOf[1], data: data2 };
+              if (vErrors === null) {
+                vErrors = [err12];
+              } else {
+                vErrors.push(err12);
+              }
+              errors++;
+            }
+            var _valid2 = _errs16 === errors;
+            valid3 = valid3 || _valid2;
+          }
+          if (!valid3) {
+            const err13 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema17.properties.maximum.anyOf, parentSchema: schema17.properties.maximum, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err13];
+            } else {
+              vErrors.push(err13);
+            }
+            errors++;
+          } else {
+            errors = _errs13;
+            if (vErrors !== null) {
+              if (_errs13) {
+                vErrors.length = _errs13;
+              } else {
+                vErrors = null;
+              }
+            }
           }
         }
         if (data.hint !== void 0) {
           let data3 = data.hint;
           if (!(typeof data3 == "number") && typeof data3 !== "string") {
-            const err8 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema17.properties.hint.type }, message: "must be number,string", schema: schema17.properties.hint.type, parentSchema: schema17.properties.hint, data: data3 };
+            const err14 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema17.properties.hint.type }, message: "must be number,string", schema: schema17.properties.hint.type, parentSchema: schema17.properties.hint, data: data3 };
             if (vErrors === null) {
-              vErrors = [err8];
+              vErrors = [err14];
             } else {
-              vErrors.push(err8);
+              vErrors.push(err14);
             }
             errors++;
           }
@@ -47788,8 +48259,8 @@
       validate14.errors = vErrors;
       return errors === 0;
     }
-    exports2["318105ed"] = validate15;
-    const schema18 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "318105ed" };
+    exports2["-60e0cb62"] = validate15;
+    const schema18 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "-60e0cb62" };
     function validate15(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -48015,6 +48486,52 @@
       validate17.errors = vErrors;
       return errors === 0;
     }
+    exports2["12b25410"] = validate18;
+    const schema21 = { "type": "integer", "$id": "12b25410" };
+    function validate18(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      if (!(typeof data == "number" && (!(data % 1) && !isNaN(data)))) {
+        const err0 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema21.type, parentSchema: schema21, data };
+        if (vErrors === null) {
+          vErrors = [err0];
+        } else {
+          vErrors.push(err0);
+        }
+        errors++;
+      }
+      validate18.errors = vErrors;
+      return errors === 0;
+    }
+    exports2["-624ef6ae"] = validate19;
+    const schema22 = { "type": "string", "pattern": "^-?\\d+$", "$id": "-624ef6ae" };
+    function validate19(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
+      ;
+      let vErrors = null;
+      let errors = 0;
+      if (typeof data === "string") {
+        if (!pattern1.test(data)) {
+          const err0 = { instancePath, schemaPath: "#/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema22, data };
+          if (vErrors === null) {
+            vErrors = [err0];
+          } else {
+            vErrors.push(err0);
+          }
+          errors++;
+        }
+      } else {
+        const err1 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema22.type, parentSchema: schema22, data };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      }
+      validate19.errors = vErrors;
+      return errors === 0;
+    }
   })(module_contractSpec, module_contractSpec.exports);
   var validateFns = module_contractSpec.exports;
   var rootSchema = {
@@ -48056,16 +48573,28 @@
                 "const": "integer"
               },
               "minimum": {
-                "type": [
-                  "number",
-                  "string"
-                ]
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^-?\\d+$"
+                  }
+                ],
+                "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
               },
               "maximum": {
-                "type": [
-                  "number",
-                  "string"
-                ]
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^-?\\d+$"
+                  }
+                ],
+                "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
               },
               "hint": {
                 "type": [
@@ -48089,7 +48618,8 @@
                 "type": [
                   "number",
                   "string"
-                ]
+                ],
+                "description": "The custom editor writes this value as a string to preserve precision."
               },
               "hint": {
                 "type": [
@@ -48130,22 +48660,35 @@
             "type": "string"
           },
           "minimum": {
-            "type": [
-              "number",
-              "string"
-            ]
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ],
+            "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
           },
           "maximum": {
-            "type": [
-              "number",
-              "string"
-            ]
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ],
+            "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
           },
           "length": {
             "type": [
               "number",
               "string"
-            ]
+            ],
+            "description": "The custom editor writes this value as a string to preserve precision."
           },
           "hint": {
             "type": [
@@ -48238,6 +48781,7 @@
             "const": "protocol"
           },
           "policy": {
+            "description": "Signed decimal integer. The custom editor writes valid values as unquoted JSON integer literals while preserving precision.",
             "anyOf": [
               {
                 "type": "integer"
@@ -48272,14 +48816,14 @@
   (function(module2, exports2) {
     "use strict";
     exports2.protocolSpec = validate10;
-    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Protocol)", "$ref": "#/$defs/protocolSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "protocolSpec" };
-    const schema12 = { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false };
+    const schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "title": "Emergent Specification (Protocol)", "$ref": "#/$defs/protocolSpec", "$defs": { "classification4": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" }, "classification5": { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){4}[a-z0-9-]+$" }, "requirement": { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false }, "obligation": { "$ref": "#/$defs/requirement" }, "role": { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false }, "supplierSpec": { "type": "object", "required": ["type", "name", "description", "requirements", "obligations", "supplier"], "properties": { "type": { "const": "supplier" }, "name": { "$ref": "#/$defs/classification5" }, "description": { "type": "string" }, "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "supplier": { "type": "string" } }, "additionalProperties": false }, "protocolSpec": { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "description": "Signed decimal integer. The custom editor writes valid values as unquoted JSON integer literals while preserving precision.", "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false } }, "$id": "protocolSpec" };
+    const schema12 = { "type": "object", "required": ["type", "policy", "name", "description", "host", "join"], "properties": { "type": { "const": "protocol" }, "policy": { "description": "Signed decimal integer. The custom editor writes valid values as unquoted JSON integer literals while preserving precision.", "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }] }, "name": { "$ref": "#/$defs/classification4" }, "description": { "type": "string" }, "host": { "$ref": "#/$defs/role" }, "join": { "$ref": "#/$defs/role" } }, "additionalProperties": false };
     const schema13 = { "type": "string", "pattern": "^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$" };
     const pattern0 = new RegExp("^-?\\d+$", "u");
     const pattern1 = new RegExp("^/(?:[a-z0-9-]+/){3}[a-z0-9-]+$", "u");
     const schema14 = { "type": "object", "required": ["requirements", "obligations", "macro"], "properties": { "requirements": { "type": "array", "items": { "$ref": "#/$defs/requirement" } }, "obligations": { "type": "array", "items": { "$ref": "#/$defs/obligation" } }, "macro": { "type": "string" } }, "additionalProperties": false };
-    const schema15 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
-    const pattern2 = new RegExp("^[\\w .(),-]+$", "u");
+    const schema15 = { "type": "object", "required": ["type", "name"], "oneOf": [{ "properties": { "type": { "const": "abstraction" }, "protocol": { "type": "string" } }, "required": ["protocol"] }, { "properties": { "type": { "const": "integer" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["minimum", "maximum", "hint"] }, { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "required": ["length", "hint"] }, { "properties": { "type": { "const": "boolean" } } }, { "properties": { "type": { "const": "site" } } }], "properties": { "type": { "type": "string" }, "name": { "type": "string", "pattern": "^[\\w .(),-]+$" }, "protocol": { "type": "string" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "additionalProperties": false };
+    const pattern4 = new RegExp("^[\\w .(),-]+$", "u");
     function validate12(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       let vErrors = null;
       let errors = 0;
@@ -48415,8 +48959,11 @@
                 }
                 if (data1.minimum !== void 0) {
                   let data5 = data1.minimum;
-                  if (!(typeof data5 == "number") && typeof data5 !== "string") {
-                    const err11 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.minimum.type, parentSchema: schema15.oneOf[1].properties.minimum, data: data5 };
+                  const _errs15 = errors;
+                  let valid7 = false;
+                  const _errs16 = errors;
+                  if (!(typeof data5 == "number" && (!(data5 % 1) && !isNaN(data5)))) {
+                    const err11 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.oneOf[1].properties.minimum.anyOf[0].type, parentSchema: schema15.oneOf[1].properties.minimum.anyOf[0], data: data5 };
                     if (vErrors === null) {
                       vErrors = [err11];
                     } else {
@@ -48424,27 +48971,118 @@
                     }
                     errors++;
                   }
+                  var _valid1 = _errs16 === errors;
+                  valid7 = valid7 || _valid1;
+                  if (!valid7) {
+                    const _errs18 = errors;
+                    if (typeof data5 === "string") {
+                      if (!pattern0.test(data5)) {
+                        const err12 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.oneOf[1].properties.minimum.anyOf[1], data: data5 };
+                        if (vErrors === null) {
+                          vErrors = [err12];
+                        } else {
+                          vErrors.push(err12);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err13 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[1].properties.minimum.anyOf[1].type, parentSchema: schema15.oneOf[1].properties.minimum.anyOf[1], data: data5 };
+                      if (vErrors === null) {
+                        vErrors = [err13];
+                      } else {
+                        vErrors.push(err13);
+                      }
+                      errors++;
+                    }
+                    var _valid1 = _errs18 === errors;
+                    valid7 = valid7 || _valid1;
+                  }
+                  if (!valid7) {
+                    const err14 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/oneOf/1/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.oneOf[1].properties.minimum.anyOf, parentSchema: schema15.oneOf[1].properties.minimum, data: data5 };
+                    if (vErrors === null) {
+                      vErrors = [err14];
+                    } else {
+                      vErrors.push(err14);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs15;
+                    if (vErrors !== null) {
+                      if (_errs15) {
+                        vErrors.length = _errs15;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
                 }
                 if (data1.maximum !== void 0) {
                   let data6 = data1.maximum;
-                  if (!(typeof data6 == "number") && typeof data6 !== "string") {
-                    const err12 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.maximum.type, parentSchema: schema15.oneOf[1].properties.maximum, data: data6 };
+                  const _errs21 = errors;
+                  let valid8 = false;
+                  const _errs22 = errors;
+                  if (!(typeof data6 == "number" && (!(data6 % 1) && !isNaN(data6)))) {
+                    const err15 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.oneOf[1].properties.maximum.anyOf[0].type, parentSchema: schema15.oneOf[1].properties.maximum.anyOf[0], data: data6 };
                     if (vErrors === null) {
-                      vErrors = [err12];
+                      vErrors = [err15];
                     } else {
-                      vErrors.push(err12);
+                      vErrors.push(err15);
                     }
                     errors++;
+                  }
+                  var _valid2 = _errs22 === errors;
+                  valid8 = valid8 || _valid2;
+                  if (!valid8) {
+                    const _errs24 = errors;
+                    if (typeof data6 === "string") {
+                      if (!pattern0.test(data6)) {
+                        const err16 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.oneOf[1].properties.maximum.anyOf[1], data: data6 };
+                        if (vErrors === null) {
+                          vErrors = [err16];
+                        } else {
+                          vErrors.push(err16);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err17 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[1].properties.maximum.anyOf[1].type, parentSchema: schema15.oneOf[1].properties.maximum.anyOf[1], data: data6 };
+                      if (vErrors === null) {
+                        vErrors = [err17];
+                      } else {
+                        vErrors.push(err17);
+                      }
+                      errors++;
+                    }
+                    var _valid2 = _errs24 === errors;
+                    valid8 = valid8 || _valid2;
+                  }
+                  if (!valid8) {
+                    const err18 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/oneOf/1/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.oneOf[1].properties.maximum.anyOf, parentSchema: schema15.oneOf[1].properties.maximum, data: data6 };
+                    if (vErrors === null) {
+                      vErrors = [err18];
+                    } else {
+                      vErrors.push(err18);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs21;
+                    if (vErrors !== null) {
+                      if (_errs21) {
+                        vErrors.length = _errs21;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
                   }
                 }
                 if (data1.hint !== void 0) {
                   let data7 = data1.hint;
                   if (!(typeof data7 == "number") && typeof data7 !== "string") {
-                    const err13 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.hint.type, parentSchema: schema15.oneOf[1].properties.hint, data: data7 };
+                    const err19 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.hint.type, parentSchema: schema15.oneOf[1].properties.hint, data: data7 };
                     if (vErrors === null) {
-                      vErrors = [err13];
+                      vErrors = [err19];
                     } else {
-                      vErrors.push(err13);
+                      vErrors.push(err19);
                     }
                     errors++;
                   }
@@ -48459,34 +49097,34 @@
                   valid4 = true;
                   passing0 = 1;
                 }
-                const _errs20 = errors;
+                const _errs28 = errors;
                 if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
                   if (data1.length === void 0) {
-                    const err14 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data1 };
+                    const err20 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data1 };
                     if (vErrors === null) {
-                      vErrors = [err14];
+                      vErrors = [err20];
                     } else {
-                      vErrors.push(err14);
+                      vErrors.push(err20);
                     }
                     errors++;
                   }
                   if (data1.hint === void 0) {
-                    const err15 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data1 };
+                    const err21 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data1 };
                     if (vErrors === null) {
-                      vErrors = [err15];
+                      vErrors = [err21];
                     } else {
-                      vErrors.push(err15);
+                      vErrors.push(err21);
                     }
                     errors++;
                   }
                   if (data1.type !== void 0) {
                     let data8 = data1.type;
                     if ("string" !== data8) {
-                      const err16 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema15.oneOf[2].properties.type, data: data8 };
+                      const err22 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema15.oneOf[2].properties.type, data: data8 };
                       if (vErrors === null) {
-                        vErrors = [err16];
+                        vErrors = [err22];
                       } else {
-                        vErrors.push(err16);
+                        vErrors.push(err22);
                       }
                       errors++;
                     }
@@ -48494,11 +49132,11 @@
                   if (data1.length !== void 0) {
                     let data9 = data1.length;
                     if (!(typeof data9 == "number") && typeof data9 !== "string") {
-                      const err17 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/oneOf/2/properties/length/type", keyword: "type", params: { type: schema15.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.length.type, parentSchema: schema15.oneOf[2].properties.length, data: data9 };
+                      const err23 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/oneOf/2/properties/length/type", keyword: "type", params: { type: schema15.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.length.type, parentSchema: schema15.oneOf[2].properties.length, data: data9 };
                       if (vErrors === null) {
-                        vErrors = [err17];
+                        vErrors = [err23];
                       } else {
-                        vErrors.push(err17);
+                        vErrors.push(err23);
                       }
                       errors++;
                     }
@@ -48506,17 +49144,17 @@
                   if (data1.hint !== void 0) {
                     let data10 = data1.hint;
                     if (!(typeof data10 == "number") && typeof data10 !== "string") {
-                      const err18 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.hint.type, parentSchema: schema15.oneOf[2].properties.hint, data: data10 };
+                      const err24 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.hint.type, parentSchema: schema15.oneOf[2].properties.hint, data: data10 };
                       if (vErrors === null) {
-                        vErrors = [err18];
+                        vErrors = [err24];
                       } else {
-                        vErrors.push(err18);
+                        vErrors.push(err24);
                       }
                       errors++;
                     }
                   }
                 }
-                var _valid0 = _errs20 === errors;
+                var _valid0 = _errs28 === errors;
                 if (_valid0 && valid4) {
                   valid4 = false;
                   passing0 = [passing0, 2];
@@ -48525,22 +49163,22 @@
                     valid4 = true;
                     passing0 = 2;
                   }
-                  const _errs26 = errors;
+                  const _errs34 = errors;
                   if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
                     if (data1.type !== void 0) {
                       let data11 = data1.type;
                       if ("boolean" !== data11) {
-                        const err19 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema15.oneOf[3].properties.type, data: data11 };
+                        const err25 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema15.oneOf[3].properties.type, data: data11 };
                         if (vErrors === null) {
-                          vErrors = [err19];
+                          vErrors = [err25];
                         } else {
-                          vErrors.push(err19);
+                          vErrors.push(err25);
                         }
                         errors++;
                       }
                     }
                   }
-                  var _valid0 = _errs26 === errors;
+                  var _valid0 = _errs34 === errors;
                   if (_valid0 && valid4) {
                     valid4 = false;
                     passing0 = [passing0, 3];
@@ -48549,22 +49187,22 @@
                       valid4 = true;
                       passing0 = 3;
                     }
-                    const _errs28 = errors;
+                    const _errs36 = errors;
                     if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
                       if (data1.type !== void 0) {
                         let data12 = data1.type;
                         if ("site" !== data12) {
-                          const err20 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema15.oneOf[4].properties.type, data: data12 };
+                          const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema15.oneOf[4].properties.type, data: data12 };
                           if (vErrors === null) {
-                            vErrors = [err20];
+                            vErrors = [err26];
                           } else {
-                            vErrors.push(err20);
+                            vErrors.push(err26);
                           }
                           errors++;
                         }
                       }
                     }
-                    var _valid0 = _errs28 === errors;
+                    var _valid0 = _errs36 === errors;
                     if (_valid0 && valid4) {
                       valid4 = false;
                       passing0 = [passing0, 4];
@@ -48578,11 +49216,11 @@
                 }
               }
               if (!valid4) {
-                const err21 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf", schema: schema15.oneOf, parentSchema: schema15, data: data1 };
+                const err27 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf", schema: schema15.oneOf, parentSchema: schema15, data: data1 };
                 if (vErrors === null) {
-                  vErrors = [err21];
+                  vErrors = [err27];
                 } else {
-                  vErrors.push(err21);
+                  vErrors.push(err27);
                 }
                 errors++;
               } else {
@@ -48597,96 +49235,26 @@
               }
               if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
                 if (data1.type === void 0) {
-                  const err22 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema15.required, parentSchema: schema15, data: data1 };
+                  const err28 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema15.required, parentSchema: schema15, data: data1 };
                   if (vErrors === null) {
-                    vErrors = [err22];
+                    vErrors = [err28];
                   } else {
-                    vErrors.push(err22);
+                    vErrors.push(err28);
                   }
                   errors++;
                 }
                 if (data1.name === void 0) {
-                  const err23 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema15.required, parentSchema: schema15, data: data1 };
+                  const err29 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema15.required, parentSchema: schema15, data: data1 };
                   if (vErrors === null) {
-                    vErrors = [err23];
+                    vErrors = [err29];
                   } else {
-                    vErrors.push(err23);
+                    vErrors.push(err29);
                   }
                   errors++;
                 }
                 for (const key1 in data1) {
                   if (!(key1 === "type" || key1 === "name" || key1 === "protocol" || key1 === "minimum" || key1 === "maximum" || key1 === "length" || key1 === "hint")) {
-                    const err24 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties", schema: false, parentSchema: schema15, data: data1 };
-                    if (vErrors === null) {
-                      vErrors = [err24];
-                    } else {
-                      vErrors.push(err24);
-                    }
-                    errors++;
-                  }
-                }
-                if (data1.type !== void 0) {
-                  let data13 = data1.type;
-                  if (typeof data13 !== "string") {
-                    const err25 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.type.type, parentSchema: schema15.properties.type, data: data13 };
-                    if (vErrors === null) {
-                      vErrors = [err25];
-                    } else {
-                      vErrors.push(err25);
-                    }
-                    errors++;
-                  }
-                }
-                if (data1.name !== void 0) {
-                  let data14 = data1.name;
-                  if (typeof data14 === "string") {
-                    if (!pattern2.test(data14)) {
-                      const err26 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data14 };
-                      if (vErrors === null) {
-                        vErrors = [err26];
-                      } else {
-                        vErrors.push(err26);
-                      }
-                      errors++;
-                    }
-                  } else {
-                    const err27 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.name.type, parentSchema: schema15.properties.name, data: data14 };
-                    if (vErrors === null) {
-                      vErrors = [err27];
-                    } else {
-                      vErrors.push(err27);
-                    }
-                    errors++;
-                  }
-                }
-                if (data1.protocol !== void 0) {
-                  let data15 = data1.protocol;
-                  if (typeof data15 !== "string") {
-                    const err28 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.protocol.type, parentSchema: schema15.properties.protocol, data: data15 };
-                    if (vErrors === null) {
-                      vErrors = [err28];
-                    } else {
-                      vErrors.push(err28);
-                    }
-                    errors++;
-                  }
-                }
-                if (data1.minimum !== void 0) {
-                  let data16 = data1.minimum;
-                  if (!(typeof data16 == "number") && typeof data16 !== "string") {
-                    const err29 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/type", keyword: "type", params: { type: schema15.properties.minimum.type }, message: "must be number,string", schema: schema15.properties.minimum.type, parentSchema: schema15.properties.minimum, data: data16 };
-                    if (vErrors === null) {
-                      vErrors = [err29];
-                    } else {
-                      vErrors.push(err29);
-                    }
-                    errors++;
-                  }
-                }
-                if (data1.maximum !== void 0) {
-                  let data17 = data1.maximum;
-                  if (!(typeof data17 == "number") && typeof data17 !== "string") {
-                    const err30 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/type", keyword: "type", params: { type: schema15.properties.maximum.type }, message: "must be number,string", schema: schema15.properties.maximum.type, parentSchema: schema15.properties.maximum, data: data17 };
+                    const err30 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties", schema: false, parentSchema: schema15, data: data1 };
                     if (vErrors === null) {
                       vErrors = [err30];
                     } else {
@@ -48695,10 +49263,10 @@
                     errors++;
                   }
                 }
-                if (data1.length !== void 0) {
-                  let data18 = data1.length;
-                  if (!(typeof data18 == "number") && typeof data18 !== "string") {
-                    const err31 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/properties/length/type", keyword: "type", params: { type: schema15.properties.length.type }, message: "must be number,string", schema: schema15.properties.length.type, parentSchema: schema15.properties.length, data: data18 };
+                if (data1.type !== void 0) {
+                  let data13 = data1.type;
+                  if (typeof data13 !== "string") {
+                    const err31 = { instancePath: instancePath + "/requirements/" + i0 + "/type", schemaPath: "#/$defs/requirement/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.type.type, parentSchema: schema15.properties.type, data: data13 };
                     if (vErrors === null) {
                       vErrors = [err31];
                     } else {
@@ -48707,34 +49275,198 @@
                     errors++;
                   }
                 }
+                if (data1.name !== void 0) {
+                  let data14 = data1.name;
+                  if (typeof data14 === "string") {
+                    if (!pattern4.test(data14)) {
+                      const err32 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data14 };
+                      if (vErrors === null) {
+                        vErrors = [err32];
+                      } else {
+                        vErrors.push(err32);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err33 = { instancePath: instancePath + "/requirements/" + i0 + "/name", schemaPath: "#/$defs/requirement/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.name.type, parentSchema: schema15.properties.name, data: data14 };
+                    if (vErrors === null) {
+                      vErrors = [err33];
+                    } else {
+                      vErrors.push(err33);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.protocol !== void 0) {
+                  let data15 = data1.protocol;
+                  if (typeof data15 !== "string") {
+                    const err34 = { instancePath: instancePath + "/requirements/" + i0 + "/protocol", schemaPath: "#/$defs/requirement/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.protocol.type, parentSchema: schema15.properties.protocol, data: data15 };
+                    if (vErrors === null) {
+                      vErrors = [err34];
+                    } else {
+                      vErrors.push(err34);
+                    }
+                    errors++;
+                  }
+                }
+                if (data1.minimum !== void 0) {
+                  let data16 = data1.minimum;
+                  const _errs46 = errors;
+                  let valid13 = false;
+                  const _errs47 = errors;
+                  if (!(typeof data16 == "number" && (!(data16 % 1) && !isNaN(data16)))) {
+                    const err35 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.properties.minimum.anyOf[0].type, parentSchema: schema15.properties.minimum.anyOf[0], data: data16 };
+                    if (vErrors === null) {
+                      vErrors = [err35];
+                    } else {
+                      vErrors.push(err35);
+                    }
+                    errors++;
+                  }
+                  var _valid3 = _errs47 === errors;
+                  valid13 = valid13 || _valid3;
+                  if (!valid13) {
+                    const _errs49 = errors;
+                    if (typeof data16 === "string") {
+                      if (!pattern0.test(data16)) {
+                        const err36 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.properties.minimum.anyOf[1], data: data16 };
+                        if (vErrors === null) {
+                          vErrors = [err36];
+                        } else {
+                          vErrors.push(err36);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err37 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.minimum.anyOf[1].type, parentSchema: schema15.properties.minimum.anyOf[1], data: data16 };
+                      if (vErrors === null) {
+                        vErrors = [err37];
+                      } else {
+                        vErrors.push(err37);
+                      }
+                      errors++;
+                    }
+                    var _valid3 = _errs49 === errors;
+                    valid13 = valid13 || _valid3;
+                  }
+                  if (!valid13) {
+                    const err38 = { instancePath: instancePath + "/requirements/" + i0 + "/minimum", schemaPath: "#/$defs/requirement/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.properties.minimum.anyOf, parentSchema: schema15.properties.minimum, data: data16 };
+                    if (vErrors === null) {
+                      vErrors = [err38];
+                    } else {
+                      vErrors.push(err38);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs46;
+                    if (vErrors !== null) {
+                      if (_errs46) {
+                        vErrors.length = _errs46;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data1.maximum !== void 0) {
+                  let data17 = data1.maximum;
+                  const _errs52 = errors;
+                  let valid14 = false;
+                  const _errs53 = errors;
+                  if (!(typeof data17 == "number" && (!(data17 % 1) && !isNaN(data17)))) {
+                    const err39 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.properties.maximum.anyOf[0].type, parentSchema: schema15.properties.maximum.anyOf[0], data: data17 };
+                    if (vErrors === null) {
+                      vErrors = [err39];
+                    } else {
+                      vErrors.push(err39);
+                    }
+                    errors++;
+                  }
+                  var _valid4 = _errs53 === errors;
+                  valid14 = valid14 || _valid4;
+                  if (!valid14) {
+                    const _errs55 = errors;
+                    if (typeof data17 === "string") {
+                      if (!pattern0.test(data17)) {
+                        const err40 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.properties.maximum.anyOf[1], data: data17 };
+                        if (vErrors === null) {
+                          vErrors = [err40];
+                        } else {
+                          vErrors.push(err40);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err41 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.maximum.anyOf[1].type, parentSchema: schema15.properties.maximum.anyOf[1], data: data17 };
+                      if (vErrors === null) {
+                        vErrors = [err41];
+                      } else {
+                        vErrors.push(err41);
+                      }
+                      errors++;
+                    }
+                    var _valid4 = _errs55 === errors;
+                    valid14 = valid14 || _valid4;
+                  }
+                  if (!valid14) {
+                    const err42 = { instancePath: instancePath + "/requirements/" + i0 + "/maximum", schemaPath: "#/$defs/requirement/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.properties.maximum.anyOf, parentSchema: schema15.properties.maximum, data: data17 };
+                    if (vErrors === null) {
+                      vErrors = [err42];
+                    } else {
+                      vErrors.push(err42);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs52;
+                    if (vErrors !== null) {
+                      if (_errs52) {
+                        vErrors.length = _errs52;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data1.length !== void 0) {
+                  let data18 = data1.length;
+                  if (!(typeof data18 == "number") && typeof data18 !== "string") {
+                    const err43 = { instancePath: instancePath + "/requirements/" + i0 + "/length", schemaPath: "#/$defs/requirement/properties/length/type", keyword: "type", params: { type: schema15.properties.length.type }, message: "must be number,string", schema: schema15.properties.length.type, parentSchema: schema15.properties.length, data: data18 };
+                    if (vErrors === null) {
+                      vErrors = [err43];
+                    } else {
+                      vErrors.push(err43);
+                    }
+                    errors++;
+                  }
+                }
                 if (data1.hint !== void 0) {
                   let data19 = data1.hint;
                   if (!(typeof data19 == "number") && typeof data19 !== "string") {
-                    const err32 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/properties/hint/type", keyword: "type", params: { type: schema15.properties.hint.type }, message: "must be number,string", schema: schema15.properties.hint.type, parentSchema: schema15.properties.hint, data: data19 };
+                    const err44 = { instancePath: instancePath + "/requirements/" + i0 + "/hint", schemaPath: "#/$defs/requirement/properties/hint/type", keyword: "type", params: { type: schema15.properties.hint.type }, message: "must be number,string", schema: schema15.properties.hint.type, parentSchema: schema15.properties.hint, data: data19 };
                     if (vErrors === null) {
-                      vErrors = [err32];
+                      vErrors = [err44];
                     } else {
-                      vErrors.push(err32);
+                      vErrors.push(err44);
                     }
                     errors++;
                   }
                 }
               } else {
-                const err33 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema15.type, parentSchema: schema15, data: data1 };
+                const err45 = { instancePath: instancePath + "/requirements/" + i0, schemaPath: "#/$defs/requirement/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema15.type, parentSchema: schema15, data: data1 };
                 if (vErrors === null) {
-                  vErrors = [err33];
+                  vErrors = [err45];
                 } else {
-                  vErrors.push(err33);
+                  vErrors.push(err45);
                 }
                 errors++;
               }
             }
           } else {
-            const err34 = { instancePath: instancePath + "/requirements", schemaPath: "#/properties/requirements/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema14.properties.requirements.type, parentSchema: schema14.properties.requirements, data: data0 };
+            const err46 = { instancePath: instancePath + "/requirements", schemaPath: "#/properties/requirements/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema14.properties.requirements.type, parentSchema: schema14.properties.requirements, data: data0 };
             if (vErrors === null) {
-              vErrors = [err34];
+              vErrors = [err46];
             } else {
-              vErrors.push(err34);
+              vErrors.push(err46);
             }
             errors++;
           }
@@ -48745,28 +49477,28 @@
             const len1 = data20.length;
             for (let i1 = 0; i1 < len1; i1++) {
               let data21 = data20[i1];
-              const _errs50 = errors;
-              let valid14 = false;
+              const _errs66 = errors;
+              let valid18 = false;
               let passing1 = null;
-              const _errs51 = errors;
+              const _errs67 = errors;
               if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
                 if (data21.protocol === void 0) {
-                  const err35 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema15.oneOf[0].required, parentSchema: schema15.oneOf[0], data: data21 };
+                  const err47 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/0/required", keyword: "required", params: { missingProperty: "protocol" }, message: "must have required property 'protocol'", schema: schema15.oneOf[0].required, parentSchema: schema15.oneOf[0], data: data21 };
                   if (vErrors === null) {
-                    vErrors = [err35];
+                    vErrors = [err47];
                   } else {
-                    vErrors.push(err35);
+                    vErrors.push(err47);
                   }
                   errors++;
                 }
                 if (data21.type !== void 0) {
                   let data22 = data21.type;
                   if ("abstraction" !== data22) {
-                    const err36 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema15.oneOf[0].properties.type, data: data22 };
+                    const err48 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/0/properties/type/const", keyword: "const", params: { allowedValue: "abstraction" }, message: "must be equal to constant", schema: "abstraction", parentSchema: schema15.oneOf[0].properties.type, data: data22 };
                     if (vErrors === null) {
-                      vErrors = [err36];
+                      vErrors = [err48];
                     } else {
-                      vErrors.push(err36);
+                      vErrors.push(err48);
                     }
                     errors++;
                   }
@@ -48774,300 +49506,128 @@
                 if (data21.protocol !== void 0) {
                   let data23 = data21.protocol;
                   if (typeof data23 !== "string") {
-                    const err37 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[0].properties.protocol.type, parentSchema: schema15.oneOf[0].properties.protocol, data: data23 };
+                    const err49 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/oneOf/0/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[0].properties.protocol.type, parentSchema: schema15.oneOf[0].properties.protocol, data: data23 };
                     if (vErrors === null) {
-                      vErrors = [err37];
+                      vErrors = [err49];
                     } else {
-                      vErrors.push(err37);
+                      vErrors.push(err49);
                     }
                     errors++;
                   }
                 }
               }
-              var _valid1 = _errs51 === errors;
-              if (_valid1) {
-                valid14 = true;
+              var _valid5 = _errs67 === errors;
+              if (_valid5) {
+                valid18 = true;
                 passing1 = 0;
               }
-              const _errs55 = errors;
+              const _errs71 = errors;
               if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
                 if (data21.minimum === void 0) {
-                  const err38 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
+                  const err50 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "minimum" }, message: "must have required property 'minimum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
                   if (vErrors === null) {
-                    vErrors = [err38];
+                    vErrors = [err50];
                   } else {
-                    vErrors.push(err38);
+                    vErrors.push(err50);
                   }
                   errors++;
                 }
                 if (data21.maximum === void 0) {
-                  const err39 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
+                  const err51 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "maximum" }, message: "must have required property 'maximum'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
                   if (vErrors === null) {
-                    vErrors = [err39];
+                    vErrors = [err51];
                   } else {
-                    vErrors.push(err39);
+                    vErrors.push(err51);
                   }
                   errors++;
                 }
                 if (data21.hint === void 0) {
-                  const err40 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
+                  const err52 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/1/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[1].required, parentSchema: schema15.oneOf[1], data: data21 };
                   if (vErrors === null) {
-                    vErrors = [err40];
+                    vErrors = [err52];
                   } else {
-                    vErrors.push(err40);
+                    vErrors.push(err52);
                   }
                   errors++;
                 }
                 if (data21.type !== void 0) {
                   let data24 = data21.type;
                   if ("integer" !== data24) {
-                    const err41 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema15.oneOf[1].properties.type, data: data24 };
+                    const err53 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/1/properties/type/const", keyword: "const", params: { allowedValue: "integer" }, message: "must be equal to constant", schema: "integer", parentSchema: schema15.oneOf[1].properties.type, data: data24 };
                     if (vErrors === null) {
-                      vErrors = [err41];
+                      vErrors = [err53];
                     } else {
-                      vErrors.push(err41);
+                      vErrors.push(err53);
                     }
                     errors++;
                   }
                 }
                 if (data21.minimum !== void 0) {
                   let data25 = data21.minimum;
-                  if (!(typeof data25 == "number") && typeof data25 !== "string") {
-                    const err42 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.minimum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.minimum.type, parentSchema: schema15.oneOf[1].properties.minimum, data: data25 };
+                  const _errs74 = errors;
+                  let valid21 = false;
+                  const _errs75 = errors;
+                  if (!(typeof data25 == "number" && (!(data25 % 1) && !isNaN(data25)))) {
+                    const err54 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.oneOf[1].properties.minimum.anyOf[0].type, parentSchema: schema15.oneOf[1].properties.minimum.anyOf[0], data: data25 };
                     if (vErrors === null) {
-                      vErrors = [err42];
+                      vErrors = [err54];
                     } else {
-                      vErrors.push(err42);
+                      vErrors.push(err54);
                     }
                     errors++;
+                  }
+                  var _valid6 = _errs75 === errors;
+                  valid21 = valid21 || _valid6;
+                  if (!valid21) {
+                    const _errs77 = errors;
+                    if (typeof data25 === "string") {
+                      if (!pattern0.test(data25)) {
+                        const err55 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.oneOf[1].properties.minimum.anyOf[1], data: data25 };
+                        if (vErrors === null) {
+                          vErrors = [err55];
+                        } else {
+                          vErrors.push(err55);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err56 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[1].properties.minimum.anyOf[1].type, parentSchema: schema15.oneOf[1].properties.minimum.anyOf[1], data: data25 };
+                      if (vErrors === null) {
+                        vErrors = [err56];
+                      } else {
+                        vErrors.push(err56);
+                      }
+                      errors++;
+                    }
+                    var _valid6 = _errs77 === errors;
+                    valid21 = valid21 || _valid6;
+                  }
+                  if (!valid21) {
+                    const err57 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/oneOf/1/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.oneOf[1].properties.minimum.anyOf, parentSchema: schema15.oneOf[1].properties.minimum, data: data25 };
+                    if (vErrors === null) {
+                      vErrors = [err57];
+                    } else {
+                      vErrors.push(err57);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs74;
+                    if (vErrors !== null) {
+                      if (_errs74) {
+                        vErrors.length = _errs74;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
                   }
                 }
                 if (data21.maximum !== void 0) {
                   let data26 = data21.maximum;
-                  if (!(typeof data26 == "number") && typeof data26 !== "string") {
-                    const err43 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/type", keyword: "type", params: { type: schema15.oneOf[1].properties.maximum.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.maximum.type, parentSchema: schema15.oneOf[1].properties.maximum, data: data26 };
-                    if (vErrors === null) {
-                      vErrors = [err43];
-                    } else {
-                      vErrors.push(err43);
-                    }
-                    errors++;
-                  }
-                }
-                if (data21.hint !== void 0) {
-                  let data27 = data21.hint;
-                  if (!(typeof data27 == "number") && typeof data27 !== "string") {
-                    const err44 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.hint.type, parentSchema: schema15.oneOf[1].properties.hint, data: data27 };
-                    if (vErrors === null) {
-                      vErrors = [err44];
-                    } else {
-                      vErrors.push(err44);
-                    }
-                    errors++;
-                  }
-                }
-              }
-              var _valid1 = _errs55 === errors;
-              if (_valid1 && valid14) {
-                valid14 = false;
-                passing1 = [passing1, 1];
-              } else {
-                if (_valid1) {
-                  valid14 = true;
-                  passing1 = 1;
-                }
-                const _errs63 = errors;
-                if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
-                  if (data21.length === void 0) {
-                    const err45 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data21 };
-                    if (vErrors === null) {
-                      vErrors = [err45];
-                    } else {
-                      vErrors.push(err45);
-                    }
-                    errors++;
-                  }
-                  if (data21.hint === void 0) {
-                    const err46 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data21 };
-                    if (vErrors === null) {
-                      vErrors = [err46];
-                    } else {
-                      vErrors.push(err46);
-                    }
-                    errors++;
-                  }
-                  if (data21.type !== void 0) {
-                    let data28 = data21.type;
-                    if ("string" !== data28) {
-                      const err47 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema15.oneOf[2].properties.type, data: data28 };
-                      if (vErrors === null) {
-                        vErrors = [err47];
-                      } else {
-                        vErrors.push(err47);
-                      }
-                      errors++;
-                    }
-                  }
-                  if (data21.length !== void 0) {
-                    let data29 = data21.length;
-                    if (!(typeof data29 == "number") && typeof data29 !== "string") {
-                      const err48 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/oneOf/2/properties/length/type", keyword: "type", params: { type: schema15.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.length.type, parentSchema: schema15.oneOf[2].properties.length, data: data29 };
-                      if (vErrors === null) {
-                        vErrors = [err48];
-                      } else {
-                        vErrors.push(err48);
-                      }
-                      errors++;
-                    }
-                  }
-                  if (data21.hint !== void 0) {
-                    let data30 = data21.hint;
-                    if (!(typeof data30 == "number") && typeof data30 !== "string") {
-                      const err49 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.hint.type, parentSchema: schema15.oneOf[2].properties.hint, data: data30 };
-                      if (vErrors === null) {
-                        vErrors = [err49];
-                      } else {
-                        vErrors.push(err49);
-                      }
-                      errors++;
-                    }
-                  }
-                }
-                var _valid1 = _errs63 === errors;
-                if (_valid1 && valid14) {
-                  valid14 = false;
-                  passing1 = [passing1, 2];
-                } else {
-                  if (_valid1) {
-                    valid14 = true;
-                    passing1 = 2;
-                  }
-                  const _errs69 = errors;
-                  if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
-                    if (data21.type !== void 0) {
-                      let data31 = data21.type;
-                      if ("boolean" !== data31) {
-                        const err50 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema15.oneOf[3].properties.type, data: data31 };
-                        if (vErrors === null) {
-                          vErrors = [err50];
-                        } else {
-                          vErrors.push(err50);
-                        }
-                        errors++;
-                      }
-                    }
-                  }
-                  var _valid1 = _errs69 === errors;
-                  if (_valid1 && valid14) {
-                    valid14 = false;
-                    passing1 = [passing1, 3];
-                  } else {
-                    if (_valid1) {
-                      valid14 = true;
-                      passing1 = 3;
-                    }
-                    const _errs71 = errors;
-                    if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
-                      if (data21.type !== void 0) {
-                        let data32 = data21.type;
-                        if ("site" !== data32) {
-                          const err51 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema15.oneOf[4].properties.type, data: data32 };
-                          if (vErrors === null) {
-                            vErrors = [err51];
-                          } else {
-                            vErrors.push(err51);
-                          }
-                          errors++;
-                        }
-                      }
-                    }
-                    var _valid1 = _errs71 === errors;
-                    if (_valid1 && valid14) {
-                      valid14 = false;
-                      passing1 = [passing1, 4];
-                    } else {
-                      if (_valid1) {
-                        valid14 = true;
-                        passing1 = 4;
-                      }
-                    }
-                  }
-                }
-              }
-              if (!valid14) {
-                const err52 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf", keyword: "oneOf", params: { passingSchemas: passing1 }, message: "must match exactly one schema in oneOf", schema: schema15.oneOf, parentSchema: schema15, data: data21 };
-                if (vErrors === null) {
-                  vErrors = [err52];
-                } else {
-                  vErrors.push(err52);
-                }
-                errors++;
-              } else {
-                errors = _errs50;
-                if (vErrors !== null) {
-                  if (_errs50) {
-                    vErrors.length = _errs50;
-                  } else {
-                    vErrors = null;
-                  }
-                }
-              }
-              if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
-                if (data21.type === void 0) {
-                  const err53 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema15.required, parentSchema: schema15, data: data21 };
-                  if (vErrors === null) {
-                    vErrors = [err53];
-                  } else {
-                    vErrors.push(err53);
-                  }
-                  errors++;
-                }
-                if (data21.name === void 0) {
-                  const err54 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema15.required, parentSchema: schema15, data: data21 };
-                  if (vErrors === null) {
-                    vErrors = [err54];
-                  } else {
-                    vErrors.push(err54);
-                  }
-                  errors++;
-                }
-                for (const key2 in data21) {
-                  if (!(key2 === "type" || key2 === "name" || key2 === "protocol" || key2 === "minimum" || key2 === "maximum" || key2 === "length" || key2 === "hint")) {
-                    const err55 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key2 }, message: "must NOT have additional properties", schema: false, parentSchema: schema15, data: data21 };
-                    if (vErrors === null) {
-                      vErrors = [err55];
-                    } else {
-                      vErrors.push(err55);
-                    }
-                    errors++;
-                  }
-                }
-                if (data21.type !== void 0) {
-                  let data33 = data21.type;
-                  if (typeof data33 !== "string") {
-                    const err56 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.type.type, parentSchema: schema15.properties.type, data: data33 };
-                    if (vErrors === null) {
-                      vErrors = [err56];
-                    } else {
-                      vErrors.push(err56);
-                    }
-                    errors++;
-                  }
-                }
-                if (data21.name !== void 0) {
-                  let data34 = data21.name;
-                  if (typeof data34 === "string") {
-                    if (!pattern2.test(data34)) {
-                      const err57 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data34 };
-                      if (vErrors === null) {
-                        vErrors = [err57];
-                      } else {
-                        vErrors.push(err57);
-                      }
-                      errors++;
-                    }
-                  } else {
-                    const err58 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.name.type, parentSchema: schema15.properties.name, data: data34 };
+                  const _errs80 = errors;
+                  let valid22 = false;
+                  const _errs81 = errors;
+                  if (!(typeof data26 == "number" && (!(data26 % 1) && !isNaN(data26)))) {
+                    const err58 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.oneOf[1].properties.maximum.anyOf[0].type, parentSchema: schema15.oneOf[1].properties.maximum.anyOf[0], data: data26 };
                     if (vErrors === null) {
                       vErrors = [err58];
                     } else {
@@ -49075,47 +49635,55 @@
                     }
                     errors++;
                   }
-                }
-                if (data21.protocol !== void 0) {
-                  let data35 = data21.protocol;
-                  if (typeof data35 !== "string") {
-                    const err59 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.protocol.type, parentSchema: schema15.properties.protocol, data: data35 };
-                    if (vErrors === null) {
-                      vErrors = [err59];
+                  var _valid7 = _errs81 === errors;
+                  valid22 = valid22 || _valid7;
+                  if (!valid22) {
+                    const _errs83 = errors;
+                    if (typeof data26 === "string") {
+                      if (!pattern0.test(data26)) {
+                        const err59 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.oneOf[1].properties.maximum.anyOf[1], data: data26 };
+                        if (vErrors === null) {
+                          vErrors = [err59];
+                        } else {
+                          vErrors.push(err59);
+                        }
+                        errors++;
+                      }
                     } else {
-                      vErrors.push(err59);
+                      const err60 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.oneOf[1].properties.maximum.anyOf[1].type, parentSchema: schema15.oneOf[1].properties.maximum.anyOf[1], data: data26 };
+                      if (vErrors === null) {
+                        vErrors = [err60];
+                      } else {
+                        vErrors.push(err60);
+                      }
+                      errors++;
                     }
-                    errors++;
+                    var _valid7 = _errs83 === errors;
+                    valid22 = valid22 || _valid7;
                   }
-                }
-                if (data21.minimum !== void 0) {
-                  let data36 = data21.minimum;
-                  if (!(typeof data36 == "number") && typeof data36 !== "string") {
-                    const err60 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/type", keyword: "type", params: { type: schema15.properties.minimum.type }, message: "must be number,string", schema: schema15.properties.minimum.type, parentSchema: schema15.properties.minimum, data: data36 };
-                    if (vErrors === null) {
-                      vErrors = [err60];
-                    } else {
-                      vErrors.push(err60);
-                    }
-                    errors++;
-                  }
-                }
-                if (data21.maximum !== void 0) {
-                  let data37 = data21.maximum;
-                  if (!(typeof data37 == "number") && typeof data37 !== "string") {
-                    const err61 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/type", keyword: "type", params: { type: schema15.properties.maximum.type }, message: "must be number,string", schema: schema15.properties.maximum.type, parentSchema: schema15.properties.maximum, data: data37 };
+                  if (!valid22) {
+                    const err61 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/oneOf/1/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.oneOf[1].properties.maximum.anyOf, parentSchema: schema15.oneOf[1].properties.maximum, data: data26 };
                     if (vErrors === null) {
                       vErrors = [err61];
                     } else {
                       vErrors.push(err61);
                     }
                     errors++;
+                  } else {
+                    errors = _errs80;
+                    if (vErrors !== null) {
+                      if (_errs80) {
+                        vErrors.length = _errs80;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
                   }
                 }
-                if (data21.length !== void 0) {
-                  let data38 = data21.length;
-                  if (!(typeof data38 == "number") && typeof data38 !== "string") {
-                    const err62 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/properties/length/type", keyword: "type", params: { type: schema15.properties.length.type }, message: "must be number,string", schema: schema15.properties.length.type, parentSchema: schema15.properties.length, data: data38 };
+                if (data21.hint !== void 0) {
+                  let data27 = data21.hint;
+                  if (!(typeof data27 == "number") && typeof data27 !== "string") {
+                    const err62 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/1/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[1].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[1].properties.hint.type, parentSchema: schema15.oneOf[1].properties.hint, data: data27 };
                     if (vErrors === null) {
                       vErrors = [err62];
                     } else {
@@ -49124,10 +49692,20 @@
                     errors++;
                   }
                 }
-                if (data21.hint !== void 0) {
-                  let data39 = data21.hint;
-                  if (!(typeof data39 == "number") && typeof data39 !== "string") {
-                    const err63 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/properties/hint/type", keyword: "type", params: { type: schema15.properties.hint.type }, message: "must be number,string", schema: schema15.properties.hint.type, parentSchema: schema15.properties.hint, data: data39 };
+              }
+              var _valid5 = _errs71 === errors;
+              if (_valid5 && valid18) {
+                valid18 = false;
+                passing1 = [passing1, 1];
+              } else {
+                if (_valid5) {
+                  valid18 = true;
+                  passing1 = 1;
+                }
+                const _errs87 = errors;
+                if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                  if (data21.length === void 0) {
+                    const err63 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "length" }, message: "must have required property 'length'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data21 };
                     if (vErrors === null) {
                       vErrors = [err63];
                     } else {
@@ -49135,23 +49713,365 @@
                     }
                     errors++;
                   }
+                  if (data21.hint === void 0) {
+                    const err64 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf/2/required", keyword: "required", params: { missingProperty: "hint" }, message: "must have required property 'hint'", schema: schema15.oneOf[2].required, parentSchema: schema15.oneOf[2], data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err64];
+                    } else {
+                      vErrors.push(err64);
+                    }
+                    errors++;
+                  }
+                  if (data21.type !== void 0) {
+                    let data28 = data21.type;
+                    if ("string" !== data28) {
+                      const err65 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/2/properties/type/const", keyword: "const", params: { allowedValue: "string" }, message: "must be equal to constant", schema: "string", parentSchema: schema15.oneOf[2].properties.type, data: data28 };
+                      if (vErrors === null) {
+                        vErrors = [err65];
+                      } else {
+                        vErrors.push(err65);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data21.length !== void 0) {
+                    let data29 = data21.length;
+                    if (!(typeof data29 == "number") && typeof data29 !== "string") {
+                      const err66 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/oneOf/2/properties/length/type", keyword: "type", params: { type: schema15.oneOf[2].properties.length.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.length.type, parentSchema: schema15.oneOf[2].properties.length, data: data29 };
+                      if (vErrors === null) {
+                        vErrors = [err66];
+                      } else {
+                        vErrors.push(err66);
+                      }
+                      errors++;
+                    }
+                  }
+                  if (data21.hint !== void 0) {
+                    let data30 = data21.hint;
+                    if (!(typeof data30 == "number") && typeof data30 !== "string") {
+                      const err67 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/oneOf/2/properties/hint/type", keyword: "type", params: { type: schema15.oneOf[2].properties.hint.type }, message: "must be number,string", schema: schema15.oneOf[2].properties.hint.type, parentSchema: schema15.oneOf[2].properties.hint, data: data30 };
+                      if (vErrors === null) {
+                        vErrors = [err67];
+                      } else {
+                        vErrors.push(err67);
+                      }
+                      errors++;
+                    }
+                  }
+                }
+                var _valid5 = _errs87 === errors;
+                if (_valid5 && valid18) {
+                  valid18 = false;
+                  passing1 = [passing1, 2];
+                } else {
+                  if (_valid5) {
+                    valid18 = true;
+                    passing1 = 2;
+                  }
+                  const _errs93 = errors;
+                  if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                    if (data21.type !== void 0) {
+                      let data31 = data21.type;
+                      if ("boolean" !== data31) {
+                        const err68 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/3/properties/type/const", keyword: "const", params: { allowedValue: "boolean" }, message: "must be equal to constant", schema: "boolean", parentSchema: schema15.oneOf[3].properties.type, data: data31 };
+                        if (vErrors === null) {
+                          vErrors = [err68];
+                        } else {
+                          vErrors.push(err68);
+                        }
+                        errors++;
+                      }
+                    }
+                  }
+                  var _valid5 = _errs93 === errors;
+                  if (_valid5 && valid18) {
+                    valid18 = false;
+                    passing1 = [passing1, 3];
+                  } else {
+                    if (_valid5) {
+                      valid18 = true;
+                      passing1 = 3;
+                    }
+                    const _errs95 = errors;
+                    if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                      if (data21.type !== void 0) {
+                        let data32 = data21.type;
+                        if ("site" !== data32) {
+                          const err69 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/oneOf/4/properties/type/const", keyword: "const", params: { allowedValue: "site" }, message: "must be equal to constant", schema: "site", parentSchema: schema15.oneOf[4].properties.type, data: data32 };
+                          if (vErrors === null) {
+                            vErrors = [err69];
+                          } else {
+                            vErrors.push(err69);
+                          }
+                          errors++;
+                        }
+                      }
+                    }
+                    var _valid5 = _errs95 === errors;
+                    if (_valid5 && valid18) {
+                      valid18 = false;
+                      passing1 = [passing1, 4];
+                    } else {
+                      if (_valid5) {
+                        valid18 = true;
+                        passing1 = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              if (!valid18) {
+                const err70 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/oneOf", keyword: "oneOf", params: { passingSchemas: passing1 }, message: "must match exactly one schema in oneOf", schema: schema15.oneOf, parentSchema: schema15, data: data21 };
+                if (vErrors === null) {
+                  vErrors = [err70];
+                } else {
+                  vErrors.push(err70);
+                }
+                errors++;
+              } else {
+                errors = _errs66;
+                if (vErrors !== null) {
+                  if (_errs66) {
+                    vErrors.length = _errs66;
+                  } else {
+                    vErrors = null;
+                  }
+                }
+              }
+              if (data21 && typeof data21 == "object" && !Array.isArray(data21)) {
+                if (data21.type === void 0) {
+                  const err71 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "type" }, message: "must have required property 'type'", schema: schema15.required, parentSchema: schema15, data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err71];
+                  } else {
+                    vErrors.push(err71);
+                  }
+                  errors++;
+                }
+                if (data21.name === void 0) {
+                  const err72 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/required", keyword: "required", params: { missingProperty: "name" }, message: "must have required property 'name'", schema: schema15.required, parentSchema: schema15, data: data21 };
+                  if (vErrors === null) {
+                    vErrors = [err72];
+                  } else {
+                    vErrors.push(err72);
+                  }
+                  errors++;
+                }
+                for (const key2 in data21) {
+                  if (!(key2 === "type" || key2 === "name" || key2 === "protocol" || key2 === "minimum" || key2 === "maximum" || key2 === "length" || key2 === "hint")) {
+                    const err73 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key2 }, message: "must NOT have additional properties", schema: false, parentSchema: schema15, data: data21 };
+                    if (vErrors === null) {
+                      vErrors = [err73];
+                    } else {
+                      vErrors.push(err73);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.type !== void 0) {
+                  let data33 = data21.type;
+                  if (typeof data33 !== "string") {
+                    const err74 = { instancePath: instancePath + "/obligations/" + i1 + "/type", schemaPath: "#/$defs/obligation/properties/type/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.type.type, parentSchema: schema15.properties.type, data: data33 };
+                    if (vErrors === null) {
+                      vErrors = [err74];
+                    } else {
+                      vErrors.push(err74);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.name !== void 0) {
+                  let data34 = data21.name;
+                  if (typeof data34 === "string") {
+                    if (!pattern4.test(data34)) {
+                      const err75 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/pattern", keyword: "pattern", params: { pattern: "^[\\w .(),-]+$" }, message: 'must match pattern "^[\\w .(),-]+$"', schema: "^[\\w .(),-]+$", parentSchema: schema15.properties.name, data: data34 };
+                      if (vErrors === null) {
+                        vErrors = [err75];
+                      } else {
+                        vErrors.push(err75);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err76 = { instancePath: instancePath + "/obligations/" + i1 + "/name", schemaPath: "#/$defs/obligation/properties/name/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.name.type, parentSchema: schema15.properties.name, data: data34 };
+                    if (vErrors === null) {
+                      vErrors = [err76];
+                    } else {
+                      vErrors.push(err76);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.protocol !== void 0) {
+                  let data35 = data21.protocol;
+                  if (typeof data35 !== "string") {
+                    const err77 = { instancePath: instancePath + "/obligations/" + i1 + "/protocol", schemaPath: "#/$defs/obligation/properties/protocol/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.protocol.type, parentSchema: schema15.properties.protocol, data: data35 };
+                    if (vErrors === null) {
+                      vErrors = [err77];
+                    } else {
+                      vErrors.push(err77);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.minimum !== void 0) {
+                  let data36 = data21.minimum;
+                  const _errs105 = errors;
+                  let valid27 = false;
+                  const _errs106 = errors;
+                  if (!(typeof data36 == "number" && (!(data36 % 1) && !isNaN(data36)))) {
+                    const err78 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.properties.minimum.anyOf[0].type, parentSchema: schema15.properties.minimum.anyOf[0], data: data36 };
+                    if (vErrors === null) {
+                      vErrors = [err78];
+                    } else {
+                      vErrors.push(err78);
+                    }
+                    errors++;
+                  }
+                  var _valid8 = _errs106 === errors;
+                  valid27 = valid27 || _valid8;
+                  if (!valid27) {
+                    const _errs108 = errors;
+                    if (typeof data36 === "string") {
+                      if (!pattern0.test(data36)) {
+                        const err79 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.properties.minimum.anyOf[1], data: data36 };
+                        if (vErrors === null) {
+                          vErrors = [err79];
+                        } else {
+                          vErrors.push(err79);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err80 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.minimum.anyOf[1].type, parentSchema: schema15.properties.minimum.anyOf[1], data: data36 };
+                      if (vErrors === null) {
+                        vErrors = [err80];
+                      } else {
+                        vErrors.push(err80);
+                      }
+                      errors++;
+                    }
+                    var _valid8 = _errs108 === errors;
+                    valid27 = valid27 || _valid8;
+                  }
+                  if (!valid27) {
+                    const err81 = { instancePath: instancePath + "/obligations/" + i1 + "/minimum", schemaPath: "#/$defs/obligation/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.properties.minimum.anyOf, parentSchema: schema15.properties.minimum, data: data36 };
+                    if (vErrors === null) {
+                      vErrors = [err81];
+                    } else {
+                      vErrors.push(err81);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs105;
+                    if (vErrors !== null) {
+                      if (_errs105) {
+                        vErrors.length = _errs105;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data21.maximum !== void 0) {
+                  let data37 = data21.maximum;
+                  const _errs111 = errors;
+                  let valid28 = false;
+                  const _errs112 = errors;
+                  if (!(typeof data37 == "number" && (!(data37 % 1) && !isNaN(data37)))) {
+                    const err82 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema15.properties.maximum.anyOf[0].type, parentSchema: schema15.properties.maximum.anyOf[0], data: data37 };
+                    if (vErrors === null) {
+                      vErrors = [err82];
+                    } else {
+                      vErrors.push(err82);
+                    }
+                    errors++;
+                  }
+                  var _valid9 = _errs112 === errors;
+                  valid28 = valid28 || _valid9;
+                  if (!valid28) {
+                    const _errs114 = errors;
+                    if (typeof data37 === "string") {
+                      if (!pattern0.test(data37)) {
+                        const err83 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema15.properties.maximum.anyOf[1], data: data37 };
+                        if (vErrors === null) {
+                          vErrors = [err83];
+                        } else {
+                          vErrors.push(err83);
+                        }
+                        errors++;
+                      }
+                    } else {
+                      const err84 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema15.properties.maximum.anyOf[1].type, parentSchema: schema15.properties.maximum.anyOf[1], data: data37 };
+                      if (vErrors === null) {
+                        vErrors = [err84];
+                      } else {
+                        vErrors.push(err84);
+                      }
+                      errors++;
+                    }
+                    var _valid9 = _errs114 === errors;
+                    valid28 = valid28 || _valid9;
+                  }
+                  if (!valid28) {
+                    const err85 = { instancePath: instancePath + "/obligations/" + i1 + "/maximum", schemaPath: "#/$defs/obligation/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema15.properties.maximum.anyOf, parentSchema: schema15.properties.maximum, data: data37 };
+                    if (vErrors === null) {
+                      vErrors = [err85];
+                    } else {
+                      vErrors.push(err85);
+                    }
+                    errors++;
+                  } else {
+                    errors = _errs111;
+                    if (vErrors !== null) {
+                      if (_errs111) {
+                        vErrors.length = _errs111;
+                      } else {
+                        vErrors = null;
+                      }
+                    }
+                  }
+                }
+                if (data21.length !== void 0) {
+                  let data38 = data21.length;
+                  if (!(typeof data38 == "number") && typeof data38 !== "string") {
+                    const err86 = { instancePath: instancePath + "/obligations/" + i1 + "/length", schemaPath: "#/$defs/obligation/properties/length/type", keyword: "type", params: { type: schema15.properties.length.type }, message: "must be number,string", schema: schema15.properties.length.type, parentSchema: schema15.properties.length, data: data38 };
+                    if (vErrors === null) {
+                      vErrors = [err86];
+                    } else {
+                      vErrors.push(err86);
+                    }
+                    errors++;
+                  }
+                }
+                if (data21.hint !== void 0) {
+                  let data39 = data21.hint;
+                  if (!(typeof data39 == "number") && typeof data39 !== "string") {
+                    const err87 = { instancePath: instancePath + "/obligations/" + i1 + "/hint", schemaPath: "#/$defs/obligation/properties/hint/type", keyword: "type", params: { type: schema15.properties.hint.type }, message: "must be number,string", schema: schema15.properties.hint.type, parentSchema: schema15.properties.hint, data: data39 };
+                    if (vErrors === null) {
+                      vErrors = [err87];
+                    } else {
+                      vErrors.push(err87);
+                    }
+                    errors++;
+                  }
                 }
               } else {
-                const err64 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema15.type, parentSchema: schema15, data: data21 };
+                const err88 = { instancePath: instancePath + "/obligations/" + i1, schemaPath: "#/$defs/obligation/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema15.type, parentSchema: schema15, data: data21 };
                 if (vErrors === null) {
-                  vErrors = [err64];
+                  vErrors = [err88];
                 } else {
-                  vErrors.push(err64);
+                  vErrors.push(err88);
                 }
                 errors++;
               }
             }
           } else {
-            const err65 = { instancePath: instancePath + "/obligations", schemaPath: "#/properties/obligations/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema14.properties.obligations.type, parentSchema: schema14.properties.obligations, data: data20 };
+            const err89 = { instancePath: instancePath + "/obligations", schemaPath: "#/properties/obligations/type", keyword: "type", params: { type: "array" }, message: "must be array", schema: schema14.properties.obligations.type, parentSchema: schema14.properties.obligations, data: data20 };
             if (vErrors === null) {
-              vErrors = [err65];
+              vErrors = [err89];
             } else {
-              vErrors.push(err65);
+              vErrors.push(err89);
             }
             errors++;
           }
@@ -49159,21 +50079,21 @@
         if (data.macro !== void 0) {
           let data40 = data.macro;
           if (typeof data40 !== "string") {
-            const err66 = { instancePath: instancePath + "/macro", schemaPath: "#/properties/macro/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.macro.type, parentSchema: schema14.properties.macro, data: data40 };
+            const err90 = { instancePath: instancePath + "/macro", schemaPath: "#/properties/macro/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema14.properties.macro.type, parentSchema: schema14.properties.macro, data: data40 };
             if (vErrors === null) {
-              vErrors = [err66];
+              vErrors = [err90];
             } else {
-              vErrors.push(err66);
+              vErrors.push(err90);
             }
             errors++;
           }
         }
       } else {
-        const err67 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data };
+        const err91 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object", schema: schema14.type, parentSchema: schema14, data };
         if (vErrors === null) {
-          vErrors = [err67];
+          vErrors = [err91];
         } else {
-          vErrors.push(err67);
+          vErrors.push(err91);
         }
         errors++;
       }
@@ -49520,8 +50440,8 @@
       validate18.errors = vErrors;
       return errors === 0;
     }
-    exports2["17a0aba3"] = validate19;
-    const schema20 = { "properties": { "type": { "const": "integer" }, "minimum": { "type": ["number", "string"] }, "maximum": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "17a0aba3" };
+    exports2["-1f0ff93d"] = validate19;
+    const schema20 = { "properties": { "type": { "const": "integer" }, "minimum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "maximum": { "anyOf": [{ "type": "integer" }, { "type": "string", "pattern": "^-?\\d+$" }], "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["minimum"] }, { "required": ["maximum"] }, { "required": ["hint"] }], "$id": "-1f0ff93d" };
     function validate19(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -49623,8 +50543,11 @@
         }
         if (data.minimum !== void 0) {
           let data1 = data.minimum;
-          if (!(typeof data1 == "number") && typeof data1 !== "string") {
-            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/type", keyword: "type", params: { type: schema20.properties.minimum.type }, message: "must be number,string", schema: schema20.properties.minimum.type, parentSchema: schema20.properties.minimum, data: data1 };
+          const _errs7 = errors;
+          let valid2 = false;
+          const _errs8 = errors;
+          if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)))) {
+            const err6 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema20.properties.minimum.anyOf[0].type, parentSchema: schema20.properties.minimum.anyOf[0], data: data1 };
             if (vErrors === null) {
               vErrors = [err6];
             } else {
@@ -49632,27 +50555,118 @@
             }
             errors++;
           }
+          var _valid1 = _errs8 === errors;
+          valid2 = valid2 || _valid1;
+          if (!valid2) {
+            const _errs10 = errors;
+            if (typeof data1 === "string") {
+              if (!pattern0.test(data1)) {
+                const err7 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema20.properties.minimum.anyOf[1], data: data1 };
+                if (vErrors === null) {
+                  vErrors = [err7];
+                } else {
+                  vErrors.push(err7);
+                }
+                errors++;
+              }
+            } else {
+              const err8 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema20.properties.minimum.anyOf[1].type, parentSchema: schema20.properties.minimum.anyOf[1], data: data1 };
+              if (vErrors === null) {
+                vErrors = [err8];
+              } else {
+                vErrors.push(err8);
+              }
+              errors++;
+            }
+            var _valid1 = _errs10 === errors;
+            valid2 = valid2 || _valid1;
+          }
+          if (!valid2) {
+            const err9 = { instancePath: instancePath + "/minimum", schemaPath: "#/properties/minimum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema20.properties.minimum.anyOf, parentSchema: schema20.properties.minimum, data: data1 };
+            if (vErrors === null) {
+              vErrors = [err9];
+            } else {
+              vErrors.push(err9);
+            }
+            errors++;
+          } else {
+            errors = _errs7;
+            if (vErrors !== null) {
+              if (_errs7) {
+                vErrors.length = _errs7;
+              } else {
+                vErrors = null;
+              }
+            }
+          }
         }
         if (data.maximum !== void 0) {
           let data2 = data.maximum;
-          if (!(typeof data2 == "number") && typeof data2 !== "string") {
-            const err7 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/type", keyword: "type", params: { type: schema20.properties.maximum.type }, message: "must be number,string", schema: schema20.properties.maximum.type, parentSchema: schema20.properties.maximum, data: data2 };
+          const _errs13 = errors;
+          let valid3 = false;
+          const _errs14 = errors;
+          if (!(typeof data2 == "number" && (!(data2 % 1) && !isNaN(data2)))) {
+            const err10 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf/0/type", keyword: "type", params: { type: "integer" }, message: "must be integer", schema: schema20.properties.maximum.anyOf[0].type, parentSchema: schema20.properties.maximum.anyOf[0], data: data2 };
             if (vErrors === null) {
-              vErrors = [err7];
+              vErrors = [err10];
             } else {
-              vErrors.push(err7);
+              vErrors.push(err10);
             }
             errors++;
+          }
+          var _valid2 = _errs14 === errors;
+          valid3 = valid3 || _valid2;
+          if (!valid3) {
+            const _errs16 = errors;
+            if (typeof data2 === "string") {
+              if (!pattern0.test(data2)) {
+                const err11 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^-?\\d+$" }, message: 'must match pattern "^-?\\d+$"', schema: "^-?\\d+$", parentSchema: schema20.properties.maximum.anyOf[1], data: data2 };
+                if (vErrors === null) {
+                  vErrors = [err11];
+                } else {
+                  vErrors.push(err11);
+                }
+                errors++;
+              }
+            } else {
+              const err12 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string", schema: schema20.properties.maximum.anyOf[1].type, parentSchema: schema20.properties.maximum.anyOf[1], data: data2 };
+              if (vErrors === null) {
+                vErrors = [err12];
+              } else {
+                vErrors.push(err12);
+              }
+              errors++;
+            }
+            var _valid2 = _errs16 === errors;
+            valid3 = valid3 || _valid2;
+          }
+          if (!valid3) {
+            const err13 = { instancePath: instancePath + "/maximum", schemaPath: "#/properties/maximum/anyOf", keyword: "anyOf", params: {}, message: "must match a schema in anyOf", schema: schema20.properties.maximum.anyOf, parentSchema: schema20.properties.maximum, data: data2 };
+            if (vErrors === null) {
+              vErrors = [err13];
+            } else {
+              vErrors.push(err13);
+            }
+            errors++;
+          } else {
+            errors = _errs13;
+            if (vErrors !== null) {
+              if (_errs13) {
+                vErrors.length = _errs13;
+              } else {
+                vErrors = null;
+              }
+            }
           }
         }
         if (data.hint !== void 0) {
           let data3 = data.hint;
           if (!(typeof data3 == "number") && typeof data3 !== "string") {
-            const err8 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema20.properties.hint.type }, message: "must be number,string", schema: schema20.properties.hint.type, parentSchema: schema20.properties.hint, data: data3 };
+            const err14 = { instancePath: instancePath + "/hint", schemaPath: "#/properties/hint/type", keyword: "type", params: { type: schema20.properties.hint.type }, message: "must be number,string", schema: schema20.properties.hint.type, parentSchema: schema20.properties.hint, data: data3 };
             if (vErrors === null) {
-              vErrors = [err8];
+              vErrors = [err14];
             } else {
-              vErrors.push(err8);
+              vErrors.push(err14);
             }
             errors++;
           }
@@ -49661,8 +50675,8 @@
       validate19.errors = vErrors;
       return errors === 0;
     }
-    exports2["318105ed"] = validate20;
-    const schema21 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"] }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "318105ed" };
+    exports2["-60e0cb62"] = validate20;
+    const schema21 = { "properties": { "type": { "const": "string" }, "length": { "type": ["number", "string"], "description": "The custom editor writes this value as a string to preserve precision." }, "hint": { "type": ["number", "string"] } }, "anyOf": [{ "required": ["type"] }, { "required": ["length"] }, { "required": ["hint"] }], "$id": "-60e0cb62" };
     function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
       ;
       let vErrors = null;
@@ -49929,16 +50943,28 @@
                 "const": "integer"
               },
               "minimum": {
-                "type": [
-                  "number",
-                  "string"
-                ]
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^-?\\d+$"
+                  }
+                ],
+                "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
               },
               "maximum": {
-                "type": [
-                  "number",
-                  "string"
-                ]
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^-?\\d+$"
+                  }
+                ],
+                "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
               },
               "hint": {
                 "type": [
@@ -49962,7 +50988,8 @@
                 "type": [
                   "number",
                   "string"
-                ]
+                ],
+                "description": "The custom editor writes this value as a string to preserve precision."
               },
               "hint": {
                 "type": [
@@ -50003,22 +51030,35 @@
             "type": "string"
           },
           "minimum": {
-            "type": [
-              "number",
-              "string"
-            ]
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ],
+            "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
           },
           "maximum": {
-            "type": [
-              "number",
-              "string"
-            ]
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ],
+            "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
           },
           "length": {
             "type": [
               "number",
               "string"
-            ]
+            ],
+            "description": "The custom editor writes this value as a string to preserve precision."
           },
           "hint": {
             "type": [
@@ -50111,6 +51151,7 @@
             "const": "protocol"
           },
           "policy": {
+            "description": "Signed decimal integer. The custom editor writes valid values as unquoted JSON integer literals while preserving precision.",
             "anyOf": [
               {
                 "type": "integer"
@@ -59636,6 +60677,7 @@ ${diagnosticSummary}` : topic.displayName, children: [
     { value: "boolean", label: "Boolean" },
     { value: "site", label: "Site" }
   ];
+  var SIGNED_DECIMAL_INTEGER_PATTERN = "^-?\\d+$";
   function App() {
     const [schema, setSchema] = (0, import_react27.useState)();
     const [formData, setFormData] = (0, import_react27.useState)({});
@@ -59766,6 +60808,14 @@ ${diagnosticSummary}` : topic.displayName, children: [
         return void 0;
       }
       const clone = JSON.parse(JSON.stringify(schema));
+      const integerTextSchema = (property2) => {
+        const { anyOf: _anyOf, ...rest } = property2;
+        return {
+          ...rest,
+          type: "string",
+          pattern: SIGNED_DECIMAL_INTEGER_PATTERN
+        };
+      };
       const applyRequirementOptions = (node) => {
         if (!node?.properties) {
           return;
@@ -59781,13 +60831,16 @@ ${diagnosticSummary}` : topic.displayName, children: [
           node.properties.name.pattern = "^[\\w .(),-]+$";
         }
         if (node.properties.length) {
-          node.properties.length.type = "integer";
+          node.properties.length = {
+            ...node.properties.length,
+            type: "string"
+          };
         }
         if (node.properties.minimum) {
-          node.properties.minimum.type = "integer";
+          node.properties.minimum = integerTextSchema(node.properties.minimum);
         }
         if (node.properties.maximum) {
-          node.properties.maximum.type = "integer";
+          node.properties.maximum = integerTextSchema(node.properties.maximum);
         }
         if (node.properties.hint) {
           node.properties.hint.type = "string";
@@ -59811,6 +60864,9 @@ ${diagnosticSummary}` : topic.displayName, children: [
       };
       applyRequirementOptions(clone?.$defs?.requirement);
       applyRequirementOptions(clone?.$defs?.obligation);
+      if (clone?.$defs?.protocolSpec?.properties?.policy) {
+        clone.$defs.protocolSpec.properties.policy = integerTextSchema(clone.$defs.protocolSpec.properties.policy);
+      }
       return clone;
     }, [schema]);
     const uiSchema = (0, import_react27.useMemo)(() => {

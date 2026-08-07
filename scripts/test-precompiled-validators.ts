@@ -41,6 +41,40 @@ function run() {
 
   expectInvalid(CONTRACT_SCHEMA_ID, {}, contractSchema);
 
+  const losslessIntegerRequirement = {
+    type: "integer",
+    name: "architecture range",
+    minimum: "-9223372036854775808",
+    maximum: "123456789012345678901234567890",
+    hint: "range",
+  };
+
+  expectValid(
+    CONTRACT_SCHEMA_ID,
+    {
+      type: "supplier",
+      name: "/layer/verb/subject/variation/platform",
+      description: "contract description",
+      requirements: [losslessIntegerRequirement],
+      obligations: [],
+      supplier: "aptissio",
+    },
+    contractSchema
+  );
+
+  expectInvalid(
+    CONTRACT_SCHEMA_ID,
+    {
+      type: "supplier",
+      name: "/layer/verb/subject/variation/platform",
+      description: "contract description",
+      requirements: [{ ...losslessIntegerRequirement, maximum: "1.5" }],
+      obligations: [],
+      supplier: "aptissio",
+    },
+    contractSchema
+  );
+
   expectValid(
     PROTOCOL_SCHEMA_ID,
     {
@@ -55,6 +89,19 @@ function run() {
   );
 
   expectInvalid(PROTOCOL_SCHEMA_ID, { type: "protocol" }, protocolSchema);
+
+  expectValid(
+    PROTOCOL_SCHEMA_ID,
+    {
+      type: "protocol",
+      policy: "9223372036854775807",
+      name: "/layer/subject/variation/platform",
+      description: "protocol description",
+      host: { macro: "host-macro", requirements: [], obligations: [] },
+      join: { macro: "join-macro", requirements: [], obligations: [] },
+    },
+    protocolSchema
+  );
 
   // Regression: enhanced schemas used for the UI should still validate against the base schema
   const enhancedContractSchema = JSON.parse(JSON.stringify(contractSchema));

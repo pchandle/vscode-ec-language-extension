@@ -7,6 +7,8 @@ import addFormats from "ajv-formats";
 import { findNodeAtLocation, parseTree, Node as JsonNode } from "jsonc-parser";
 import { DocumentUpdateCoordinator } from "./DocumentUpdateCoordinator";
 import { isFileType, replaceExtension } from "../fileTypes";
+import { restoreLosslessIntegerFields } from "./losslessIntegerFields";
+import { serializeProtocolSpecification } from "./protocolSpecSerializer";
 
 type WebviewIncomingMessage =
   | { type: "ready" }
@@ -137,7 +139,9 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     const text = document.getText();
     try {
       const value = JSON.parse(text);
-      return { text, value, tree: parseTree(text) ?? undefined };
+      const tree = parseTree(text) ?? undefined;
+      restoreLosslessIntegerFields(text, value, tree, "specification");
+      return { text, value, tree };
     } catch (err: any) {
       return { text, parseError: err?.message ?? "Invalid JSON" };
     }
@@ -216,7 +220,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
 
   private async updateTextDocument(document: vscode.TextDocument, value: unknown) {
     const edit = new vscode.WorkspaceEdit();
-    const jsonText = JSON.stringify(value ?? {}, null, 2) + "\n";
+    const jsonText = this.serializeDocument(value) + "\n";
     const end = document.positionAt(document.getText().length);
     const fullRange = new vscode.Range(new vscode.Position(0, 0), end);
     edit.replace(document.uri, fullRange, jsonText);
@@ -224,13 +228,12 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   private async normalizeOnOpen(document: vscode.TextDocument) {
-    const text = document.getText();
-    let parsed: any;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
+    const parsedResult = this.parseDocument(document);
+    if (parsedResult.parseError) {
       return;
     }
+    const text = parsedResult.text;
+    const parsed = parsedResult.value;
 
     if (!parsed || parsed.type !== this.expectedType) {
       return;
@@ -241,7 +244,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     const normalized = this.normalizeSpec(parsed);
-    const formatted = JSON.stringify(normalized, null, 2) + "\n";
+    const formatted = this.serializeDocument(normalized) + "\n";
     if (formatted === text) {
       return;
     }
@@ -258,8 +261,8 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     if (Array.isArray(clone.description)) {
       clone.description = clone.description.join("\n");
     }
-    if (clone.type !== "protocol" && clone.policy && typeof clone.policy === "string" && /^-?\d+$/.test(clone.policy)) {
-      clone.policy = parseInt(clone.policy, 10);
+    if (clone.type === "protocol" && typeof clone.policy === "number") {
+      clone.policy = String(clone.policy);
     }
     if (clone.host && typeof clone.host === "object" && Array.isArray(clone.host.macro)) {
       clone.host.macro = clone.host.macro.join("\n");
@@ -271,6 +274,12 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
       if (!item || typeof item !== "object") {
         return;
       }
+      const toIntegerString = (value: any) => {
+        if (typeof value === "number" && Number.isFinite(value)) {
+          return String(value);
+        }
+        return value;
+      };
       const toInt = (value: any) => {
         if (typeof value === "number") {
           return Number.isFinite(value) ? Math.trunc(value) : value;
@@ -283,7 +292,7 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
 
       if (item.type === "string") {
         if (item.length !== undefined) {
-          item.length = toInt(item.length);
+          item.length = toIntegerString(item.length);
         }
         if (item.hint !== undefined) {
           item.hint = String(item.hint);
@@ -291,10 +300,10 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
       }
       if (item.type === "integer") {
         if (item.minimum !== undefined) {
-          item.minimum = toInt(item.minimum);
+          item.minimum = toIntegerString(item.minimum);
         }
         if (item.maximum !== undefined) {
-          item.maximum = toInt(item.maximum);
+          item.maximum = toIntegerString(item.maximum);
         }
         if (item.hint !== undefined) {
           item.hint = toInt(item.hint);
@@ -316,6 +325,10 @@ export class SpecEditorProvider implements vscode.CustomTextEditorProvider {
     normalizeArray(clone.join?.obligations);
 
     return clone;
+  }
+
+  private serializeDocument(value: unknown): string {
+    return this.expectedType === "protocol" ? serializeProtocolSpecification(value) : JSON.stringify(value ?? {}, null, 2);
   }
 
   private isNameValid(name: unknown) {

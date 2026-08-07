@@ -4,6 +4,8 @@ import * as vscode from "vscode";
 import Ajv from "ajv";
 import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
+import { parseTree } from "jsonc-parser";
+import { restoreLosslessIntegerFields } from "./customEditors/losslessIntegerFields";
 import { loadSchema } from "./customEditors/SpecEditorProvider";
 import { loadPdesSchema } from "./customEditors/PdesEditorProvider";
 import { loadPddCandidates, ProtocolDesignDefinition } from "./pddLoader";
@@ -93,7 +95,9 @@ export function registerPspecMigration(context: vscode.ExtensionContext): (docum
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(document.getText());
+      const text = document.getText();
+      parsed = JSON.parse(text);
+      restoreLosslessIntegerFields(text, parsed, parseTree(text) ?? undefined, "specification");
     } catch (error: any) {
       void vscode.window.showErrorMessage(`Cannot migrate invalid JSON: ${error?.message ?? String(error)}`);
       return;

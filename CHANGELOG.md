@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## 0.13.2 - 2026-08-08
+- Preserve exact, arbitrary-size integer values when editing contract specifications, protocol specifications, and protocol designs; this includes integer bounds and string lengths.
+- Write integer bounds and string lengths as JSON strings, preventing JavaScript-number rounding during editor saves, `.pspec` migration, and specification normalisation.
+- Export valid protocol policies as canonical unquoted JSON integer literals without precision loss.
+- Add regression coverage for signed 64-bit endpoints, larger integer values, protocol-policy serialization, and normalizer output.
+
 ## 0.13.1 - 2026-08-07
 - Improve Design Domain Language syntax highlighting with brighter colours for line comments, numbers, and expression links.
 - Highlight `def` as a keyword and distinguish uppercase symbolic literals, including names containing digits and underscores.

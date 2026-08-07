@@ -13,6 +13,8 @@
 
 The extension provides highlighting, snippets, diagnostics, completions, document links, specification lookup, local specification navigation, and formatting for Emergent expression files. The custom editors update the open document through VS Code edits; save the document with the normal VS Code save command.
 
+When a specification is edited, integer `minimum`, `maximum`, and string `length` values are written as JSON strings. Valid protocol `policy` values are written as unquoted signed decimal JSON integers. Both forms preserve architecture-sized integers beyond JavaScript's safe-integer range.
+
 ## First-time setup
 
 1. Open a folder or workspace.

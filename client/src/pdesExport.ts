@@ -1,11 +1,13 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { parse as parseJsonc } from "jsonc-parser";
+import { parse as parseJsonc, parseTree } from "jsonc-parser";
 import Ajv from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { findPddForVersion } from "./pddLoader";
 import { loadPdesSchema } from "./customEditors/PdesEditorProvider";
+import { restoreLosslessIntegerFields } from "./customEditors/losslessIntegerFields";
+import { serializeProtocolSpecification } from "./customEditors/protocolSpecSerializer";
 import { transformPdesToPspec, PdesDesign } from "./pdes/transform";
 import { extensionWithoutDot, isFileType, replaceExtension } from "./fileTypes";
 
@@ -37,6 +39,7 @@ export async function exportPdesDocument(
   let parsed: PdesDesign;
   try {
     parsed = parseJsonc(text) as PdesDesign;
+    restoreLosslessIntegerFields(text, parsed, parseTree(text) ?? undefined, "protocolDesign");
   } catch (err: any) {
     void vscode.window.showErrorMessage(`Failed to parse .pdes: ${err?.message ?? err}`);
     return;
@@ -81,7 +84,7 @@ export async function exportPdesDocument(
     return;
   }
 
-  const newContent = JSON.stringify(pspec, null, 2) + "\n";
+  const newContent = serializeProtocolSpecification(pspec) + "\n";
   const targetExists = fs.existsSync(saveUri.fsPath);
 
   if (targetExists) {

@@ -95,8 +95,28 @@ suite("PDES transform", () => {
     const modes = [mode("group-peers", "label", 2)];
 
     assert.equal(transformPdesToPspec(design(modes, " 004 "), pdd).pspec!.policy, "4");
-    assert.equal(transformPdesToPspec(design(modes, 3.8), pdd).pspec!.policy, "3");
+    assert.equal(transformPdesToPspec(design(modes, 3.8), pdd).pspec!.policy, "0");
     assert.equal(transformPdesToPspec(design(modes, "not a policy"), pdd).pspec!.policy, "0");
+  });
+
+  test("exports lossless integer bounds and policies", () => {
+    const min = "-9223372036854775808";
+    const max = "9223372036854775807";
+    const larger = "123456789012345678901234567890";
+    const mixedMode = {
+      modeTemplate: "mixed",
+      collaborationLabel: "lossless",
+      topics: Array.from({ length: 4 }, (_, index) => ({
+        name: `topic ${index}`,
+        properties: { minimum: min, maximum: max, hint: "range" },
+      })),
+    };
+
+    const result = transformPdesToPspec(design([mixedMode], larger), pdd);
+    assert.ok(result.pspec);
+    assert.equal(result.pspec!.policy, larger);
+    assert.equal(result.pspec!.host.requirements[0].minimum, min);
+    assert.equal(result.pspec!.host.requirements[0].maximum, max);
   });
 
   test("rejects blank collaboration labels", () => {

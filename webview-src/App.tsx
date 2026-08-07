@@ -38,6 +38,8 @@ const REQUIREMENT_TYPE_OPTIONS = [
   { value: "site", label: "Site" },
 ];
 
+const SIGNED_DECIMAL_INTEGER_PATTERN = "^-?\\d+$";
+
 export default function App() {
   const [schema, setSchema] = useState<any>();
   const [formData, setFormData] = useState<FormData>({});
@@ -175,6 +177,14 @@ export default function App() {
     }
 
     const clone = JSON.parse(JSON.stringify(schema));
+    const integerTextSchema = (property: any) => {
+      const { anyOf: _anyOf, ...rest } = property;
+      return {
+        ...rest,
+        type: "string",
+        pattern: SIGNED_DECIMAL_INTEGER_PATTERN,
+      };
+    };
     const applyRequirementOptions = (node: any) => {
       if (!node?.properties) {
         return;
@@ -191,13 +201,16 @@ export default function App() {
         node.properties.name.pattern = "^[\\w .(),-]+$";
       }
       if (node.properties.length) {
-        node.properties.length.type = "integer";
+        node.properties.length = {
+          ...node.properties.length,
+          type: "string",
+        };
       }
       if (node.properties.minimum) {
-        node.properties.minimum.type = "integer";
+        node.properties.minimum = integerTextSchema(node.properties.minimum);
       }
       if (node.properties.maximum) {
-        node.properties.maximum.type = "integer";
+        node.properties.maximum = integerTextSchema(node.properties.maximum);
       }
       if (node.properties.hint) {
         // Printable ASCII excluding backslash and double-quote to avoid escape needs
@@ -225,6 +238,9 @@ export default function App() {
 
     applyRequirementOptions(clone?.$defs?.requirement);
     applyRequirementOptions(clone?.$defs?.obligation);
+    if (clone?.$defs?.protocolSpec?.properties?.policy) {
+      clone.$defs.protocolSpec.properties.policy = integerTextSchema(clone.$defs.protocolSpec.properties.policy);
+    }
 
     return clone;
   }, [schema]);

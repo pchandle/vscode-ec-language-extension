@@ -8,6 +8,7 @@ import addFormats from "ajv-formats";
 import { parse as parseJsonc, Node as JsonNode, findNodeAtLocation, parseTree } from "jsonc-parser";
 import { findPddForVersion } from "../pddLoader";
 import { DocumentUpdateCoordinator } from "./DocumentUpdateCoordinator";
+import { restoreLosslessIntegerFields } from "./losslessIntegerFields";
 
 type HostMessage =
   | { type: "ready" }
@@ -125,7 +126,9 @@ export class PdesEditorProvider implements vscode.CustomTextEditorProvider {
     const text = document.getText();
     try {
       const value = parseJsonc(text);
-      return { text, value, tree: parseTree(text) ?? undefined };
+      const tree = parseTree(text) ?? undefined;
+      restoreLosslessIntegerFields(text, value, tree, "protocolDesign");
+      return { text, value, tree };
     } catch (err: any) {
       return { text, parseError: err?.message ?? "Invalid JSON" };
     }

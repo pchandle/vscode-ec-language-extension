@@ -44,16 +44,28 @@
               "const": "integer"
             },
             "minimum": {
-              "type": [
-                "number",
-                "string"
-              ]
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?\\d+$"
+                }
+              ],
+              "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
             },
             "maximum": {
-              "type": [
-                "number",
-                "string"
-              ]
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?\\d+$"
+                }
+              ],
+              "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
             },
             "hint": {
               "type": [
@@ -77,7 +89,8 @@
               "type": [
                 "number",
                 "string"
-              ]
+              ],
+              "description": "The custom editor writes this value as a string to preserve precision."
             },
             "hint": {
               "type": [
@@ -118,22 +131,35 @@
           "type": "string"
         },
         "minimum": {
-          "type": [
-            "number",
-            "string"
-          ]
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "pattern": "^-?\\d+$"
+            }
+          ],
+          "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
         },
         "maximum": {
-          "type": [
-            "number",
-            "string"
-          ]
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "pattern": "^-?\\d+$"
+            }
+          ],
+          "description": "Signed decimal integer. The custom editor writes this value as a string to preserve precision."
         },
         "length": {
           "type": [
             "number",
             "string"
-          ]
+          ],
+          "description": "The custom editor writes this value as a string to preserve precision."
         },
         "hint": {
           "type": [
@@ -226,6 +252,7 @@
           "const": "protocol"
         },
         "policy": {
+          "description": "Signed decimal integer. The custom editor writes valid values as unquoted JSON integer literals while preserving precision.",
           "anyOf": [
             {
               "type": "integer"

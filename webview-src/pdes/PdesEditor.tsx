@@ -70,12 +70,12 @@ const propertyFields: Record<
 > = {
   abstraction: [{ key: "protocol", label: "Protocol", type: "text" }],
   integer: [
-    { key: "minimum", label: "Minimum", type: "number" },
-    { key: "maximum", label: "Maximum", type: "number" },
+    { key: "minimum", label: "Minimum", type: "text" },
+    { key: "maximum", label: "Maximum", type: "text" },
     { key: "hint", label: "Hint", type: "text" },
   ],
   string: [
-    { key: "length", label: "Length", type: "number" },
+    { key: "length", label: "Length", type: "text" },
     { key: "hint", label: "Hint", type: "text" },
   ],
   boolean: [],
@@ -493,12 +493,7 @@ export function PdesEditor({ value, pdd, pddPath, parseError, hostErrors, protoc
                       ...topic,
                       properties: {
                         ...(topic.properties ?? {}),
-                        [field.key]:
-                          field.type === "number"
-                            ? e.target.value === ""
-                              ? undefined
-                              : Number(e.target.value)
-                            : e.target.value,
+                        [field.key]: e.target.value,
                       },
                     })
                   }

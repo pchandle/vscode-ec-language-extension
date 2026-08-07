@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const Ajv = require('ajv');
+const { findNodeAtLocation, parseTree } = require('jsonc-parser');
 
 function usage(exitCode = 1) {
   console.error('Usage: normalize-specs.js [-apply] <directory> <filename-pattern>');
@@ -70,8 +71,8 @@ function normalizeSpec(obj) {
   if (typeof clone.description === 'object' && Array.isArray(clone.description)) {
     clone.description = clone.description.join('\n');
   }
-  if (clone.policy && typeof clone.policy === 'string' && /^-?\d+$/.test(clone.policy)) {
-    clone.policy = parseInt(clone.policy, 10);
+  if (clone.type === 'protocol' && typeof clone.policy === 'number') {
+    clone.policy = String(clone.policy);
   }
   if (clone.host && typeof clone.host === 'object') {
     if (Array.isArray(clone.host.macro)) {
@@ -86,8 +87,63 @@ function normalizeSpec(obj) {
   return clone;
 }
 
+function restoreNumberAtPath(text, value, tree, path) {
+  const node = findNodeAtLocation(tree, path);
+  if (!node || node.type !== 'number') return;
+  let target = value;
+  for (const segment of path.slice(0, -1)) {
+    if (!target || typeof target !== 'object') return;
+    target = target[segment];
+  }
+  const key = path[path.length - 1];
+  if (target && typeof target === 'object') {
+    target[key] = text.slice(node.offset, node.offset + node.length);
+  }
+}
+
+function restoreTopicCollectionIntegers(text, value, tree, path) {
+  let topics = value;
+  for (const segment of path) {
+    if (!topics || typeof topics !== 'object') return;
+    topics = topics[segment];
+  }
+  if (!Array.isArray(topics)) return;
+  topics.forEach((_topic, index) => {
+    restoreNumberAtPath(text, value, tree, [...path, index, 'minimum']);
+    restoreNumberAtPath(text, value, tree, [...path, index, 'maximum']);
+    restoreNumberAtPath(text, value, tree, [...path, index, 'length']);
+  });
+}
+
+function restoreLosslessSpecIntegers(text, value) {
+  const tree = parseTree(text);
+  if (!tree || !value || typeof value !== 'object') return;
+  if (value.type === 'protocol') {
+    restoreNumberAtPath(text, value, tree, ['policy']);
+    for (const role of ['host', 'join']) {
+      restoreTopicCollectionIntegers(text, value, tree, [role, 'requirements']);
+      restoreTopicCollectionIntegers(text, value, tree, [role, 'obligations']);
+    }
+    return;
+  }
+  restoreTopicCollectionIntegers(text, value, tree, ['requirements']);
+  restoreTopicCollectionIntegers(text, value, tree, ['obligations']);
+}
+
 function formatJson(obj) {
-  return JSON.stringify(obj, null, 2) + '\n';
+  const json = JSON.stringify(obj, null, 2);
+  const canonicalPolicy = canonicalPolicyValue(obj);
+  if (!canonicalPolicy) return json + '\n';
+  const tree = parseTree(json);
+  const policyNode = tree ? findNodeAtLocation(tree, ['policy']) : undefined;
+  if (!policyNode || policyNode.type !== 'string') return json + '\n';
+  return json.slice(0, policyNode.offset) + canonicalPolicy + json.slice(policyNode.offset + policyNode.length) + '\n';
+}
+
+function canonicalPolicyValue(obj) {
+  if (!obj || obj.type !== 'protocol' || typeof obj.policy !== 'string') return undefined;
+  const trimmed = obj.policy.trim();
+  return /^-?\d+$/.test(trimmed) ? BigInt(trimmed).toString() : undefined;
 }
 
 function diffText(oldText, newText, filePath) {
@@ -121,6 +177,7 @@ for (const file of allFiles) {
   let parsed;
   try {
     parsed = JSON.parse(raw);
+    restoreLosslessSpecIntegers(raw, parsed);
   } catch (err) {
     validationFailures += 1;
     logLines.push(`[PARSE-ERROR] ${file}`);
