@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.13.1 - 2026-08-07
+- Improve Design Domain Language syntax highlighting with brighter colours for line comments, numbers, and expression links.
+- Highlight `def` as a keyword and distinguish uppercase symbolic literals, including names containing digits and underscores.
+
 ## 0.13.0 - 2026-08-05
 - Remove the legacy `gateway.*` connection settings. Configure Studio with `studio.hostname`, `studio.port`, `studio.allowInsecure`, and `studio.network`.
 - Incrementally index Component Manager source changes in configured component directories.

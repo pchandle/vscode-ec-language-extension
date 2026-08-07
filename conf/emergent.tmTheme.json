@@ -24,6 +24,12 @@
             }
         },
         {
+            "scope": "comment.line.double-slash",
+            "settings": {
+                "foreground": "#899635"
+            }
+        },
+        {
             "scope": "keyword",
             "settings": {
                 "foreground": "#c586c0"
@@ -81,7 +87,7 @@
         {
             "scope": "keyword.numbers",
             "settings": {
-                "foreground": "#b5b771"
+                "foreground": "#ed8c8c"
             }
         },
         {
@@ -111,7 +117,13 @@
         {
             "scope": "markup.underline.link.emergent",
             "settings": {
-                "foreground": "#2e74a6"
+                "foreground": "#278cba"
+            }
+        },
+        {
+            "scope": "constant.other.allcaps",
+            "settings": {
+                "foreground": "#c9c9a5"
             }
         },
         {

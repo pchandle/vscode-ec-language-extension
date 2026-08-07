@@ -113,7 +113,7 @@
 		},
 		{
 			"name": "keyword.keywords.subhostjoin",
-			"match": "\\b(sub|host|join|job)\\b"
+			"match": "\\b(sub|host|join|job|def)\\b"
 		},
 		{
 			"name": "keyword.keywords.asset",
@@ -130,6 +130,10 @@
 		{
 			"match": "(//).*$\\n?",
 			"name": "comment.line.double-slash"
+		},
+		{
+			"match": "\\b[A-Z0-9_]+\\b",
+			"name": "constant.other.allcaps"
 		},
 		{
 			"match": "[a-fA-F0-9]",
